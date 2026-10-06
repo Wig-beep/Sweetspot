@@ -11,12 +11,16 @@ import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
 import { defineComponent } from 'vue'
 import { BGPrediction, ControllerInternals } from '../../types/Controller.js'
+import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import {
     glucoseColorLine,
     glucoseColorLineSegment
 } from '../util/ChartGlucoseColor.js'
 import AccordionBox from './AccordionBox.vue'
+
+/** number of datasets that are always present (prediction, measured) */
+const FIXED_DATASETS = 2
 
 export default defineComponent({
     components: {
@@ -25,7 +29,8 @@ export default defineComponent({
     data() {
         return {
             preserveOldCurves: true,
-            currentDatasetID: 1,
+            // datasets 0 (prediction) and 1 (measured glucose) are fixed
+            currentDatasetID: FIXED_DATASETS,
         }
     },
     setup() {
@@ -53,6 +58,16 @@ export default defineComponent({
                         borderDash: [10, 2],
                         borderWidth: 1,
                         spanGaps: true
+                    },
+                    <ChartDataset>{
+                        type: "line",
+                        label: this.$t("measured"),
+                        showLine: false,
+                        pointStyle: "circle",
+                        pointRadius: 4,
+                        borderColor: glucoseColorLine,
+                        backgroundColor: glucoseColorLine,
+                        data: [],
                     },
                 ],
             },
@@ -85,8 +100,13 @@ export default defineComponent({
                 plugins: {
                     legend: {
                         labels: {
-                            // no legend for controller prediction
-                            filter: (item) => (item.datasetIndex || 0) > 0
+                            // no legend for controller prediction and
+                            // for measured glucose if there is none
+                            filter: (item, data) => {
+                                const index = item.datasetIndex || 0
+                                return index > 1 || (index === 1 &&
+                                    data.datasets[1].data.length > 0)
+                            }
                         }
                     },
                 },
@@ -109,11 +129,11 @@ export default defineComponent({
             }
             else {
                 // remove all but first (prediction)
-                chartGlucose.data.datasets = datasets.slice(0, 1)
+                chartGlucose.data.datasets = datasets.slice(0, FIXED_DATASETS)
                 datasets = chartGlucose.data.datasets
             }
             // create new curve
-            const id = (datasets.length)// const id = (datasets.length+1) /2
+            const id = datasets.length - FIXED_DATASETS + 1
             datasets.push({
                 type: "line",
                 label: `Glucose Result ${id}`, //label: `#${id}: ` + this.$t("actual"),
@@ -155,10 +175,17 @@ export default defineComponent({
                     .push({ x: result.t.valueOf(), y: result.s.SMBG })
             }*/
         },
+        /** shows measured glucose (in mmol/L) from logged patient data */
+        setMeasuredGlucose(events: PatientEvent[]) {
+            this.chart.data.datasets[1].data = events.map(
+                (event) => <Point>{ x: event.time.valueOf(), y: event.value })
+            this.update()
+        },
         update() {
             const config = this.chart.config
             // adapt scale only to real glucose diagram, not predictions
-            const tmax = <Point>this.chart.data.datasets[1].data.at(-1)
+            const tmax = <Point>this.chart.data
+                .datasets[this.currentDatasetID - 1].data.at(-1)
             if (typeof config.options === "undefined") {
                 config.options = {}
             }
@@ -204,6 +231,7 @@ export default defineComponent({
 	"title": "Glucose concentration",
 	"actual": "actual concentration",
 	"prediction": "prediction by algorithm",
+	"measured": "measured glucose",
 	"preserveOldCurves": "preserve old curves",
 }
 </i18n>
@@ -212,6 +240,7 @@ export default defineComponent({
 	"title": "Glukosekonzentration",
 	"actual": "Tatsächliche Glukosekonzentration",
 	"prediction": "Prädiktion des Algorithmus",
+	"measured": "Gemessene Glukose",
 	"preserveOldCurves": "Alte Kurven beibehalten",
 }
 </i18n>

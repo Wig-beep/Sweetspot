@@ -6,51 +6,59 @@
             <thead>
                 <tr>
                     <th>Time</th>
-                    <th>Meal (g)</th>
-                    <th>Bolus (U)</th>
-                    <th>Basal (U/hr)</th>
+                    <th>Event</th>
+                    <th>Value</th>
+                    <th>Duration (min)</th>
+                    <th></th>
                 </tr>
             </thead>
 
             <tbody>
-                <tr v-for="(reading, index) in localReadings" :key="index">
+                <tr v-for="(row, index) in rows" :key="row.id">
                     <td>
                         <input
                             type="datetime-local"
-                            v-model="reading.timeString"
+                            v-model="row.timeString"
                         />
+                    </td>
+
+                    <td>
+                        <select v-model="row.type">
+                            <option v-for="type in eventTypes" :key="type" :value="type">
+                                {{ typeLabels[type] }}
+                            </option>
+                        </select>
                     </td>
 
                     <td>
                         <input
                             type="number"
                             min="0"
+                            :step="row.type === 'carbs' ? 1 : 0.1"
+                            v-model.number="row.value"
+                        />
+                    </td>
+
+                    <td>
+                        <input
+                            v-if="row.type === 'carbs'"
+                            type="number"
+                            min="1"
                             step="1"
-                            v-model.number="reading.carbs"
+                            v-model.number="row.duration"
                         />
                     </td>
 
                     <td>
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            v-model.number="reading.bolus"
-                        />
-                    </td>
-
-                    <td>
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            v-model.number="reading.basal"
-                        />
+                        <button @click="removeRow(index)" title="Remove event">✕</button>
                     </td>
                 </tr>
             </tbody>
         </table>
 
+        <button @click="addRow">
+            Add event
+        </button>
         <button @click="applyChanges">
             Apply changes
         </button>
@@ -58,67 +66,68 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue"
-import { InsulinReading } from "../../types/InsulinReading.js"
-import Meal from "../../types/Meal.js"
+import { defineComponent, PropType } from "vue"
+import { sortByTime } from "../../common/PatientEvents.js"
+import PatientEvent, {
+    PATIENT_EVENT_TYPES,
+    PatientEventType
+} from "../../types/PatientEvent.js"
 
 type TimelineRow = {
+    id: number
     timeString: string
-    basal: number
-    bolus: number
-    carbs: number
+    type: PatientEventType
+    value: number
+    duration?: number
 }
+
+const typeLabels: Record<PatientEventType, string> = {
+    basal: "Basal rate (U/h)",
+    bolus: "Bolus (U)",
+    carbs: "Carbs (g)",
+    glucose: "Glucose (mmol/L)",
+}
+
+let nextRowId = 0
 
 export default defineComponent({
     name: "PatientTimeline",
 
     props: {
-        readings: {
-            type: Array as () => InsulinReading[],
+        events: {
+            type: Array as PropType<PatientEvent[]>,
             required: true
         },
-
-        meals: {
-            type: Array as () => Meal[],
-            required: true
-        }
     },
 
     emits: ["timelineChanged"],
 
     data() {
         return {
-            localReadings: [] as TimelineRow[]
+            rows: [] as TimelineRow[],
+            eventTypes: PATIENT_EVENT_TYPES,
+            typeLabels,
         }
     },
 
     watch: {
-        readings: {
+        events: {
             immediate: true,
             deep: true,
 
             handler() {
-                this.updateLocalReadings()
+                this.rows = this.events.map(event => ({
+                    id: nextRowId++,
+                    timeString: this.toDateTimeLocal(event.time),
+                    type: event.type,
+                    value: event.value,
+                    duration: event.duration,
+                }))
             }
         }
     },
 
     methods: {
-        updateLocalReadings() {
-            this.localReadings = this.readings.map(reading => {
-                const meal = this.meals.find(
-                    meal => meal.start.getTime() === reading.time.getTime()
-                )
-
-                return {
-                    timeString: this.toDateTimeLocal(reading.time),
-                    basal: reading.basal,
-                    bolus: reading.bolus,
-                    carbs: meal?.carbs ?? 0
-                }
-            })
-        },
-
         toDateTimeLocal(date: Date): string {
             const year = date.getFullYear()
             const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -129,32 +138,41 @@ export default defineComponent({
             return `${year}-${month}-${day}T${hours}:${minutes}`
         },
 
+        addRow() {
+            const last = this.rows.at(-1)
+            this.rows.push({
+                id: nextRowId++,
+                timeString: last?.timeString
+                    ?? this.toDateTimeLocal(new Date()),
+                type: "bolus",
+                value: 0,
+            })
+        },
+
+        removeRow(index: number) {
+            this.rows.splice(index, 1)
+        },
+
         applyChanges() {
-            const readings: InsulinReading[] = []
-            const meals: Meal[] = []
+            const events: PatientEvent[] = []
 
-            for (const row of this.localReadings) {
+            for (const row of this.rows) {
                 const time = new Date(row.timeString)
-
-                readings.push({
-                    time,
-                    basal: Number(row.basal) || 0,
-                    bolus: Number(row.bolus) || 0
-                })
-
-                if (Number(row.carbs) > 0) {
-                    meals.push({
-                        start: time,
-                        carbs: Number(row.carbs),
-                        duration: 1
-                    })
+                if (isNaN(time.valueOf())) {
+                    continue
                 }
+                const event: PatientEvent = {
+                    time,
+                    type: row.type,
+                    value: Number(row.value) || 0,
+                }
+                if (row.type === "carbs" && Number(row.duration) > 0) {
+                    event.duration = Number(row.duration)
+                }
+                events.push(event)
             }
 
-            this.$emit("timelineChanged", {
-                readings,
-                meals
-            })
+            this.$emit("timelineChanged", sortByTime(events))
         }
     }
 })
@@ -176,13 +194,20 @@ export default defineComponent({
     border: 1px solid #ccc;
 }
 
-.patient-timeline input {
+.patient-timeline input,
+.patient-timeline select {
     width: 100%;
     box-sizing: border-box;
 }
 
 .patient-timeline button {
     margin-top: 10px;
+    margin-right: 6px;
     padding: 6px 12px;
+}
+
+.patient-timeline td button {
+    margin: 0;
+    padding: 2px 6px;
 }
 </style>

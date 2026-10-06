@@ -30,16 +30,9 @@ import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
 import LoggedDoses from '../../core/controllers/LoggedDoses.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
-//import mealCSV from "../../core/MealTest.csv"
-//import insulinCSV from "../../core/BasalBolusTest.csv"
-//import patientDataCSV from "../../core/PatientDataTest.csv"
-import { InsulinReading } from '../../types/InsulinReading.js'
+import PatientEvent from '../../types/PatientEvent.js'
+import { getMealsFromEvents, parsePatientEventsCSV } from '../../common/PatientEvents.js'
 import PatientTimeline from './PatientTimeline.vue'
-
-type PatientCSVData = {
-    readings: InsulinReading[]
-    meals: Meal[]
-}
 
 // prepare simulator
 const sim = new Simulator()
@@ -99,8 +92,8 @@ export default defineComponent({
             meals: [] as Meal[],
             exerciseUnits: [] as Exercise[],
             options: {} as SimulatorOptions,
-            originalPatientData: null as PatientCSVData | null,  // never mutated — baseline for comparison
-            patientData: null as PatientCSVData | null,          // working copy the timeline will edit
+            originalPatientEvents: null as PatientEvent[] | null,  // never mutated — baseline for comparison
+            patientEvents: null as PatientEvent[] | null,          // working copy the timeline will edit
             csvFileName: '' as string,
         }
     },
@@ -119,11 +112,10 @@ export default defineComponent({
     computed: {
         /** time span covered by the loaded patient data */
         simulationSpan(): { t0: Date, tmax: Date } | undefined {
-            if (!this.patientData) {
+            if (!this.patientEvents) {
                 return undefined
             }
-            return getPatientDataTimeSpan(
-                this.patientData.readings, this.patientData.meals)
+            return getPatientDataTimeSpan(this.patientEvents)
         },
     },
     methods: {
@@ -142,10 +134,10 @@ export default defineComponent({
                 const csvText = await file.text()
 
                 try {
-                    const parsed = this.loadPatientDataFromCSV(csvText)
+                    const parsed = parsePatientEventsCSV(csvText)
 
-                    this.originalPatientData = structuredClone(parsed)
-                    this.patientData = parsed
+                    this.originalPatientEvents = structuredClone(parsed)
+                    this.patientEvents = parsed
 
                     console.log("CSV PARSED:", parsed)
                 } catch (err) {
@@ -162,12 +154,13 @@ export default defineComponent({
             this.resetCharts()
 
             sim.setPatient(this.getPatient())
-            if (this.patientData) {
+            const events = toRaw(this.patientEvents)
+            if (events) {
                 // replay logged doses and meals from the loaded CSV
                 const loggedDoses = new LoggedDoses()
-                loggedDoses.setReadings(this.patientData.readings)
+                loggedDoses.setEvents(events)
                 sim.setController(loggedDoses)
-                sim.setMeals(this.patientData.meals)
+                sim.setMeals(getMealsFromEvents(events))
             }
             else {
                 sim.setController(this.getController())
@@ -183,6 +176,10 @@ export default defineComponent({
             // propagate results to charts
             const results = sim.getSimulationResults()
             this.propagateSimulationResults(results)
+            const chartGlucose = <InstanceType<typeof ChartGlucose>>
+                this.$refs.chartGlucose
+            chartGlucose.setMeasuredGlucose(
+                (events ?? []).filter((event) => event.type === "glucose"))
         },
         getController(): Controller {
             return <Controller>toRaw(this.controller)
@@ -269,80 +266,11 @@ export default defineComponent({
                 chart.controllerDataHover?.(t0, toRaw(data))
             }
         },
-        loadPatientDataFromCSV(csvText: string): {
-            readings: InsulinReading[]
-            meals: Meal[]
-        } {
-            const lines = csvText.trim().split(/\r?\n/)
-
-            // Remove header
-            lines.shift()
-
-            const readings: InsulinReading[] = []
-            const meals: Meal[] = []
-
-            for (const line of lines) {
-                if (!line.trim()) {
-                    continue
-                }
-
-                const [timestamp, basal, bolus, carbs] = line.split(",")
-
-                const time = new Date(timestamp)
-                const basalValue = Number(basal)
-                const bolusValue = Number(bolus)
-                const carbsValue = Number(carbs)
-
-                if (isNaN(time.getTime())) {
-                    throw new Error(`Invalid time: ${timestamp}`)
-                }
-
-                if (isNaN(basalValue)) {
-                    throw new Error(`Invalid basal value: ${basal}`)
-                }
-
-                if (isNaN(bolusValue)) {
-                    throw new Error(`Invalid bolus value: ${bolus}`)
-                }
-
-                if (isNaN(carbsValue)) {
-                    throw new Error(`Invalid carbohydrate amount: ${carbs}`)
-                }
-
-                // Store insulin data
-                readings.push({
-                    time: time,
-                    basal: basalValue,
-                    bolus: bolusValue
-                })
-
-                // Only create a meal if carbs > 0
-                if (carbsValue > 0) {
-                    meals.push({
-                        start: time,
-                        carbs: carbsValue
-                    })
-                }
-            }
-
-            return {
-                readings,
-                meals
-            }
-        },
-        timelineChanged(data: {
-            readings: InsulinReading[]
-            meals: Meal[]
-        }): void {
-
-            if (!this.patientData) {
+        timelineChanged(events: PatientEvent[]): void {
+            if (!this.patientEvents) {
                 return
             }
-
-            this.patientData.readings = data.readings
-            this.patientData.meals = data.meals
-
-            console.log("Timeline updated:", this.patientData)
+            this.patientEvents = events
         },
     },
 })
@@ -373,9 +301,8 @@ export default defineComponent({
             <VirtualPatientSelection @patientChanged="patientChanged" />
 
             <PatientTimeline
-                v-if="patientData"
-                :readings="patientData.readings"
-                :meals="patientData.meals"
+                v-if="patientEvents"
+                :events="patientEvents"
                 @timelineChanged="timelineChanged"
             />
 

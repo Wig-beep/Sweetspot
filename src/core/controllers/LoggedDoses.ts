@@ -11,9 +11,9 @@ import Controller, {
     Measurement,
     TracedMeasurement
 } from '../../types/Controller.js'
-import { InsulinReading } from '../../types/InsulinReading.js'
 import { ModuleProfile } from '../../types/ModuleProfile.js'
 import { ParameterDescriptions } from '../../types/ParametricModule.js'
+import PatientEvent from '../../types/PatientEvent.js'
 import AbstractController from '../AbstractController.js'
 
 export const profile: ModuleProfile = {
@@ -34,8 +34,10 @@ export default class LoggedDoses
     extends AbstractController<typeof LoggedDosesParameters>
     implements Controller {
 
-    /** logged doses, sorted by time */
-    protected readings: InsulinReading[] = []
+    /** logged basal rate changes, sorted by time */
+    protected basal: PatientEvent[] = []
+    /** logged boluses, sorted by time */
+    protected boluses: PatientEvent[] = []
     /** time of previous update; boluses up to this time have been given */
     protected tLast: Date = new Date(0)
 
@@ -61,11 +63,14 @@ export default class LoggedDoses
 
     /**
      * Sets the logged doses to be replayed.
-     * @param {InsulinReading[]} readings - logged basal rates and boluses
+     * @param {PatientEvent[]} events - logged events; only basal and bolus
+     *      events are used
      */
-    setReadings(readings: InsulinReading[]): void {
-        this.readings = [...readings].sort(
+    setEvents(events: PatientEvent[]): void {
+        const sorted = [...events].sort(
             (a, b) => a.time.valueOf() - b.time.valueOf())
+        this.basal = sorted.filter((event) => event.type === "basal")
+        this.boluses = sorted.filter((event) => event.type === "bolus")
     }
 
     override reset(t: Date) {
@@ -75,22 +80,22 @@ export default class LoggedDoses
     }
 
     update(t: Date, _s: TracedMeasurement, _a: AnnouncementList = {}) {
-        // basal rate of the latest reading at or before t
+        // basal rate of the latest basal event at or before t
         let iir = 0
-        for (const reading of this.readings) {
-            if (reading.time > t) break
-            iir = reading.basal
+        for (const event of this.basal) {
+            if (event.time > t) break
+            iir = event.value
         }
 
         // boluses logged since the previous update (inclusive of t)
         let ibolus = 0
         const reason: string[] = []
-        for (const reading of this.readings) {
-            const isDue = reading.time > this.tLast && reading.time <= t
-            if (isDue && reading.bolus > 0) {
-                ibolus += reading.bolus
-                reason.push("logged bolus: " + reading.bolus + " U at "
-                    + reading.time.toLocaleString())
+        for (const event of this.boluses) {
+            const isDue = event.time > this.tLast && event.time <= t
+            if (isDue && event.value > 0) {
+                ibolus += event.value
+                reason.push("logged bolus: " + event.value + " U at "
+                    + event.time.toLocaleString())
             }
         }
         this.tLast = t
@@ -104,7 +109,10 @@ export default class LoggedDoses
      * are given on time and basal changes take effect immediately.
      */
     override getNextUpdateTime(t: Date): Date | undefined {
-        return this.readings.find((reading) => reading.time > t)?.time
+        const next = [...this.basal, ...this.boluses]
+            .filter((event) => event.time > t)
+            .map((event) => event.time.valueOf())
+        return next.length ? new Date(Math.min(...next)) : undefined
     }
 }
 

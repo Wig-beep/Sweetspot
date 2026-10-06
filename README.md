@@ -33,8 +33,14 @@ npm run serve
 ```
 * Open browser and visit [http://localhost:8080/SweetSpot.html](http://localhost:8080/SweetSpot.html).
 * Load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv)).
-  Columns: `time,basal,bolus,carbs` with time as `YYYY-MM-DD HH:MM`, basal in U/h, bolus in U, carbs in g.
-  The simulation runs over the day set in the simulation options (default: today), so the CSV dates must match it.
+  Each row is one event: `time,type,value,duration` with time as `YYYY-MM-DD HH:MM` and type one of
+  * `basal`: basal rate in U/h, held until the next basal row
+  * `bolus`: insulin bolus in U
+  * `carbs`: carb intake in g, optionally eaten over `duration` minutes
+  * `glucose`: measured glucose in mmol/L, shown on the glucose chart
+
+  The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.
+  The simulation runs from the first event until 6 hours after the last one.
 * Now edit the source files, save your changes, and simply reload website.
 
 If you want to build an independent bundle that can be integrated into an html document, run

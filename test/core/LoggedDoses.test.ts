@@ -11,7 +11,7 @@ import StaticInsulinPump from '../../src/core/actuators/StaticInsulinPump.js'
 import LoggedDoses from '../../src/core/controllers/LoggedDoses.js'
 import VirtualPatientUvaPadova from '../../src/core/models/UvaPadova_T1DMS.js'
 import IdealCGM from '../../src/core/sensors/IdealCGM.js'
-import { InsulinReading } from '../../src/types/InsulinReading.js'
+import PatientEvent from '../../src/types/PatientEvent.js'
 
 const at = (h: number, m: number) => new Date(2026, 9, 5, h, m)
 
@@ -20,15 +20,20 @@ describe("LoggedDoses", () => {
     describe("#update", () => {
         const controller = new LoggedDoses()
         // deliberately unsorted
-        controller.setReadings([
-            { time: at(12, 0), basal: 0.5, bolus: 0 },
-            { time: at(8, 0), basal: 1, bolus: 4 },
-            { time: at(6, 0), basal: 0.8, bolus: 2 },
+        controller.setEvents([
+            { time: at(12, 0), type: "basal", value: 0.5 },
+            { time: at(8, 0), type: "bolus", value: 4 },
+            { time: at(6, 0), type: "basal", value: 0.8 },
+            { time: at(6, 0), type: "bolus", value: 2 },
+            { time: at(9, 0), type: "carbs", value: 50 },
+            { time: at(10, 0), type: "glucose", value: 7.5 },
         ])
 
         it("should hold the basal rate of the latest reading", () => {
             controller.reset(at(7, 0))
             controller.update(at(7, 0), {})
+            expect(controller.getOutput().iir).to.equal(0.8)
+            controller.update(at(8, 30), {})
             expect(controller.getOutput().iir).to.equal(0.8)
             controller.update(at(12, 30), {})
             expect(controller.getOutput().iir).to.equal(0.5)
@@ -50,22 +55,23 @@ describe("LoggedDoses", () => {
             expect(controller.getOutput().ibolus).to.equal(0)
         })
 
-        it("should request an update at the next logged dose", () => {
+        it("should request an update at the next logged dose only", () => {
             controller.reset(at(7, 0))
             expect(controller.getNextUpdateTime(at(7, 0))).to.deep.equal(at(8, 0))
+            expect(controller.getNextUpdateTime(at(8, 0))).to.deep.equal(at(12, 0))
             expect(controller.getNextUpdateTime(at(13, 0))).to.be.undefined
         })
     })
 
     describe("in Simulator", () => {
         it("should deliver every logged bolus off the time grid", () => {
-            const readings: InsulinReading[] = [
-                { time: at(0, 0), basal: 0.8, bolus: 0 },
-                { time: at(7, 32), basal: 0.8, bolus: 5 },
-                { time: at(15, 7), basal: 0.8, bolus: 2 },
+            const events: PatientEvent[] = [
+                { time: at(0, 0), type: "basal", value: 0.8 },
+                { time: at(7, 32), type: "bolus", value: 5 },
+                { time: at(15, 7), type: "bolus", value: 2 },
             ]
             const controller = new LoggedDoses()
-            controller.setReadings(readings)
+            controller.setEvents(events)
 
             const sim = new Simulator()
             sim.setPatient(new VirtualPatientUvaPadova())
