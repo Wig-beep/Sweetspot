@@ -8,7 +8,7 @@
                     <th>Time</th>
                     <th>Event</th>
                     <th>Value</th>
-                    <th>Duration (min)</th>
+                    <th>Details</th>
                     <th></th>
                 </tr>
             </thead>
@@ -45,8 +45,19 @@
                             type="number"
                             min="1"
                             step="1"
+                            placeholder="duration (min)"
+                            title="Duration of the meal in min"
                             v-model.number="row.duration"
                         />
+                        <select
+                            v-else-if="row.type === 'longacting'"
+                            v-model="row.insulin"
+                            title="Long-acting insulin"
+                        >
+                            <option v-for="insulin in insulins" :key="insulin" :value="insulin">
+                                {{ insulinLabels[insulin] }}
+                            </option>
+                        </select>
                     </td>
 
                     <td>
@@ -67,8 +78,11 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
+import { DEFAULT_LONG_ACTING_INSULIN } from "../../common/LongActingInsulin.js"
 import { sortByTime } from "../../common/PatientEvents.js"
 import PatientEvent, {
+    LONG_ACTING_INSULINS,
+    LongActingInsulin,
     PATIENT_EVENT_TYPES,
     PatientEventType
 } from "../../types/PatientEvent.js"
@@ -79,13 +93,22 @@ type TimelineRow = {
     type: PatientEventType
     value: number
     duration?: number
+    insulin: LongActingInsulin
 }
 
 const typeLabels: Record<PatientEventType, string> = {
     basal: "Basal rate (U/h)",
     bolus: "Bolus (U)",
     carbs: "Carbs (g)",
+    longacting: "Long-acting (U)",
     glucose: "Glucose (mmol/L)",
+}
+
+const insulinLabels: Record<LongActingInsulin, string> = {
+    glargine: "Glargine (e.g. Lantus)",
+    glargine_u300: "Glargine U300 (Toujeo)",
+    degludec: "Degludec (Tresiba)",
+    detemir: "Detemir (Levemir)",
 }
 
 let nextRowId = 0
@@ -107,6 +130,8 @@ export default defineComponent({
             rows: [] as TimelineRow[],
             eventTypes: PATIENT_EVENT_TYPES,
             typeLabels,
+            insulins: LONG_ACTING_INSULINS,
+            insulinLabels,
         }
     },
 
@@ -122,6 +147,7 @@ export default defineComponent({
                     type: event.type,
                     value: event.value,
                     duration: event.duration,
+                    insulin: event.insulin ?? DEFAULT_LONG_ACTING_INSULIN,
                 }))
             }
         }
@@ -146,6 +172,7 @@ export default defineComponent({
                     ?? this.toDateTimeLocal(new Date()),
                 type: "bolus",
                 value: 0,
+                insulin: DEFAULT_LONG_ACTING_INSULIN,
             })
         },
 
@@ -169,6 +196,9 @@ export default defineComponent({
                 if (row.type === "carbs" && Number(row.duration) > 0) {
                     event.duration = Number(row.duration)
                 }
+                if (row.type === "longacting") {
+                    event.insulin = row.insulin
+                }
                 events.push(event)
             }
 
@@ -181,6 +211,7 @@ export default defineComponent({
 <style scoped>
 .patient-timeline {
     margin-top: 20px;
+    overflow-x: auto;
 }
 
 .patient-timeline table {

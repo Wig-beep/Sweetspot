@@ -11,9 +11,13 @@ import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
 import { defineComponent, toRaw } from 'vue'
 import { ControllerInternals } from '../../types/Controller.js'
+import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import colors from '../util/Colors.js'
 import AccordionBox from './AccordionBox.vue'
+
+/** index of the dataset showing long-acting injections */
+const LONG_ACTING_DATASET = 7
 
 export default defineComponent({
     emits: ["selectLog"],
@@ -108,7 +112,16 @@ export default defineComponent({
                         stepped: "before",
                         hidden: true,
                     },
-                    
+                    <ChartDatasetCustomTypesPerDataset>{
+                        type: "scatter",
+                        data: [],
+                        yAxisID: 'yLong',
+                        label: this.$t("longacting"),
+                        backgroundColor: colors['THUGreen'],
+                        borderColor: colors['THUAnthrazit'],
+                        radius: 10,
+                        pointStyle: "rectRot",
+                    },
                 ]
             },
             options: {
@@ -139,6 +152,12 @@ export default defineComponent({
                         ticks: { stepSize: 10 },
                         grid: { drawOnChartArea: false },
                     },
+                    // long-acting doses are much larger than rates and
+                    // boluses, so they get their own (hidden) axis
+                    yLong: {
+                        display: false,
+                        min: 0,
+                    },
                     yEx: {
                         title: { display: true, text: "%" },
                         position: 'right',
@@ -149,6 +168,14 @@ export default defineComponent({
                     },
                 },
                 plugins: {
+                    legend: {
+                        labels: {
+                            // no legend for long-acting insulin if there is none
+                            filter: (item, data) =>
+                                item.datasetIndex !== LONG_ACTING_DATASET ||
+                                data.datasets[LONG_ACTING_DATASET].data.length > 0
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             afterBody: (context) => {
@@ -206,6 +233,16 @@ export default defineComponent({
             datasets[5].data.push({ x: t.valueOf(), y: u.exercise || 0 })
             datasets[6].data.push({ x: t.valueOf(), y: (u.iir || 0) > 10 ? NaN : (u.iir || 0)  })
         },
+        /** shows long-acting injections (in U) from logged patient data */
+        setLongActingInjections(events: PatientEvent[]) {
+            const datasets = this.chart.data.datasets
+            datasets[LONG_ACTING_DATASET].data = events.map(
+                (event) => ({ x: event.time.valueOf(), y: event.value }))
+            const scales = this.chart.options.scales!
+            // place markers near the top of the chart
+            scales.yLong!.max = 1.2 * Math.max(0, ...events.map((e) => e.value))
+            this.update()
+        },
         update() {
             this.chart.update()
         },
@@ -226,7 +263,8 @@ export default defineComponent({
 <i18n locale="en">
 {
 	"title":		"Insulin dosage and carb intake",
-	"iir":			"insulin infusion rate in U/h",
+	"iir":			"basal insulin in U/h",
+	"longacting":	"long-acting injection in U",
 	"ibolus":		"insulin bolus in U",
     "pumpoutput":   "insulin pump output in U/h",
 	"iob":			"calculated IOB in U",
@@ -238,7 +276,8 @@ export default defineComponent({
 <i18n locale="de">
 {
 	"title": 		"Insulindosierung und Mahlzeiten",
-	"iir":			"Insulinrate in U/h",
+	"iir":			"Basalinsulin in U/h",
+	"longacting":	"Langzeitinsulin in U",
 	"ibolus":		"Insulinbolus in U",
     "pumpoutput":   "Insulinabgabe der Pumpe in U/h",
 	"iob":			"Berechnetes IOB in U",

@@ -29,6 +29,7 @@ import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
 import LoggedDoses from '../../core/controllers/LoggedDoses.js'
+import StaticInsulinPump from '../../core/actuators/StaticInsulinPump.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { getMealsFromEvents, parsePatientEventsCSV } from '../../common/PatientEvents.js'
@@ -170,7 +171,10 @@ export default defineComponent({
             // simulate the period covered by the CSV, if one is loaded
             sim.setOptions({ ...this.getOptions(), ...this.simulationSpan })
             sim.setSensor(this.getSensor())
-            sim.setActuator(this.getActuator())
+            // logged doses are replayed exactly, without pump rounding or limits
+            sim.setActuator(events ? new StaticInsulinPump({
+                inc_basal: 0, inc_bolus: 0, max_basal: 100, max_bolus: 100,
+            }) : this.getActuator())
             sim.runSimulation()
 
             // propagate results to charts
@@ -180,6 +184,10 @@ export default defineComponent({
                 this.$refs.chartGlucose
             chartGlucose.setMeasuredGlucose(
                 (events ?? []).filter((event) => event.type === "glucose"))
+            const chartInsulinCarbs = <InstanceType<typeof ChartInsulinCarbs>>
+                this.$refs.chartInsulinCarbs
+            chartInsulinCarbs.setLongActingInjections(
+                (events ?? []).filter((event) => event.type === "longacting"))
         },
         getController(): Controller {
             return <Controller>toRaw(this.controller)

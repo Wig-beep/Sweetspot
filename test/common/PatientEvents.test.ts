@@ -40,6 +40,22 @@ describe("parsePatientEventsCSV", () => {
         ])
     })
 
+    it("should parse long-acting injections with insulin names", () => {
+        const events = parsePatientEventsCSV([
+            "time,type,value,duration,insulin",
+            "2026-10-05 22:00,longacting,18,,degludec",
+            "2026-10-05 22:00,longacting,18,,Tresiba",
+            "2026-10-05 22:00,longacting,18,,",
+            "2026-10-05 22:00,bolus,2,,degludec",
+        ].join("\n"))
+        expect(events).to.deep.equal([
+            { time: at(22, 0), type: "longacting", value: 18, insulin: "degludec" },
+            { time: at(22, 0), type: "longacting", value: 18, insulin: "degludec" },
+            { time: at(22, 0), type: "longacting", value: 18 },
+            { time: at(22, 0), type: "bolus", value: 2 },
+        ])
+    })
+
     it("should parse the legacy layout", () => {
         const events = parsePatientEventsCSV([
             "time,basal,bolus,carbs",
@@ -57,8 +73,10 @@ describe("parsePatientEventsCSV", () => {
     const invalid: [string, string, RegExp][] = [
         ["missing time column", "type,value\nbolus,1", /"time" column/],
         ["missing type column", "time,value\n2026-10-05 08:00,1", /time,type,value/],
-        ["unknown type", "time,type,value\n2026-10-05 08:00,longacting,10",
-            /Line 2: unknown event type "longacting"/],
+        ["unknown type", "time,type,value\n2026-10-05 08:00,nph,10",
+            /Line 2: unknown event type "nph"/],
+        ["unknown insulin", "time,type,value,insulin\n2026-10-05 08:00,longacting,10,nph",
+            /Line 2: unknown long-acting insulin "nph"/],
         ["invalid time", "time,type,value\nyesterday,bolus,1", /Line 2: invalid time/],
         ["negative value", "time,type,value\n2026-10-05 08:00,bolus,-1",
             /Line 2: invalid bolus/],

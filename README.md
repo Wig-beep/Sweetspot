@@ -32,15 +32,23 @@ npm install
 npm run serve
 ```
 * Open browser and visit [http://localhost:8080/SweetSpot.html](http://localhost:8080/SweetSpot.html).
-* Load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv)).
-  Each row is one event: `time,type,value,duration` with time as `YYYY-MM-DD HH:MM` and type one of
+* Load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv) for a pump day
+  and [examples/PatientData/SampleDayMDI.csv](examples/PatientData/SampleDayMDI.csv) for an MDI day).
+  Each row is one event: `time,type,value,duration,insulin` with time as `YYYY-MM-DD HH:MM` and type one of
   * `basal`: basal rate in U/h, held until the next basal row
   * `bolus`: insulin bolus in U
   * `carbs`: carb intake in g, optionally eaten over `duration` minutes
+  * `longacting`: long-acting insulin injection in U; `insulin` is one of `glargine` (default), `glargine_u300`,
+    `degludec` or `detemir` (brand names such as Lantus, Toujeo, Tresiba or Levemir are accepted too)
   * `glucose`: measured glucose in mmol/L, shown on the glucose chart
 
   The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.
   The simulation runs from the first event until 6 hours after the last one.
+
+  Long-acting insulin is released over many hours using simplified profiles (see
+  [src/common/LongActingInsulin.ts](src/common/LongActingInsulin.ts)); these are educational approximations, not
+  validated pharmacokinetic models. The long-acting injections of the first day are assumed to have been taken on the
+  preceding days too, so that the simulation starts with long-acting insulin on board.
 * Now edit the source files, save your changes, and simply reload website.
 
 If you want to build an independent bundle that can be integrated into an html document, run

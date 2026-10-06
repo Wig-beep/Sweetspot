@@ -5,6 +5,11 @@
  * See https://lt1.org for further information.
  */
 
+import {
+    assumedPriorInjections,
+    DEFAULT_LONG_ACTING_INSULIN,
+    longActingRate
+} from '../../common/LongActingInsulin.js'
 import Controller, {
     AnnouncementList,
     ControllerOutput,
@@ -19,7 +24,7 @@ import AbstractController from '../AbstractController.js'
 export const profile: ModuleProfile = {
     type: "controller",
     id: "LoggedDoses",
-    version: "1.0.0",
+    version: "1.1.0",
     name: "Logged doses",
 }
 
@@ -29,6 +34,10 @@ export const profile: ModuleProfile = {
  *
  * The basal rate of the most recent reading is held until the next reading.
  * Each bolus is administered once, at the first update at or after its time.
+ * Long-acting injections (MDI) are released over many hours and added to the
+ * basal rate; the injections of the first day are assumed to have been taken
+ * on the preceding days as well, so that the simulation starts with
+ * long-acting insulin on board.
  */
 export default class LoggedDoses
     extends AbstractController<typeof LoggedDosesParameters>
@@ -38,6 +47,10 @@ export default class LoggedDoses
     protected basal: PatientEvent[] = []
     /** logged boluses, sorted by time */
     protected boluses: PatientEvent[] = []
+    /** logged long-acting injections, sorted by time */
+    protected injections: PatientEvent[] = []
+    /** logged and assumed earlier long-acting injections */
+    protected activeInjections: PatientEvent[] = []
     /** time of previous update; boluses up to this time have been given */
     protected tLast: Date = new Date(0)
 
@@ -63,14 +76,19 @@ export default class LoggedDoses
 
     /**
      * Sets the logged doses to be replayed.
-     * @param {PatientEvent[]} events - logged events; only basal and bolus
-     *      events are used
+     * @param {PatientEvent[]} events - logged events; only basal, bolus and
+     *      long-acting events are used
      */
     setEvents(events: PatientEvent[]): void {
         const sorted = [...events].sort(
             (a, b) => a.time.valueOf() - b.time.valueOf())
         this.basal = sorted.filter((event) => event.type === "basal")
         this.boluses = sorted.filter((event) => event.type === "bolus")
+        this.injections = sorted.filter((event) => event.type === "longacting")
+        this.activeInjections = [
+            ...assumedPriorInjections(this.injections),
+            ...this.injections,
+        ]
     }
 
     override reset(t: Date) {
@@ -87,6 +105,11 @@ export default class LoggedDoses
             iir = event.value
         }
 
+        // insulin released from long-acting injections
+        for (const injection of this.activeInjections) {
+            iir += longActingRate(injection, t)
+        }
+
         // boluses logged since the previous update (inclusive of t)
         let ibolus = 0
         const reason: string[] = []
@@ -98,6 +121,13 @@ export default class LoggedDoses
                     + event.time.toLocaleString())
             }
         }
+        for (const injection of this.injections) {
+            if (injection.time > this.tLast && injection.time <= t) {
+                reason.push("long-acting injection: " + injection.value + " U "
+                    + (injection.insulin ?? DEFAULT_LONG_ACTING_INSULIN) + " at "
+                    + injection.time.toLocaleString())
+            }
+        }
         this.tLast = t
 
         this.internals = reason.length ? { reason } : {}
@@ -106,10 +136,11 @@ export default class LoggedDoses
 
     /**
      * Requests a simulation stop at the next logged dose, so that boluses
-     * are given on time and basal changes take effect immediately.
+     * are given on time and basal changes and injections take effect
+     * immediately.
      */
     override getNextUpdateTime(t: Date): Date | undefined {
-        const next = [...this.basal, ...this.boluses]
+        const next = [...this.basal, ...this.boluses, ...this.injections]
             .filter((event) => event.time > t)
             .map((event) => event.time.valueOf())
         return next.length ? new Date(Math.min(...next)) : undefined

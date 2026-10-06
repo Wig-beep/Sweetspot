@@ -63,6 +63,34 @@ describe("LoggedDoses", () => {
         })
     })
 
+    describe("#update with long-acting insulin", () => {
+        const controller = new LoggedDoses()
+        controller.setEvents([
+            { time: at(8, 0), type: "basal", value: 0.5 },
+            { time: at(22, 0), type: "longacting", value: 24, insulin: "glargine" },
+        ])
+
+        it("should start with long-acting insulin on board", () => {
+            controller.reset(at(7, 0))
+            controller.update(at(7, 0), {})
+            // assumed injection of the previous day is on its plateau
+            const plateau = 24 / ((26 + 23 - 3) / 2)
+            expect(controller.getOutput().iir).to.be.closeTo(plateau, 1e-9)
+        })
+
+        it("should add long-acting release to the basal rate", () => {
+            controller.reset(at(7, 0))
+            controller.update(at(9, 0), {})
+            const plateau = 24 / ((26 + 23 - 3) / 2)
+            expect(controller.getOutput().iir).to.be.closeTo(0.5 + plateau, 1e-9)
+        })
+
+        it("should request an update at the injection", () => {
+            controller.reset(at(7, 0))
+            expect(controller.getNextUpdateTime(at(9, 0))).to.deep.equal(at(22, 0))
+        })
+    })
+
     describe("in Simulator", () => {
         it("should deliver every logged bolus off the time grid", () => {
             const events: PatientEvent[] = [

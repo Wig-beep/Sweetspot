@@ -7,6 +7,8 @@
 
 import Meal from '../types/Meal.js'
 import PatientEvent, {
+    LONG_ACTING_INSULINS,
+    LongActingInsulin,
     PATIENT_EVENT_TYPES,
     PatientEventType
 } from '../types/PatientEvent.js'
@@ -14,14 +16,25 @@ import PatientEvent, {
 /** glucose values above this are assumed to be in mg/dl instead of mmol/L */
 const MAX_GLUCOSE_MMOL = 35
 
+/** brand names accepted for long-acting insulins */
+const LONG_ACTING_BRANDS: Record<string, LongActingInsulin> = {
+    lantus: "glargine",
+    abasaglar: "glargine",
+    semglee: "glargine",
+    toujeo: "glargine_u300",
+    tresiba: "degludec",
+    levemir: "detemir",
+}
+
 /**
  * Parses logged patient events from CSV text.
  *
  * Two layouts are accepted (column order is free, header names are
  * case-insensitive, "start" may be used instead of "time"):
- * - one event per row: `time,type,value[,duration]` with type being one of
- *   basal (U/h), bolus (U), carbs (g) or glucose (mmol/L), and an optional
- *   duration of carb intake in min
+ * - one event per row: `time,type,value[,duration][,insulin]` with type
+ *   being one of basal (U/h), bolus (U), carbs (g), longacting (U) or
+ *   glucose (mmol/L), an optional duration of carb intake in min, and an
+ *   optional insulin name for long-acting injections (default: glargine)
  * - legacy layout: `time,basal,bolus,carbs` where each row sets the basal
  *   rate and may contain a bolus and a meal
  *
@@ -42,6 +55,7 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
     const typeCol = column("type")
     const valueCol = column("value")
     const durationCol = column("duration")
+    const insulinCol = column("insulin")
     const legacyCols = {
         basal: column("basal"),
         bolus: column("bolus"),
@@ -60,7 +74,7 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
         }
         const lineNumber = index + 2
         const cells = splitRow(line)
-        const fail = (message: string) => {
+        const fail = (message: string): never => {
             throw new Error(`Line ${lineNumber}: ${message}`)
         }
 
@@ -103,6 +117,16 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
         const event: PatientEvent = { time, type, value }
         if (type === "carbs" && durationCol >= 0 && cells[durationCol]) {
             event.duration = readNumber(durationCol, "duration")
+        }
+        if (type === "longacting" && insulinCol >= 0 && cells[insulinCol]) {
+            const name = cells[insulinCol].toLowerCase()
+            const insulin = LONG_ACTING_BRANDS[name]
+                ?? LONG_ACTING_INSULINS.find((i) => i === name)
+            if (typeof insulin === "undefined") {
+                fail(`unknown long-acting insulin "${cells[insulinCol]}" (expected `
+                    + LONG_ACTING_INSULINS.join(", ") + ")")
+            }
+            event.insulin = insulin
         }
         events.push(event)
     })
