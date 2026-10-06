@@ -28,13 +28,13 @@
 
                 <div class="cell-details">
                     <input
-                        v-if="row.type === 'carbs'"
+                        v-if="row.type === 'carbs' || row.type === 'exercise'"
                         type="number"
                         min="1"
                         step="1"
                         placeholder="duration (min)"
-                        title="Duration of the meal in min"
-                        aria-label="Duration of the meal in min"
+                        :title="durationLabel(row.type)"
+                        :aria-label="durationLabel(row.type)"
                         v-model.number="row.duration"
                     />
                     <select
@@ -88,6 +88,7 @@ const typeLabels: Record<PatientEventType, string> = {
     bolus: "Bolus (U)",
     carbs: "Carbs (g)",
     longacting: "Long-acting (U)",
+    exercise: "Exercise (intensity %)",
     glucose: "Glucose (mmol/L)",
 }
 
@@ -151,6 +152,12 @@ export default defineComponent({
             return `${year}-${month}-${day}T${hours}:${minutes}`
         },
 
+        durationLabel(type: PatientEventType): string {
+            return type === "exercise"
+                ? "Duration of the exercise in min"
+                : "Duration of the meal in min"
+        },
+
         addRow() {
             const last = this.rows.at(-1)
             this.rows.push({
@@ -180,7 +187,8 @@ export default defineComponent({
                     type: row.type,
                     value: Number(row.value) || 0,
                 }
-                if (row.type === "carbs" && Number(row.duration) > 0) {
+                if ((row.type === "carbs" || row.type === "exercise")
+                    && Number(row.duration) > 0) {
                     event.duration = Number(row.duration)
                 }
                 if (row.type === "longacting") {

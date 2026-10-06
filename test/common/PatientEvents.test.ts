@@ -7,6 +7,7 @@
 
 import { expect } from 'chai'
 import {
+    getExercisesFromEvents,
     getMealsFromEvents,
     parsePatientEventsCSV
 } from '../../src/common/PatientEvents.js'
@@ -56,6 +57,22 @@ describe("parsePatientEventsCSV", () => {
         ])
     })
 
+    it("should parse exercise with a default duration", () => {
+        const events = parsePatientEventsCSV([
+            "time,type,value,duration",
+            "2026-10-05 14:00,exercise,40,45",
+            "2026-10-05 18:00,exercise,20,",
+        ].join("\n"))
+        expect(events).to.deep.equal([
+            { time: at(14, 0), type: "exercise", value: 40, duration: 45 },
+            { time: at(18, 0), type: "exercise", value: 20, duration: 30 },
+        ])
+        expect(getExercisesFromEvents(events)).to.deep.equal([
+            { start: at(14, 0), duration: 45, intensity: 40 },
+            { start: at(18, 0), duration: 30, intensity: 20 },
+        ])
+    })
+
     it("should parse the legacy layout", () => {
         const events = parsePatientEventsCSV([
             "time,basal,bolus,carbs",
@@ -82,6 +99,8 @@ describe("parsePatientEventsCSV", () => {
             /Line 2: invalid bolus/],
         ["missing value", "time,type,value\n2026-10-05 08:00,bolus,",
             /Line 2: invalid bolus/],
+        ["exercise above 100 %", "time,type,value\n2026-10-05 08:00,exercise,150",
+            /at most 100 %/],
         ["glucose in mg/dl", "time,type,value\n2026-10-05 08:00,glucose,120",
             /mmol\/L/],
     ]

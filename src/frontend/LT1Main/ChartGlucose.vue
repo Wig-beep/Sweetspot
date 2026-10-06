@@ -235,8 +235,10 @@ export default defineComponent({
          * @param {SimulationResult[]} results - results of the run
          * @param {string} key - identifies runs with identical inputs
          * @param {string} name - label prefix, numbered per run (e.g. what-if)
+         * @param {string} label - label to use instead of a numbered name
          */
-        addRun(results: SimulationResult[], key: string, name: string) {
+        addRun(results: SimulationResult[], key: string, name: string,
+            label?: string) {
             let datasets = this.chart.data.datasets
             if (!this.preserveOldCurves) {
                 this.clearRuns()
@@ -253,7 +255,8 @@ export default defineComponent({
                 const number = datasets.slice(FIXED_DATASETS).filter(
                     (dataset) => dataset.label?.startsWith(name)).length + 1
                 const i = this.runKeys.length
-                const curve = glucoseCurve(`${name} ${number}`, runDash(i), data)
+                const curve = glucoseCurve(label ?? `${name} ${number}`,
+                    runDash(i), data)
                 datasets.push(<ChartDataset>{ ...curve, baseLabel: curve.label })
                 this.runKeys.push(key)
                 // hide earlier runs; they stay available in the legend

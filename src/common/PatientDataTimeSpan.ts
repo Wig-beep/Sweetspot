@@ -28,8 +28,11 @@ export function getPatientDataTimeSpan(
     events: PatientEvent[],
     tailHours = DEFAULT_TAIL_HOURS
 ): { t0: Date, tmax: Date } | undefined {
+    // exercise counts until its end
     const times = events
-        .map((event) => event.time.valueOf())
+        .map((event) => event.time.valueOf() + (event.type === "exercise"
+            ? (event.duration ?? 0) * MS_PER_MIN : 0))
+        .concat(events.map((event) => event.time.valueOf()))
         .filter(isFinite)
 
     if (times.length === 0) {

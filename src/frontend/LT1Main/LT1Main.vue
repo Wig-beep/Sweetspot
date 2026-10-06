@@ -28,13 +28,18 @@ import Actuator from '../../types/Actuator.js'
 import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
-import LoggedDoses from '../../core/controllers/LoggedDoses.js'
-import StaticInsulinPump from '../../core/actuators/StaticInsulinPump.js'
+import { simulateEvents } from '../../common/SimulateEvents.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
-import { getMealsFromEvents, parsePatientEventsCSV } from '../../common/PatientEvents.js'
+import { parsePatientEventsCSV } from '../../common/PatientEvents.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
+import TeachingScenarioPanel from './TeachingScenarioPanel.vue'
+import {
+    getTeachingScenarios,
+    TeachingScenario,
+    WhatIf
+} from '../../common/TeachingScenarios.js'
 import { computeGlucoseMetrics, GlucoseMetrics } from '../../common/GlucoseMetrics.js'
 
 // prepare simulator
@@ -76,6 +81,7 @@ export default defineComponent({
         ChartSignals,
         PatientTimeline,
         ScenarioComparison,
+        TeachingScenarioPanel,
     },
 
     created() {
@@ -99,6 +105,12 @@ export default defineComponent({
             originalPatientEvents: null as PatientEvent[] | null,  // never mutated — baseline for comparison
             patientEvents: null as PatientEvent[] | null,          // working copy the timeline will edit
             csvFileName: '' as string,
+            /** teaching scenarios (on the current day) */
+            scenarios: getTeachingScenarios(new Date()),
+            /** id of the loaded teaching scenario, if any */
+            activeScenarioId: null as string | null,
+            /** whether exercise was simulated with the exercise model */
+            usedExerciseModel: false,
             /** metrics of the latest simulation (what-if day, if edited) */
             metrics: null as GlucoseMetrics | null,
             /** metrics of the logged day, if the timeline has been edited */
@@ -146,6 +158,7 @@ export default defineComponent({
                 console.log("CSV LOADED:", file.name)
 
                 this.csvFileName = file.name
+                this.activeScenarioId = null
 
                 const csvText = await file.text()
 
@@ -174,6 +187,7 @@ export default defineComponent({
 
             const events = toRaw(this.patientEvents)
             const original = toRaw(this.originalPatientEvents)
+            this.usedExerciseModel = false
             const chartGlucose = this.chartGlucose()
             const chartInsulinCarbs = this.chartInsulinCarbs()
 
@@ -190,7 +204,8 @@ export default defineComponent({
             chartGlucose.setLoggedDay(loggedDay)
             if (isWhatIf) {
                 const key = JSON.stringify(events)
-                chartGlucose.addRun(results, key, this.$t("whatif"))
+                chartGlucose.addRun(results, key, this.$t("whatif"),
+                    this.scenarioWhatIfLabel(key))
                 chartInsulinCarbs.addRun(results, events ?? [], key,
                     chartGlucose.getRunLabel(key))
             }
@@ -212,6 +227,32 @@ export default defineComponent({
             this.metrics = computeGlucoseMetrics(results)
             this.baselineMetrics = (isWhatIf && loggedDay)
                 ? computeGlucoseMetrics(loggedDay) : null
+        },
+        /** loads a teaching scenario as the logged day */
+        loadScenario(scenario: TeachingScenario): void {
+            const events = structuredClone(toRaw(scenario.events))
+            this.originalPatientEvents = structuredClone(events)
+            this.patientEvents = events
+            this.csvFileName = ''
+            this.activeScenarioId = scenario.id
+            this.chartGlucose().clearRuns()
+            this.chartInsulinCarbs().clearRuns()
+            this.run()
+        },
+        /** applies a what-if of the loaded teaching scenario */
+        applyWhatIf(whatIf: WhatIf): void {
+            this.patientEvents = structuredClone(toRaw(whatIf.events))
+            this.run()
+        },
+        /**
+         * Returns the name of the scenario what-if with the given events
+         * (as JSON), if the timeline matches one.
+         */
+        scenarioWhatIfLabel(eventsJSON: string): string | undefined {
+            const scenario = this.scenarios.find(
+                (s) => s.id === this.activeScenarioId)
+            return scenario?.whatIfs.find((w) =>
+                JSON.stringify(w.events) === eventsJSON)?.label
         },
         chartGlucose(): InstanceType<typeof ChartGlucose> {
             return <InstanceType<typeof ChartGlucose>>this.$refs.chartGlucose
@@ -244,26 +285,22 @@ export default defineComponent({
          * @returns {SimulationResult[]} results
          */
         simulate(events: PatientEvent[] | null): SimulationResult[] {
-            sim.setPatient(this.getPatient())
             if (events) {
-                // replay logged doses and meals from the loaded CSV
-                const loggedDoses = new LoggedDoses()
-                loggedDoses.setEvents(events)
-                sim.setController(loggedDoses)
-                sim.setMeals(getMealsFromEvents(events))
+                // replay logged doses, meals and exercise over the period
+                // covered by the patient data
+                const { results, usedExerciseModel } = simulateEvents(events,
+                    this.getPatient(), this.getSensor(),
+                    { ...this.getOptions(), ...this.simulationSpan }, sim)
+                this.usedExerciseModel ||= usedExerciseModel
+                return results
             }
-            else {
-                sim.setController(this.getController())
-                sim.setMeals(this.getMeals())
-            }
+            sim.setPatient(this.getPatient())
+            sim.setController(this.getController())
+            sim.setMeals(this.getMeals())
             sim.setExerciseUnits(this.getExerciseUnits())
-            // simulate the period covered by the CSV, if one is loaded
-            sim.setOptions({ ...this.getOptions(), ...this.simulationSpan })
+            sim.setOptions(this.getOptions())
             sim.setSensor(this.getSensor())
-            // logged doses are replayed exactly, without pump rounding or limits
-            sim.setActuator(events ? new StaticInsulinPump({
-                inc_basal: 0, inc_bolus: 0, max_basal: 100, max_bolus: 100,
-            }) : this.getActuator())
+            sim.setActuator(this.getActuator())
             return sim.runSimulation()
         },
         getController(): Controller {
@@ -382,13 +419,21 @@ export default defineComponent({
                 <ActuatorSelection @valueChanged="actuatorChanged" />
             </div>
             
+            <TeachingScenarioPanel :scenarios="scenarios"
+                :activeId="activeScenarioId"
+                @load="loadScenario" @whatIf="applyWhatIf" />
+
             <div class="lt1-csv-input">
-                <label for="csvUpload">Load patient data CSV:</label>
+                <label for="csvUpload">Or load patient data CSV:</label>
                 <input type="file" id="csvUpload" accept=".csv" @change="onCsvFileSelected" />
                 <span v-if="csvFileName">Loaded: {{ csvFileName }}</span>
                 <div v-if="simulationSpan">
                     Simulating {{ simulationSpan.t0.toLocaleString() }}
                     to {{ simulationSpan.tmax.toLocaleString() }}
+                </div>
+                <div v-if="usedExerciseModel" class="exercise-note">
+                    Exercise is simulated with the Deichmann 2021 virtual
+                    patient, as the selected one does not respond to exercise.
                 </div>
             </div>
 
@@ -442,7 +487,11 @@ export default defineComponent({
 
 
 <style lang="css">
-
+.exercise-note {
+    font-size: 0.8rem;
+    font-style: italic;
+    opacity: 0.8;
+}
 </style>
 
 

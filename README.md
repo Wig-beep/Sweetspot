@@ -32,7 +32,11 @@ npm install
 npm run serve
 ```
 * Open browser and visit [http://localhost:8080/SweetSpot.html](http://localhost:8080/SweetSpot.html).
-* Load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv) for a pump day
+* Choose a teaching scenario (meal bolus timing, stacking corrections, high-fat meals, exercise, treating a hypo):
+  each loads a simulated day of a virtual person on multiple daily injections, with what-ifs to try and key points.
+  The scenarios are illustrations for learning, calibrated to the virtual patients, and should be reviewed by diabetes
+  educators before use with learners (see [src/common/TeachingScenarios.ts](src/common/TeachingScenarios.ts)).
+* Or load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv) for a pump day
   and [examples/PatientData/SampleDayMDI.csv](examples/PatientData/SampleDayMDI.csv) for an MDI day).
   Each row is one event: `time,type,value,duration,insulin` with time as `YYYY-MM-DD HH:MM` and type one of
   * `basal`: basal rate in U/h, held until the next basal row
@@ -40,6 +44,9 @@ npm run serve
   * `carbs`: carb intake in g, optionally eaten over `duration` minutes
   * `longacting`: long-acting insulin injection in U; `insulin` is one of `glargine` (default), `glargine_u300`,
     `degludec` or `detemir` (brand names such as Lantus, Toujeo, Tresiba or Levemir are accepted too)
+  * `exercise`: physical activity with intensity in % of maximal effort, lasting `duration` minutes (default 30).
+    The default virtual patient does not respond to exercise, so days with exercise are simulated with the
+    Deichmann 2021 exercise model.
   * `glucose`: measured glucose in mmol/L, shown on the glucose chart
 
   The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.

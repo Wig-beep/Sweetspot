@@ -7,7 +7,7 @@
 
 /** supported types of logged patient events */
 export const PATIENT_EVENT_TYPES =
-    ["basal", "bolus", "carbs", "longacting", "glucose"] as const
+    ["basal", "bolus", "carbs", "longacting", "exercise", "glucose"] as const
 
 /**
  * Type of a logged patient event and the unit of its value:
@@ -15,6 +15,7 @@ export const PATIENT_EVENT_TYPES =
  * - bolus: insulin bolus in U
  * - carbs: carb intake in g
  * - longacting: long-acting insulin injection in U (MDI)
+ * - exercise: physical activity, intensity in % of maximal effort
  * - glucose: measured glucose in mmol/L
  */
 export declare type PatientEventType = typeof PATIENT_EVENT_TYPES[number]
@@ -36,7 +37,7 @@ declare type PatientEvent = {
     type: PatientEventType
     /** value in the unit of the event type */
     value: number
-    /** duration of carb intake in min (carbs only) */
+    /** duration of carb intake or exercise in min (carbs and exercise only) */
     duration?: number
     /** insulin of a long-acting injection (longacting only) */
     insulin?: LongActingInsulin

@@ -6,6 +6,7 @@
  */
 
 import { DEFAULT_LONG_ACTING_INSULIN } from './LongActingInsulin.js'
+import Exercise from '../types/Exercise.js'
 import Meal from '../types/Meal.js'
 import PatientEvent, {
     LONG_ACTING_INSULINS,
@@ -16,6 +17,9 @@ import PatientEvent, {
 
 /** glucose values above this are assumed to be in mg/dl instead of mmol/L */
 const MAX_GLUCOSE_MMOL = 35
+
+/** duration of exercise in min, if none is given */
+export const DEFAULT_EXERCISE_DURATION = 30
 
 /** brand names accepted for long-acting insulins */
 const LONG_ACTING_BRANDS: Record<string, LongActingInsulin> = {
@@ -33,9 +37,10 @@ const LONG_ACTING_BRANDS: Record<string, LongActingInsulin> = {
  * Two layouts are accepted (column order is free, header names are
  * case-insensitive, "start" may be used instead of "time"):
  * - one event per row: `time,type,value[,duration][,insulin]` with type
- *   being one of basal (U/h), bolus (U), carbs (g), longacting (U) or
- *   glucose (mmol/L), an optional duration of carb intake in min, and an
- *   optional insulin name for long-acting injections (default: glargine)
+ *   being one of basal (U/h), bolus (U), carbs (g), longacting (U),
+ *   exercise (intensity in %) or glucose (mmol/L), an optional duration of
+ *   carb intake or exercise in min, and an optional insulin name for
+ *   long-acting injections (default: glargine)
  * - legacy layout: `time,basal,bolus,carbs` where each row sets the basal
  *   rate and may contain a bolus and a meal
  *
@@ -116,8 +121,15 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
             fail(`glucose ${value} looks like mg/dl, please use mmol/L`)
         }
         const event: PatientEvent = { time, type, value }
-        if (type === "carbs" && durationCol >= 0 && cells[durationCol]) {
+        if (type === "exercise" && value > 100) {
+            fail(`exercise intensity ${value} must be at most 100 %`)
+        }
+        if ((type === "carbs" || type === "exercise") &&
+            durationCol >= 0 && cells[durationCol]) {
             event.duration = readNumber(durationCol, "duration")
+        }
+        if (type === "exercise" && !event.duration) {
+            event.duration = DEFAULT_EXERCISE_DURATION
         }
         if (type === "longacting") {
             event.insulin = DEFAULT_LONG_ACTING_INSULIN
@@ -159,6 +171,21 @@ export function getMealsFromEvents(events: PatientEvent[]): Meal[] {
             start: event.time,
             carbs: event.value,
             duration: event.duration,
+        }))
+}
+
+/**
+ * Converts logged exercise events into exercise units for the simulator.
+ * @param {PatientEvent[]} events
+ * @returns {Exercise[]} exercise units
+ */
+export function getExercisesFromEvents(events: PatientEvent[]): Exercise[] {
+    return events
+        .filter((event) => event.type === "exercise" && event.value > 0)
+        .map((event) => ({
+            start: event.time,
+            duration: event.duration ?? DEFAULT_EXERCISE_DURATION,
+            intensity: event.value,
         }))
 }
 
