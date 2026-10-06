@@ -19,7 +19,7 @@ For a live demo, visit the project website [https://LT1.org](https://lt1.org/sim
 # Installation / Quick start
 Follow these instructions to use the simulator locally and modify its source code.
 
-* Install npm
+* Install Node.js 20 or newer (22 recommended, see `.nvmrc`) and npm
 * Clone repository and enter your local directory.
 * Install project dependencies:
 
@@ -31,7 +31,10 @@ npm install
 ```shell
 npm run serve
 ```
-* Open browser and visit [http://localhost:8080/](http://localhost:8080/).
+* Open browser and visit [http://localhost:8080/SweetSpot.html](http://localhost:8080/SweetSpot.html).
+* Load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv)).
+  Columns: `time,basal,bolus,carbs` with time as `YYYY-MM-DD HH:MM`, basal in U/h, bolus in U, carbs in g.
+  The simulation runs over the day set in the simulation options (default: today), so the CSV dates must match it.
 * Now edit the source files, save your changes, and simply reload website.
 
 If you want to build an independent bundle that can be integrated into an html document, run

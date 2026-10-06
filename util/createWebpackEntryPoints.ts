@@ -15,6 +15,10 @@ const entryNames = await findFiles('./src/frontend/entries/')
 const entryConfig = Object.fromEntries(entryNames.map(
     (entry) => [ entry.replace(/\.[^.]*$/, ''), './src/frontend/entries/'+entry]))
 
+// output HTML file name for an entry point (main app is served as SweetSpot.html)
+const htmlName = (entry: string) =>
+    (entry === 'LT1Main' ? 'SweetSpot' : entry) + '.html'
+
 // for each entry point, create one webpack HTML plugin
 const HtmlPlugins = entryNames.map( function(entry: string) {
     entry = entry.replace(/\.[^.]*$/, '')
@@ -26,9 +30,8 @@ const HtmlPlugins = entryNames.map( function(entry: string) {
             // so that app.mount can find it
             appid: entry
         },
-        favicon: './src/frontend/assets/images/favicon.png',
-        //filename: entry + '.html',
-        filename: entry === 'LT1Main' ? 'SweetSpot.html' : entry + '.html',
+        favicon: './src/frontend/assets/images/Favicon.png',
+        filename: htmlName(entry),
         chunks: [entry],
     })
 })
@@ -41,11 +44,11 @@ HtmlPlugins.push(new HtmlWebpackPlugin({
         entrypoints: "<ul>" + 
             entryNames.map(entryName => {
                 const entry = entryName.replace(/\.[^.]*$/, '')
-                return `<li><a href="${entry}.html">${entry}</a></li>`
+                return `<li><a href="${htmlName(entry)}">${entry}</a></li>`
             }).join("\n")
             + "</ul>"
     },
-    favicon: './src/frontend/assets/images/favicon.png',
+    favicon: './src/frontend/assets/images/Favicon.png',
     filename: 'index.html',
 }))
 
