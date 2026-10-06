@@ -19,6 +19,7 @@ import glucoseColor, {
     glucoseColorLineSegment
 } from '../util/ChartGlucoseColor.js'
 import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
+import { fitLegendToWidth } from '../util/ResponsiveLegend.js'
 import AccordionBox from './AccordionBox.vue'
 
 /** index of the dataset showing the logged day in a what-if comparison */
@@ -132,6 +133,7 @@ export default defineComponent({
                 ],
             },
             options: {
+                onResize: (chart, size) => fitLegendToWidth(chart, size),
                 layout: {
                     padding: { right: 20 },
                 },
@@ -209,6 +211,7 @@ export default defineComponent({
                 },
             },
         })
+        fitLegendToWidth(this.chart)
     },
     methods: {
         /** removes the prediction of the previous run */

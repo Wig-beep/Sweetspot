@@ -6,7 +6,6 @@
 /* for wide screen, show results next to settings. otherwise below */
 div.lt1-container {
     font-family: ABeeZee, Candara, Helvetica, sans-serif;
-    min-width: 440px;
     max-width: 1200px;
     width: 100%;
     display: flex;
@@ -15,15 +14,18 @@ div.lt1-container {
 }
 
 div.lt1-controls {
-    width: 350px;
+    /* full width (minus margins) when shown above the results */
+    width: calc(100% - 10px);
+    box-sizing: border-box;
     height: min-content;
-	
 }
 
 div.lt1-results {
-    width: 100%;
+    /* full width (minus margins) when shown below the settings */
+    width: calc(100% - 10px);
+    box-sizing: border-box;
     max-width: 850px;
-    min-width: 350px;
+    min-width: 0;
 }
 
 @media screen and (min-width: 850px) {
@@ -31,8 +33,12 @@ div.lt1-results {
         flex-wrap: nowrap;
     }
 
+    div.lt1-controls {
+        width: 350px;
+    }
+
     div.lt1-results {
-        width: calc(100% - 350px);
+        width: calc(100% - 370px);
     }
 }
 
@@ -94,6 +100,13 @@ div.lt1-results {
     height: 250px;
     width: 100%;
     margin-top: 1rem;
+}
+
+/* phones: taller charts, so that the plot keeps room below the legend */
+@media screen and (max-width: 480px) {
+    .canvas-chart {
+        height: 320px;
+    }
 }
 
 /* tooltip popups */

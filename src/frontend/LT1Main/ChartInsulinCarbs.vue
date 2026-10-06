@@ -15,8 +15,11 @@ import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import colors from '../util/Colors.js'
 import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
+import { fitLegendToWidth } from '../util/ResponsiveLegend.js'
 import AccordionBox from './AccordionBox.vue'
 
+/** index of the dataset showing exercise intensity */
+const EXERCISE_DATASET = 5
 /** index of the dataset showing long-acting injections */
 const LONG_ACTING_DATASET = 7
 /**
@@ -140,6 +143,7 @@ export default defineComponent({
                 ]
             },
             options: {
+                onResize: (chart, size) => fitLegendToWidth(chart, size),
                 layout: {
                     padding: { right: 20 },
                 },
@@ -174,6 +178,8 @@ export default defineComponent({
                         min: 0,
                     },
                     yEx: {
+                        // only shown if there is exercise
+                        display: 'auto',
                         title: { display: true, text: "%" },
                         position: 'right',
                         min: 0,
@@ -207,6 +213,9 @@ export default defineComponent({
                                 const dataset = <RunDataset>data.datasets[index]
                                 if (dataset.runKey) {
                                     return dataset.runRole === "basal"
+                                }
+                                if (index === EXERCISE_DATASET) {
+                                    return !item.hidden
                                 }
                                 return index !== LONG_ACTING_DATASET ||
                                     dataset.data.length > 0
@@ -247,6 +256,7 @@ export default defineComponent({
                 },
             },
         })
+        fitLegendToWidth(this.chart)
     },
     methods: {
         /** clears the main simulation; what-if runs are kept */
@@ -261,6 +271,9 @@ export default defineComponent({
             for (const result of results) {
                 this._pushRecord(result)
             }
+            // show exercise intensity only if there is exercise
+            const hasExercise = results.some((r) => (r.u.exercise ?? 0) > 0)
+            this.chart.setDatasetVisibility(EXERCISE_DATASET, hasExercise)
             this.update()
         },
         _pushRecord(result: SimulationResult) {

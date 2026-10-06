@@ -128,6 +128,18 @@ export default defineComponent({
     text-align: left;
 }
 
+/* small phones: tighter cells so that four columns fit */
+@media (max-width: 420px) {
+    .scenario-comparison {
+        font-size: 0.8rem;
+    }
+
+    .scenario-comparison th,
+    .scenario-comparison td {
+        padding: 3px 3px;
+    }
+}
+
 .scenario-comparison tbody tr:nth-child(odd) {
     background: rgba(127, 127, 127, 0.1);
 }

@@ -2,70 +2,57 @@
     <div class="patient-timeline">
         <h3>Patient Timeline</h3>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Event</th>
-                    <th>Value</th>
-                    <th>Details</th>
-                    <th></th>
-                </tr>
-            </thead>
+        <ul class="timeline-rows" aria-label="Patient events">
+            <li v-for="(row, index) in rows" :key="row.id" class="timeline-row">
+                <input
+                    class="cell-time"
+                    type="datetime-local"
+                    aria-label="Time"
+                    v-model="row.timeString"
+                />
 
-            <tbody>
-                <tr v-for="(row, index) in rows" :key="row.id">
-                    <td>
-                        <input
-                            type="datetime-local"
-                            v-model="row.timeString"
-                        />
-                    </td>
+                <select class="cell-type" v-model="row.type" aria-label="Event">
+                    <option v-for="type in eventTypes" :key="type" :value="type">
+                        {{ typeLabels[type] }}
+                    </option>
+                </select>
 
-                    <td>
-                        <select v-model="row.type">
-                            <option v-for="type in eventTypes" :key="type" :value="type">
-                                {{ typeLabels[type] }}
-                            </option>
-                        </select>
-                    </td>
+                <input
+                    class="cell-value"
+                    type="number"
+                    min="0"
+                    :step="row.type === 'carbs' ? 1 : 0.1"
+                    aria-label="Value"
+                    v-model.number="row.value"
+                />
 
-                    <td>
-                        <input
-                            type="number"
-                            min="0"
-                            :step="row.type === 'carbs' ? 1 : 0.1"
-                            v-model.number="row.value"
-                        />
-                    </td>
+                <div class="cell-details">
+                    <input
+                        v-if="row.type === 'carbs'"
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="duration (min)"
+                        title="Duration of the meal in min"
+                        aria-label="Duration of the meal in min"
+                        v-model.number="row.duration"
+                    />
+                    <select
+                        v-else-if="row.type === 'longacting'"
+                        v-model="row.insulin"
+                        title="Long-acting insulin"
+                        aria-label="Long-acting insulin"
+                    >
+                        <option v-for="insulin in insulins" :key="insulin" :value="insulin">
+                            {{ insulinLabels[insulin] }}
+                        </option>
+                    </select>
+                </div>
 
-                    <td>
-                        <input
-                            v-if="row.type === 'carbs'"
-                            type="number"
-                            min="1"
-                            step="1"
-                            placeholder="duration (min)"
-                            title="Duration of the meal in min"
-                            v-model.number="row.duration"
-                        />
-                        <select
-                            v-else-if="row.type === 'longacting'"
-                            v-model="row.insulin"
-                            title="Long-acting insulin"
-                        >
-                            <option v-for="insulin in insulins" :key="insulin" :value="insulin">
-                                {{ insulinLabels[insulin] }}
-                            </option>
-                        </select>
-                    </td>
-
-                    <td>
-                        <button @click="removeRow(index)" title="Remove event">✕</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                <button class="cell-remove" @click="removeRow(index)"
+                    title="Remove event" aria-label="Remove event">✕</button>
+            </li>
+        </ul>
 
         <button @click="addRow">
             Add event
@@ -211,33 +198,65 @@ export default defineComponent({
 <style scoped>
 .patient-timeline {
     margin-top: 20px;
-    overflow-x: auto;
+    /* lay out rows depending on the width available to the timeline */
+    container-type: inline-size;
 }
 
-.patient-timeline table {
+.timeline-rows {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/*
+ * Narrow (default): two lines per event
+ *   time ........................ ✕
+ *   event      value      details
+ */
+.timeline-row {
+    display: grid;
+    grid-template-columns: 1.3fr 0.8fr 1.3fr auto;
+    grid-template-areas:
+        "time  time  time    remove"
+        "type  value details .";
+    gap: 4px 6px;
+    align-items: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid #ccc;
+}
+
+.timeline-row:nth-child(odd) {
+    background: rgba(127, 127, 127, 0.08);
+}
+
+/* wide: one line per event */
+@container (min-width: 520px) {
+    .timeline-row {
+        grid-template-columns: 1.5fr 1.3fr 0.6fr 1.4fr auto;
+        grid-template-areas: "time type value details remove";
+    }
+}
+
+.cell-time { grid-area: time; }
+.cell-type { grid-area: type; }
+.cell-value { grid-area: value; }
+.cell-details { grid-area: details; }
+.cell-remove { grid-area: remove; }
+
+.timeline-row input,
+.timeline-row select {
     width: 100%;
-    border-collapse: collapse;
-}
-
-.patient-timeline th,
-.patient-timeline td {
-    padding: 6px;
-    border: 1px solid #ccc;
-}
-
-.patient-timeline input,
-.patient-timeline select {
-    width: 100%;
+    min-width: 0;
     box-sizing: border-box;
 }
 
-.patient-timeline button {
+.patient-timeline > button {
     margin-top: 10px;
     margin-right: 6px;
     padding: 6px 12px;
 }
 
-.patient-timeline td button {
+.timeline-row .cell-remove {
     margin: 0;
     padding: 2px 6px;
 }
