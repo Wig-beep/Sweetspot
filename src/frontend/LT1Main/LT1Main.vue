@@ -16,10 +16,7 @@ import MealTable from './MealTable.vue'
 import ExerciseTable from './ExerciseTable.vue'
 import ChartGlucose from './ChartGlucose.vue'
 import ChartInsulinCarbs from './ChartInsulinCarbs.vue'
-import ChartSignals from './ChartSignals.vue'
-import ChartControllerOutput from './ChartControllerOutput.vue'
 import SimulationOptionsConfig from './SimulationOptionsConfig.vue'
-import ChartAGP from './ChartAGP.vue'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import Patient, { PatientProfile } from '../../types/Patient.js'
 import Controller from '../../types/Controller.js'
@@ -81,9 +78,6 @@ export default defineComponent({
         SimulationOptionsConfig,
         ChartGlucose,
         ChartInsulinCarbs,
-        ChartControllerOutput,
-        ChartAGP,
-        ChartSignals,
         PatientTimeline,
         ScenarioComparison,
         TeachingScenarioPanel,
@@ -524,11 +518,6 @@ export default defineComponent({
                 @runVisibilityChanged="insulinRunVisibilityChanged" />
             <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
                 :isLoggedDay="patientEvents !== null" />
-            <div style="display: none;">  
-                <ChartControllerOutput ref="chartControllerOutput" />
-                <ChartSignals ref="chartSignals" />
-                <ChartAGP ref="chartAGP" />
-            </div>
         </div>
     </div>
 </template>

@@ -8,8 +8,7 @@
 
 import { toMmolL } from '../../common/GlucoseUnits.js'
 import { defineComponent } from 'vue'
-import Chart from 'chart.js/auto'
-import 'chartjs-adapter-luxon'
+import Chart from '../util/ChartSetup.js'
 import { glucoseColorLineSegment } from '../util/ChartGlucoseColor.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 

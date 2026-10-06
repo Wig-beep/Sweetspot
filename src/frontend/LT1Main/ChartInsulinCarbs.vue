@@ -7,8 +7,7 @@
  */
 
 import { ChartDataset, ChartDatasetCustomTypesPerDataset, Point } from 'chart.js'
-import Chart from 'chart.js/auto'
-import 'chartjs-adapter-luxon'
+import Chart from '../util/ChartSetup.js'
 import { defineComponent, toRaw } from 'vue'
 import { ControllerInternals } from '../../types/Controller.js'
 import PatientEvent from '../../types/PatientEvent.js'
@@ -158,7 +157,9 @@ export default defineComponent({
                         time: {
                             displayFormats: {
                                 hour: 'HH:mm'
-                            }
+                            },
+                            // 24-hour time with the date, e.g. 5 Oct 14:30
+                            tooltipFormat: 'd MMM HH:mm',
                         },
                     },
                     y: {

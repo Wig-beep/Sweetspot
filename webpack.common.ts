@@ -22,8 +22,9 @@ export default <webpack.Configuration>{
       '.js': ['.js', '.ts', '.tsx']
     },
     alias: {
-        'vue$': 'vue/dist/vue.esm-browser.js',
-        // 'vue-i18n': 'vue-i18n/dist/vue-i18n.runtime.esm-bundler.js',
+        // Vue without the template compiler: templates are compiled at
+        // build time by vue-loader
+        'vue$': 'vue/dist/vue.runtime.esm-bundler.js',
     },
   },
   module: {
@@ -81,8 +82,10 @@ export default <webpack.Configuration>{
         __LT1_LOCAL_SENSOR_DEVICES__: JSON.stringify(
             await findLocalJson('./src/core/sensors/devices')
         ),
-        __VUE_OPTIONS_API__: false,
-        __VUE_PROD_DEVTOOLS__: false
+        // components use the Options API
+        __VUE_OPTIONS_API__: true,
+        __VUE_PROD_DEVTOOLS__: false,
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
     }),
     new webpack.ProvidePlugin({
         process: 'process/browser.js',

@@ -6,7 +6,7 @@
  * See https://lt1.org for further information.
  */
 
-import Chart from 'chart.js/auto'
+import Chart from '../util/ChartSetup.js'
 import { defineComponent, PropType, toRaw } from 'vue'
 import DailyProfile from '../../common/DailyProfile.js'
 import { displayUnit } from '../../common/GlucoseUnits.js'

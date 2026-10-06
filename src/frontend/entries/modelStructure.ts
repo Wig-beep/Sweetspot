@@ -5,6 +5,7 @@
  * See https://lt1.org for further information.
  */
 
+import { h } from 'vue'
 import ModelStructure from '../structureDiagrams/ModelStructure.vue'
 import createVueApp from '../util/createVueApp.js'
 
@@ -12,9 +13,10 @@ const app = createVueApp('modelStructure', {
 	data() { return {
 		selectedModel: "",
 	}},
-	template: '<ModelStructure :selectedModel="this.selectedModel" />',
-	components: {
-		ModelStructure,
+	// render function instead of a template string, so that the Vue build
+	// without the template compiler can be used
+	render() {
+		return h(ModelStructure, { selectedModel: (<any>this).selectedModel })
 	},
 })
 

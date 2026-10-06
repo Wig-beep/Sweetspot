@@ -6,9 +6,8 @@
  * See https://lt1.org for further information.
  */
 
-import 'chartjs-adapter-luxon'
 import { defineComponent } from 'vue'
-import Chart from 'chart.js/auto'
+import Chart from '../util/ChartSetup.js'
 import { ChartDatasetCustomTypesPerDataset } from 'chart.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import AccordionBox from './AccordionBox.vue'
