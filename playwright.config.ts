@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 /**
  * End-to-end tests of the production build, as learners use it, on a
- * desktop and a phone screen. Run with `npm run test:e2e` (builds first).
+ * desktop and a phone screen, in Chromium (Chrome, Edge, Android) and WebKit
+ * (Safari, iPhone). Run with `npm run test:e2e` (builds first).
  */
 export default defineConfig({
     testDir: './e2e',
@@ -22,6 +23,15 @@ export default defineConfig({
         {
             name: 'phone',
             use: { ...devices['Pixel 7'] },
+        },
+        // WebKit, the engine of Safari: many learners use iPhones and Macs
+        {
+            name: 'desktop-safari',
+            use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 900 } },
+        },
+        {
+            name: 'iphone',
+            use: { ...devices['iPhone 15'] },
         },
     ],
     webServer: {

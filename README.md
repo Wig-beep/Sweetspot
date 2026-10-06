@@ -68,8 +68,9 @@ npm run serve
 * Now edit the source files, save your changes, and simply reload website.
 
 To run the tests: `npm test` runs the unit tests, and `npm run test:e2e` builds the app and runs the end-to-end
-tests in [e2e](e2e) (main learner journeys and accessibility checks, on a desktop and a phone screen). The first time,
-install the browser with `npx playwright install chromium`.
+tests in [e2e](e2e): the main learner journeys and accessibility checks, on a desktop and a phone screen, in Chromium
+and in WebKit (the engine of Safari). The first time, install the browsers with
+`npx playwright install chromium webkit`.
 
 If you want to build an independent bundle that can be integrated into an html document, run
 
