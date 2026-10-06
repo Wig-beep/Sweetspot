@@ -15,10 +15,23 @@ import { SimulationResult } from '../../types/SimulationResult.js'
 import colors from '../util/Colors.js'
 import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
 import { fitLegendToWidth } from '../util/ResponsiveLegend.js'
+import {
+    exercisePlugin,
+    fixAxisWidth,
+    hoverLinePlugin,
+    setExercise,
+    setHoverTime,
+    TimeInterval,
+    timeAtPointer,
+} from '../util/ChartSync.js'
 import AccordionBox from './AccordionBox.vue'
 
-/** index of the dataset showing exercise intensity */
-const EXERCISE_DATASET = 5
+/** datasets that are kept for other pages but not shown in this app:
+ *  insulin on board (2, only shown if there is any), carbs being absorbed
+ *  (4), exercise intensity (5, shown as shaded periods instead) and pump
+ *  output (6) */
+const IOB_DATASET = 2
+const HIDDEN_DATASETS = [4, 5, 6]
 /** index of the dataset showing long-acting injections */
 const LONG_ACTING_DATASET = 7
 /**
@@ -37,7 +50,7 @@ type RunDataset = ChartDataset & {
 }
 
 export default defineComponent({
-    emits: ["selectLog", "runVisibilityChanged"],
+    emits: ["selectLog", "runVisibilityChanged", "hoverTime"],
     props: {
         /** text alternative of the chart */
         description: { type: String, default: "Insulin and carbs chart" },
@@ -66,6 +79,7 @@ export default defineComponent({
         const canvas = document.getElementById(id) as HTMLCanvasElement
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
+            plugins: [exercisePlugin, hoverLinePlugin],
             data: {
                 datasets: [
                     <ChartDatasetCustomTypesPerDataset>{
@@ -147,6 +161,9 @@ export default defineComponent({
             },
             options: {
                 onResize: (chart, size) => fitLegendToWidth(chart, size),
+                // shared hover line with the glucose chart
+                onHover: (event, _elements, chart) =>
+                    this.$emit("hoverTime", timeAtPointer(event, chart)),
                 layout: {
                     padding: { right: 20 },
                 },
@@ -167,6 +184,7 @@ export default defineComponent({
                         min: 0,
                         ticks: { stepSize: 1 },
                         suggestedMax: 2,
+                        afterFit: fixAxisWidth,
                     },
                     yG: {
                         title: { display: true, text: "carbs (grams)" },
@@ -175,6 +193,7 @@ export default defineComponent({
                         suggestedMax: 30,
                         ticks: { stepSize: 10 },
                         grid: { drawOnChartArea: false },
+                        afterFit: fixAxisWidth,
                     },
                     // long-acting doses are much larger than rates and
                     // boluses, so they get their own (hidden) axis
@@ -183,8 +202,8 @@ export default defineComponent({
                         min: 0,
                     },
                     yEx: {
-                        // only shown if there is exercise
-                        display: 'auto',
+                        // exercise is shown as shaded periods instead
+                        display: false,
                         title: { display: true, text: "%" },
                         position: 'right',
                         min: 0,
@@ -219,8 +238,11 @@ export default defineComponent({
                                 if (dataset.runKey) {
                                     return dataset.runRole === "basal"
                                 }
-                                if (index === EXERCISE_DATASET) {
-                                    return !item.hidden
+                                if (HIDDEN_DATASETS.includes(index)) {
+                                    return false
+                                }
+                                if (index === IOB_DATASET) {
+                                    return dataset.data.length > 0
                                 }
                                 return index !== LONG_ACTING_DATASET ||
                                     dataset.data.length > 0
@@ -277,8 +299,9 @@ export default defineComponent({
                 this._pushRecord(result)
             }
             // show exercise intensity only if there is exercise
-            const hasExercise = results.some((r) => (r.u.exercise ?? 0) > 0)
-            this.chart.setDatasetVisibility(EXERCISE_DATASET, hasExercise)
+            for (const index of HIDDEN_DATASETS) {
+                this.chart.setDatasetVisibility(index, false)
+            }
             this.update()
         },
         _pushRecord(result: SimulationResult) {
@@ -445,6 +468,22 @@ export default defineComponent({
                 .filter((dataset) => (<{ yAxisID?: string }>dataset).yAxisID === 'yLong')
                 .flatMap((dataset) => dataset.data.map((p) => (<Point>p).y ?? 0))
             this.chart.options.scales!.yLong!.max = 1.2 * Math.max(0, ...doses)
+            this.update()
+        },
+        /** shows the given period (the same as in the glucose chart) */
+        setTimeRange(range: { t0: Date, tmax: Date } | null) {
+            const x = this.chart.options.scales!.x!
+            x.min = range?.t0.valueOf()
+            x.max = range?.tmax.valueOf()
+            this.update()
+        },
+        /** draws the shared hover line at the given time (or removes it) */
+        setHoverTime(time: number | null) {
+            setHoverTime(this.chart, time)
+        },
+        /** shades the given periods of exercise */
+        setExercise(periods: TimeInterval[]) {
+            setExercise(this.chart, periods)
             this.update()
         },
         update() {

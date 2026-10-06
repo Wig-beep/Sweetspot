@@ -145,6 +145,13 @@ textarea:focus-visible {
 
     .lt1-results {
         width: calc(100% - 412px);
+        /* keep the results in view while editing on the left; scroll
+           within the panel if it is taller than the window */
+        position: sticky;
+        top: 0.5rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 1rem);
+        overflow-y: auto;
     }
 }
 

@@ -19,6 +19,18 @@ import glucoseColor, {
 } from '../util/ChartGlucoseColor.js'
 import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
 import { fitLegendToWidth } from '../util/ResponsiveLegend.js'
+import {
+    EXERCISE_BORDER,
+    EXERCISE_COLOR,
+    exercisePlugin,
+    fixAxisWidth,
+    hasExercise,
+    hoverLinePlugin,
+    setExercise,
+    setHoverTime,
+    TimeInterval,
+    timeAtPointer,
+} from '../util/ChartSync.js'
 import AccordionBox from './AccordionBox.vue'
 
 /** index of the dataset showing the logged day in a what-if comparison */
@@ -107,7 +119,7 @@ export default defineComponent({
     components: {
         AccordionBox
     },
-    emits: ["runVisibilityChanged"],
+    emits: ["runVisibilityChanged", "hoverTime"],
     props: {
         /** text alternative of the chart */
         description: { type: String, default: "Glucose chart" },
@@ -115,6 +127,8 @@ export default defineComponent({
     data() {
         return {
             preserveOldCurves: true,
+            /** period shown, shared with the insulin and food chart */
+            timeRange: null as { t0: Date, tmax: Date } | null,
             /** key of the latest run, which is drawn solid */
             latestKey: null as string | null,
             /**
@@ -140,7 +154,7 @@ export default defineComponent({
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
             type: "line",
-            plugins: [targetRangeBand],
+            plugins: [targetRangeBand, exercisePlugin, hoverLinePlugin],
             data: {
                 datasets: [
                     <ChartDataset>{
@@ -167,6 +181,9 @@ export default defineComponent({
             },
             options: {
                 onResize: (chart, size) => fitLegendToWidth(chart, size),
+                // shared hover line with the insulin and food chart
+                onHover: (event, _elements, chart) =>
+                    this.$emit("hoverTime", timeAtPointer(event, chart)),
                 layout: {
                     padding: { right: 20 },
                 },
@@ -189,6 +206,16 @@ export default defineComponent({
                         // extend below 2 mmol/L so that severe hypos stay visible
                         suggestedMin: 2,
                         suggestedMax: 12,
+                        afterFit: fixAxisWidth,
+                    },
+                    // empty axis, as wide as the carbs axis of the insulin
+                    // and food chart, so that both plot areas line up
+                    yRight: {
+                        position: "right",
+                        grid: { drawOnChartArea: false },
+                        ticks: { display: false },
+                        border: { display: false },
+                        afterFit: fixAxisWidth,
                     },
                 },
                 plugins: {
@@ -240,6 +267,17 @@ export default defineComponent({
                                     hidden: false,
                                     datasetIndex: -1,
                                 })
+                                if (hasExercise(chart)) {
+                                    items.push({
+                                        text: "exercise",
+                                        fillStyle: EXERCISE_COLOR,
+                                        strokeStyle: EXERCISE_BORDER,
+                                        lineWidth: 1,
+                                        pointStyle: "rect",
+                                        hidden: false,
+                                        datasetIndex: -2,
+                                    })
+                                }
                                 return items
                             },
                             // room for the line pattern symbols
@@ -248,8 +286,10 @@ export default defineComponent({
                             // drawn on top
                             // (the target range entry comes last)
                             sort: (a, b) => {
+                                // entries for the target range and exercise
+                                // (negative indices) come last
                                 const order = (i?: number) =>
-                                    (i ?? -1) < 0 ? Infinity : i!
+                                    (i ?? -1) < 0 ? 1000 - i! : i!
                                 return order(a.datasetIndex) - order(b.datasetIndex)
                             },
                             // no legend for controller prediction, and for
@@ -400,22 +440,37 @@ export default defineComponent({
                 (event) => <Point>{ x: event.time.valueOf(), y: event.value })
             this.update()
         },
+        /**
+         * Shows the given period (the same as in the insulin and food
+         * chart), or adapts to the simulated glucose if none is given.
+         */
+        setTimeRange(range: { t0: Date, tmax: Date } | null) {
+            this.timeRange = range
+            this.update()
+        },
+        /** draws the shared hover line at the given time (or removes it) */
+        setHoverTime(time: number | null) {
+            setHoverTime(this.chart, time)
+        },
+        /** shades the given periods of exercise */
+        setExercise(periods: TimeInterval[]) {
+            setExercise(this.chart, periods)
+            this.update()
+        },
         update() {
-            const config = this.chart.config
-            // adapt scale only to simulated glucose, not predictions
-            const tmax = Math.max(0, ...this.chart.data.datasets
-                .slice(LOGGED_DAY_DATASET)
-                .map((dataset) => (<Point | undefined>dataset.data.at(-1))?.x ?? 0))
-            if (typeof config.options === "undefined") {
-                config.options = {}
+            const x = this.chart.options.scales!.x!
+            if (this.timeRange) {
+                x.min = this.timeRange.t0.valueOf()
+                x.max = this.timeRange.tmax.valueOf()
             }
-            if (typeof config.options.scales === "undefined") {
-                config.options.scales = {}
+            else {
+                // adapt scale only to simulated glucose, not predictions
+                const tmax = Math.max(0, ...this.chart.data.datasets
+                    .slice(LOGGED_DAY_DATASET)
+                    .map((dataset) => (<Point | undefined>dataset.data.at(-1))?.x ?? 0))
+                x.min = undefined
+                x.max = tmax || undefined
             }
-            if (typeof config.options.scales.x === "undefined") {
-                config.options.scales.x = {}
-            }
-            config.options.scales.x.max = tmax || undefined
             this.chart.update()
         },
         controllerDataHover(t0: Date, data: ControllerInternals) {

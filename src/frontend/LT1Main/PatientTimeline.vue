@@ -1,6 +1,5 @@
 <template>
     <div class="patient-timeline">
-        <h3>Timeline</h3>
         <p class="ss-hint">
             Change a time or an amount, or add an entry. Then select
             "Show this change" to compare it with the original day.
@@ -291,7 +290,7 @@ export default defineComponent({
 
 <style scoped>
 .patient-timeline {
-    margin-top: 20px;
+    margin-top: 0.5rem;
     /* lay out rows depending on the width available to the timeline */
     container-type: inline-size;
 }

@@ -29,11 +29,12 @@ import { hasExercise, simulateEvents } from '../../common/SimulateEvents.js'
 import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
-import { parsePatientEventsCSV } from '../../common/PatientEvents.js'
+import { getExercisesFromEvents, parsePatientEventsCSV } from '../../common/PatientEvents.js'
 import { eventsForDay, getDays } from '../../common/PatientDays.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
 import TeachingScenarioPanel from './TeachingScenarioPanel.vue'
+import AccordionBox from './AccordionBox.vue'
 import {
     getTeachingScenarios,
     TeachingScenario,
@@ -88,6 +89,7 @@ export default defineComponent({
         PatientTimeline,
         ScenarioComparison,
         TeachingScenarioPanel,
+        AccordionBox,
     },
 
     created() {
@@ -287,6 +289,18 @@ export default defineComponent({
                 mainEvents.filter((event) => event.type === "longacting"))
             this.syncInsulinRuns()
 
+            // both charts show the same period and the same exercise, so
+            // that doses and meals line up with their effect on glucose
+            const span = this.simulationSpan ?? null
+            const exercise = getExercisesFromEvents(events ?? []).map((e) => ({
+                start: e.start,
+                end: new Date(e.start.valueOf() + e.duration * 60e3),
+            }))
+            for (const chart of [chartGlucose, chartInsulinCarbs]) {
+                chart.setExercise(exercise)
+                chart.setTimeRange(span)
+            }
+
             this.metrics = computeGlucoseMetrics(results)
             this.baselineMetrics = (isWhatIf && loggedDay)
                 ? computeGlucoseMetrics(loggedDay) : null
@@ -338,6 +352,11 @@ export default defineComponent({
             chartInsulinCarbs.setComparison(this.patientEvents !== null &&
                 Object.keys(visibility).length > 0)
             chartInsulinCarbs.syncRuns(visibility, chartGlucose.latestKey)
+        },
+        /** draws the hover line at the same time in both charts */
+        hoverTimeChanged(time: number | null): void {
+            this.chartGlucose().setHoverTime(time)
+            this.chartInsulinCarbs().setHoverTime(time)
         },
         /** a what-if run was shown or hidden in the insulin chart's legend */
         insulinRunVisibilityChanged(key: string, visible: boolean): void {
@@ -538,15 +557,19 @@ export default defineComponent({
                 exercise (the Deichmann 2021 model).
             </p>
 
-            <PatientTimeline
-                v-if="patientEvents"
-                :key="dataKey"
-                :events="patientEvents"
-                @timelineChanged="timelineChanged"
-            />
             <button v-if="isEdited" @click="resetToLoggedDay">
                 Undo all changes
             </button>
+
+            <!-- secondary for scenarios (which offer changes to try),
+                 open for uploaded days, where it is the way to make changes -->
+            <AccordionBox v-if="patientEvents" :key="dataKey"
+                title="Edit the day yourself" :initial="!activeScenarioId">
+                <PatientTimeline
+                    :events="patientEvents"
+                    @timelineChanged="timelineChanged"
+                />
+            </AccordionBox>
 
             <VirtualPatientSelection @patientChanged="patientChanged" />
         </section>
@@ -557,10 +580,12 @@ export default defineComponent({
             </p>
             <p class="visually-hidden" role="status">{{ statusMessage }}</p>
             <ChartGlucose ref="chartGlucose" :description="glucoseDescription"
-                @runVisibilityChanged="syncInsulinRuns" />
+                @runVisibilityChanged="syncInsulinRuns"
+                @hoverTime="hoverTimeChanged" />
             <ChartInsulinCarbs ref="chartInsulinCarbs" @selectLog="controllerDataHover"
                 :description="insulinDescription"
-                @runVisibilityChanged="insulinRunVisibilityChanged" />
+                @runVisibilityChanged="insulinRunVisibilityChanged"
+                @hoverTime="hoverTimeChanged" />
             <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
                 :isLoggedDay="patientEvents !== null" />
         </section>
