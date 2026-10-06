@@ -49,8 +49,8 @@ const LONG_ACTING_BRANDS: Record<string, LongActingInsulin> = {
  * @throws {Error} if the file cannot be parsed; the message names the line
  */
 export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
-    const lines = csvText.trim().split(/\r?\n/)
-    const header = splitRow(lines[0] ?? "").map((name) => name.toLowerCase())
+    const { rows, delimiter } = readCSV(csvText)
+    const header = (rows[0] ?? []).map((name) => name.toLowerCase())
     const column = (...names: string[]) =>
         header.findIndex((name) => names.includes(name))
 
@@ -74,12 +74,11 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
     }
 
     const events: PatientEvent[] = []
-    lines.slice(1).forEach((line, index) => {
-        if (!line.trim()) {
+    rows.slice(1).forEach((cells, index) => {
+        if (cells.every((cell) => cell === "")) {
             return
         }
         const lineNumber = index + 2
-        const cells = splitRow(line)
         const fail = (message: string): never => {
             throw new Error(`Line ${lineNumber}: ${message}`)
         }
@@ -88,7 +87,9 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
             `invalid time "${cells[timeCol] ?? ""}" (use YYYY-MM-DD HH:MM `
             + `or DD/MM/YYYY HH:MM)`)
         const readNumber = (col: number, name: string) => {
-            const value = Number(cells[col])
+            // files separated by semicolons or tabs may use decimal commas
+            const text = delimiter === "," ? cells[col] : cells[col]?.replace(",", ".")
+            const value = Number(text)
             if (!cells[col] || !isFinite(value) || value < 0) {
                 fail(`invalid ${name} "${cells[col] ?? ""}"`)
             }
@@ -246,6 +247,61 @@ export function getExercisesFromEvents(events: PatientEvent[]): Exercise[] {
         }))
 }
 
-function splitRow(line: string): string[] {
-    return line.split(",").map((cell) => cell.trim())
+/**
+ * Reads the rows and cells of CSV text. Cells may be wrapped in double
+ * quotes (and then contain separators, line breaks and "" for a quote).
+ * The separator (comma, semicolon or tab) is detected from the first line.
+ *
+ * @param {string} text - contents of a CSV file
+ * @returns rows of trimmed cells, and the separator found
+ */
+export function readCSV(text: string): { rows: string[][], delimiter: string } {
+    // byte order mark written by some spreadsheet programs
+    text = text.replace(/^\uFEFF/, "")
+    const firstLine = text.split(/\r?\n/, 1)[0] ?? ""
+    const count = (d: string) => firstLine.split(d).length - 1
+    const delimiter = [",", ";", "\t"].reduce(
+        (best, d) => count(d) > count(best) ? d : best, ",")
+
+    const rows: string[][] = []
+    let row: string[] = []
+    let cell = ""
+    let quoted = false
+    const endCell = () => { row.push(cell.trim()); cell = "" }
+    const endRow = () => { endCell(); rows.push(row); row = [] }
+
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i]
+        if (quoted) {
+            if (c !== '"') {
+                cell += c
+            }
+            else if (text[i + 1] === '"') {
+                cell += '"'
+                i++
+            }
+            else {
+                quoted = false
+            }
+        }
+        else if (c === '"') {
+            quoted = true
+        }
+        else if (c === delimiter) {
+            endCell()
+        }
+        else if (c === "\n" || c === "\r") {
+            if (c === "\r" && text[i + 1] === "\n") {
+                i++
+            }
+            endRow()
+        }
+        else {
+            cell += c
+        }
+    }
+    if (cell !== "" || row.length > 0) {
+        endRow()
+    }
+    return { rows, delimiter }
 }

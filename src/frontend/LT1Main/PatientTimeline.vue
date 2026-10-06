@@ -19,8 +19,15 @@
             </ul>
         </div>
 
+        <p v-if="glucoseCount > 0" class="show-glucose">
+            <input type="checkbox" id="showGlucose" v-model="showGlucose" />
+            <label for="showGlucose">
+                Show glucose readings ({{ glucoseCount }})
+            </label>
+        </p>
+
         <ul class="timeline-rows" aria-label="Patient events">
-            <li v-for="(row, index) in rows" :key="row.id" class="timeline-row"
+            <li v-for="row in visibleRows" :key="row.id" class="timeline-row"
                 :class="{ 'has-error': errors[row.id] }">
                 <input
                     class="cell-time"
@@ -70,7 +77,7 @@
                     </select>
                 </div>
 
-                <button class="cell-remove" @click="removeRow(index)"
+                <button class="cell-remove" @click="removeRow(row.id)"
                     title="Remove this entry" aria-label="Remove this entry">✕</button>
                 <p v-if="errors[row.id]" class="cell-error" :id="'row-error-' + row.id">
                     <span class="visually-hidden">Error:</span> {{ errors[row.id] }}
@@ -125,6 +132,9 @@ const insulinLabels: Record<LongActingInsulin, string> = {
 
 let nextRowId = 0
 
+/** more glucose readings than this are hidden in the timeline at first */
+const MAX_SHOWN_READINGS = 12
+
 export default defineComponent({
     name: "PatientTimeline",
 
@@ -140,6 +150,13 @@ export default defineComponent({
     data() {
         return {
             rows: [] as TimelineRow[],
+            /**
+             * whether glucose readings are listed; many readings (e.g. from
+             * a sensor) are hidden at first. The timeline is created anew
+             * for other data, so this is only decided when data is loaded.
+             */
+            showGlucose: this.events.filter((e) => e.type === "glucose")
+                .length <= MAX_SHOWN_READINGS,
             /** problems found when showing a change, by row id */
             errors: {} as Record<number, string>,
             eventTypes: PATIENT_EVENT_TYPES,
@@ -150,6 +167,19 @@ export default defineComponent({
     },
 
     computed: {
+        /** number of glucose readings in the timeline */
+        glucoseCount(): number {
+            return this.rows.filter((row) => row.type === "glucose").length
+        },
+        /**
+         * rows shown; glucose readings can be hidden, which keeps long
+         * sensor exports manageable (hidden rows are kept unchanged)
+         */
+        visibleRows(): TimelineRow[] {
+            return this.showGlucose ? this.rows
+                : this.rows.filter((row) => row.type !== "glucose"
+                    || this.errors[row.id])
+        },
         /** rows with a problem, in the order shown */
         errorRows(): TimelineRow[] {
             return this.rows.filter((row) => this.errors[row.id])
@@ -204,8 +234,8 @@ export default defineComponent({
             })
         },
 
-        removeRow(index: number) {
-            this.rows.splice(index, 1)
+        removeRow(id: number) {
+            this.rows = this.rows.filter((row) => row.id !== id)
         },
 
         applyChanges() {
@@ -366,6 +396,22 @@ export default defineComponent({
 .timeline-error-summary a {
     color: var(--ss-error);
     font-weight: bold;
+}
+
+.show-glucose {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.show-glucose input {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--ss-primary);
+}
+
+.show-glucose label {
+    font-weight: normal;
 }
 
 .cell-time { grid-area: time; }

@@ -30,6 +30,7 @@ import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { parsePatientEventsCSV } from '../../common/PatientEvents.js'
+import { eventsForDay, getDays } from '../../common/PatientDays.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
 import TeachingScenarioPanel from './TeachingScenarioPanel.vue'
@@ -110,6 +111,14 @@ export default defineComponent({
             originalPatientEvents: null as PatientEvent[] | null,  // never mutated — baseline for comparison
             patientEvents: null as PatientEvent[] | null,          // working copy the timeline will edit
             csvFileName: '' as string,
+            /** all events of the uploaded file */
+            fileEvents: null as PatientEvent[] | null,
+            /** days covered by the uploaded file */
+            fileDays: [] as Date[],
+            /** index of the day of the file that is looked at */
+            selectedDay: 0,
+            /** changes whenever other data is loaded (resets the timeline) */
+            dataKey: 0,
             /** problem with the last CSV file, shown next to the upload */
             csvError: '' as string,
             /** teaching scenarios (on the current day) */
@@ -195,41 +204,46 @@ export default defineComponent({
             async onCsvFileSelected(event: Event): Promise<void> {
                 const input = event.target as HTMLInputElement
                 const file = input.files?.[0]
-
                 if (!file) {
                     return
                 }
-
-                console.log("CSV LOADED:", file.name)
-
-                this.csvFileName = file.name
-                this.activeScenarioId = null
-
                 const csvText = await file.text()
+                // allows the same file to be selected again later
+                input.value = ''
 
+                let parsed: PatientEvent[]
                 try {
-                    const parsed = parsePatientEventsCSV(csvText)
-
-                    this.originalPatientEvents = structuredClone(parsed)
-                    this.patientEvents = parsed
-                    // what-ifs of previously loaded data do not apply any more
-                    this.chartGlucose().clearRuns()
-                    this.chartInsulinCarbs().clearRuns()
-
-                    console.log("CSV PARSED:", parsed)
+                    parsed = parsePatientEventsCSV(csvText)
                 } catch (err) {
                     this.csvError = `We could not read ${file.name}. `
                         + `${(err as Error).message}. Check the file and try again.`
-                    input.value = ''
                     return
                 }
                 this.csvError = ''
-
-                // Allows the user to select the same file again later
-                input.value = ''
-
-                this.run()
+                this.csvFileName = file.name
+                this.activeScenarioId = null
+                this.fileEvents = parsed
+                this.fileDays = getDays(parsed)
+                // files with several days are looked at one day at a time
+                this.loadDay(0)
             },
+        /** loads one day of the uploaded file as the logged day */
+        loadDay(index: number): void {
+            const all = toRaw(this.fileEvents) ?? []
+            const days = toRaw(this.fileDays)
+            const events = days.length > 1 ? eventsForDay(all, days[index]) : all
+            this.selectedDay = index
+            this.setLoggedDay(events)
+        },
+        /** sets the logged day, removing results of earlier data */
+        setLoggedDay(events: PatientEvent[]): void {
+            this.originalPatientEvents = structuredClone(toRaw(events))
+            this.patientEvents = structuredClone(toRaw(events))
+            this.dataKey++
+            this.chartGlucose().clearRuns()
+            this.chartInsulinCarbs().clearRuns()
+            this.run()
+        },
         run(): void {
             this.resetCharts()
 
@@ -279,15 +293,17 @@ export default defineComponent({
         },
         /** loads a teaching scenario as the logged day */
         loadScenario(scenario: TeachingScenario): void {
-            const events = structuredClone(toRaw(scenario.events))
-            this.originalPatientEvents = structuredClone(events)
-            this.patientEvents = events
             this.csvFileName = ''
             this.csvError = ''
+            this.fileEvents = null
+            this.fileDays = []
             this.activeScenarioId = scenario.id
-            this.chartGlucose().clearRuns()
-            this.chartInsulinCarbs().clearRuns()
-            this.run()
+            this.setLoggedDay(scenario.events)
+        },
+        /** name of a day for the day picker, e.g. "Monday 5 October" */
+        dayName(day: Date): string {
+            return day.toLocaleDateString("en-GB",
+                { weekday: "long", day: "numeric", month: "long" })
         },
         /** applies a what-if of the loaded teaching scenario */
         applyWhatIf(whatIf: WhatIf): void {
@@ -498,6 +514,20 @@ export default defineComponent({
                 <input type="file" id="csvUpload" accept=".csv" @change="onCsvFileSelected" />
                 <p v-if="csvFileName && !csvError" class="ss-hint">Using {{ csvFileName }}</p>
                 <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
+                <div v-if="fileDays.length > 1" class="day-picker">
+                    <label for="daySelect">Day to look at</label>
+                    <p class="ss-hint" id="dayHint">
+                        The file covers {{ fileDays.length }} days. Choose one
+                        day to look at.
+                    </p>
+                    <select id="daySelect" aria-describedby="dayHint"
+                        :value="selectedDay"
+                        @change="loadDay(Number(($event.target as HTMLSelectElement).value))">
+                        <option v-for="(day, index) in fileDays" :key="index" :value="index">
+                            {{ dayName(day) }}
+                        </option>
+                    </select>
+                </div>
             </div>
 
             <p v-if="simulationSpan" class="ss-hint">
@@ -510,6 +540,7 @@ export default defineComponent({
 
             <PatientTimeline
                 v-if="patientEvents"
+                :key="dataKey"
                 :events="patientEvents"
                 @timelineChanged="timelineChanged"
             />
@@ -551,6 +582,16 @@ export default defineComponent({
     margin: 1.5rem 0 1rem 0;
     padding-top: 1rem;
     border-top: 1px solid var(--ss-border);
+}
+
+.day-picker {
+    margin-top: 0.75rem;
+}
+
+.day-picker select {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .lt1-csv-input input[type=file] {

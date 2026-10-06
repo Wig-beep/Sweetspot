@@ -38,7 +38,8 @@ npm run serve
   educators before use with learners (see [src/common/TeachingScenarios.ts](src/common/TeachingScenarios.ts)).
 * Or load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv) for a pump day
   and [examples/PatientData/SampleDayMDI.csv](examples/PatientData/SampleDayMDI.csv) for an MDI day).
-  Each row is one event: `time,type,value,duration,insulin` with time as `YYYY-MM-DD HH:MM` and type one of
+  Each row is one event: `time,type,value,duration,insulin` with time as `YYYY-MM-DD HH:MM` or `DD/MM/YYYY HH:MM`
+  (UK order; other date formats are rejected) and type one of
   * `basal`: basal rate in U/h, held until the next basal row
   * `bolus`: insulin bolus in U
   * `carbs`: carb intake in g, optionally eaten over `duration` minutes
@@ -50,6 +51,9 @@ npm run serve
   * `glucose`: measured glucose in mmol/L, shown on the glucose chart
 
   The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.
+  Cells may be quoted, and files separated by semicolons or tabs are accepted too.
+  Files covering several days (for example sensor exports) are looked at one day at a time; many glucose readings
+  are hidden in the timeline at first.
   The simulation runs from the first event until 6 hours after the last one.
 
   To try a what-if, edit the patient timeline (e.g. move a bolus earlier or change a dose) and apply the changes:

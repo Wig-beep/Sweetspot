@@ -11,7 +11,8 @@ import {
     getExercisesFromEvents,
     getMealsFromEvents,
     parseDateTime,
-    parsePatientEventsCSV
+    parsePatientEventsCSV,
+    readCSV
 } from '../../src/common/PatientEvents.js'
 
 const at = (h: number, m: number) => new Date(2026, 9, 5, h, m)
@@ -182,5 +183,30 @@ describe("checkEvent", () => {
         expect(checkEvent({ time, type: "exercise", value: 150 })).to.match(/at most 100/)
         expect(checkEvent({ time, type: "carbs", value: 50, duration: 0 })).to.match(/duration must be more than 0/)
         expect(checkEvent({ time: new Date(NaN), type: "bolus", value: 1 })).to.match(/time/)
+    })
+})
+
+describe("readCSV", () => {
+
+    it("should read quoted cells with separators, quotes and line breaks", () => {
+        const { rows } = readCSV('a,b,c\n"1,5","say ""hi""","two\nlines"\n')
+        expect(rows).to.deep.equal([["a", "b", "c"], ["1,5", 'say "hi"', "two\nlines"]])
+    })
+
+    it("should detect semicolons and tabs as separators", () => {
+        expect(readCSV("a;b\n1;2").delimiter).to.equal(";")
+        expect(readCSV("a\tb\n1\t2").rows).to.deep.equal([["a", "b"], ["1", "2"]])
+    })
+
+    it("should ignore a byte order mark and handle Windows line endings", () => {
+        expect(readCSV("\uFEFFa,b\r\n1,2\r\n").rows).to.deep.equal([["a", "b"], ["1", "2"]])
+    })
+
+    it("should be used for patient data, with decimal commas after semicolons", () => {
+        const at = (h: number, m: number) => new Date(2026, 9, 5, h, m)
+        expect(parsePatientEventsCSV('"time","type","value"\n"2026-10-05 08:00","bolus","4"'))
+            .to.deep.equal([{ time: at(8, 0), type: "bolus", value: 4 }])
+        expect(parsePatientEventsCSV("time;type;value\n05/10/2026 08:00;bolus;4,5"))
+            .to.deep.equal([{ time: at(8, 0), type: "bolus", value: 4.5 }])
     })
 })
