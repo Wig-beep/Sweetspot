@@ -110,7 +110,7 @@ textarea:focus-visible {
     margin: auto;
 }
 
-div.lt1-container {
+.lt1-container {
     font-family: var(--ss-font);
     max-width: 1200px;
     width: 100%;
@@ -119,14 +119,14 @@ div.lt1-container {
     box-sizing: border-box;
 }
 
-div.lt1-controls {
+.lt1-controls {
     /* full width (minus margins) when shown above the results */
     width: calc(100% - 16px);
     box-sizing: border-box;
     height: min-content;
 }
 
-div.lt1-results {
+.lt1-results {
     /* full width (minus margins) when shown below the settings */
     width: calc(100% - 16px);
     box-sizing: border-box;
@@ -135,15 +135,15 @@ div.lt1-results {
 }
 
 @media screen and (min-width: 880px) {
-    div.lt1-container {
+    .lt1-container {
         flex-wrap: nowrap;
     }
 
-    div.lt1-controls {
+    .lt1-controls {
         width: 380px;
     }
 
-    div.lt1-results {
+    .lt1-results {
         width: calc(100% - 412px);
     }
 }

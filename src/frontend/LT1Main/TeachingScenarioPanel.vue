@@ -31,12 +31,8 @@ export default defineComponent({
     },
 
     methods: {
-        selected(event: Event) {
-            const id = (event.target as HTMLSelectElement).value
-            const scenario = this.scenarios.find((s) => s.id === id)
-            if (scenario) {
-                this.$emit("load", scenario)
-            }
+        choose(scenario: TeachingScenario) {
+            this.$emit("load", scenario)
         },
         tryWhatIf(whatIf: WhatIf) {
             this.$emit("whatIf", whatIf)
@@ -48,18 +44,23 @@ export default defineComponent({
 
 <template>
     <div class="teaching-scenarios">
-        <label for="scenarioSelect">Practice scenario</label>
-        <p class="ss-hint" id="scenarioHint">
-            Each scenario is a day in the life of a made-up person who takes
-            insulin injections. Try different choices and see what happens.
-        </p>
-        <select id="scenarioSelect" aria-describedby="scenarioHint"
-            :value="activeId ?? ''" @change="selected">
-            <option value="" disabled>Choose a scenario</option>
-            <option v-for="scenario in scenarios" :key="scenario.id" :value="scenario.id">
-                {{ scenario.title }}
-            </option>
-        </select>
+        <!-- radios rather than a drop-down: titles wrap instead of being cut
+             off, and all choices are visible (NHS design system guidance) -->
+        <fieldset class="scenario-choice" aria-describedby="scenarioHint">
+            <legend>Practice scenario</legend>
+            <p class="ss-hint" id="scenarioHint">
+                Each scenario is a day in the life of a made-up person who
+                takes insulin injections. Try different choices and see what
+                happens.
+            </p>
+            <div class="ss-radio" v-for="scenario in scenarios" :key="scenario.id">
+                <input type="radio" name="scenario"
+                    :id="'scenario-' + scenario.id" :value="scenario.id"
+                    :checked="scenario.id === activeId"
+                    @change="choose(scenario)" />
+                <label :for="'scenario-' + scenario.id">{{ scenario.title }}</label>
+            </div>
+        </fieldset>
 
         <div v-if="active" class="scenario-card">
             <h3>{{ active.title }}</h3>
@@ -92,9 +93,41 @@ export default defineComponent({
 
 
 <style scoped>
-.teaching-scenarios select {
-    width: 100%;
-    box-sizing: border-box;
+.scenario-choice {
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+.scenario-choice legend {
+    font-weight: bold;
+    padding: 0;
+    margin-bottom: 0.25rem;
+}
+
+/* large radio buttons with the whole label as a target */
+.ss-radio {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ss-radio input[type=radio] {
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    min-height: 0;
+    margin: 0.1rem 0 0 0;
+    accent-color: var(--ss-primary);
+    cursor: pointer;
+}
+
+.ss-radio label {
+    font-weight: normal;
+    padding: 0.25rem 0;
+    cursor: pointer;
 }
 
 .scenario-card {

@@ -221,31 +221,66 @@ export default defineComponent({
 }
 
 /*
- * Narrow (default): two lines per event
+ * The layout depends on the width available, so that the drop-down
+ * labels (e.g. "Quick-acting insulin (units)") are never cut off.
+ *
+ * Narrow (default, e.g. phones): three lines per entry
  *   time ........................ ✕
- *   event      value      details
+ *   event .........................
+ *   value    details ..............
  */
 .timeline-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(4.5rem, 0.7fr) minmax(0, 1.2fr) auto;
+    grid-template-columns: minmax(4.5rem, 6rem) minmax(0, 1fr) auto;
     grid-template-areas:
-        "time  time  time    remove"
-        "type  value details .";
-    gap: 4px 6px;
+        "time  time    remove"
+        "type  type    type"
+        "value details details";
+    gap: 6px;
     align-items: center;
-    padding: 6px 4px;
+    padding: 8px 4px;
     border-bottom: 1px solid #ccc;
+}
+
+/* narrow: the insulin drop-down gets a line of its own */
+.timeline-row:has(.cell-details select) {
+    grid-template-areas:
+        "time    time    remove"
+        "type    type    type"
+        "value   .       ."
+        "details details details";
 }
 
 .timeline-row:nth-child(odd) {
     background: rgba(127, 127, 127, 0.08);
 }
 
-/* wide: one line per event */
-@container (min-width: 720px) {
+/* medium: two lines per entry */
+@container (min-width: 620px) {
     .timeline-row {
-        grid-template-columns: minmax(13rem, 1.2fr) minmax(11rem, 1.4fr)
-            minmax(4.5rem, 0.5fr) minmax(6rem, 1fr) auto;
+        grid-template-columns: minmax(16.5rem, 1.2fr) minmax(4.5rem, 6rem)
+            minmax(0, 1fr) auto;
+        grid-template-areas:
+            "time  time  time    remove"
+            "type  value details .";
+    }
+
+    .timeline-row:has(.cell-details select) {
+        grid-template-areas:
+            "time  time  time    remove"
+            "type  value details .";
+    }
+}
+
+/* wide: one line per entry */
+@container (min-width: 820px) {
+    .timeline-row {
+        grid-template-columns: minmax(13rem, 1fr) minmax(16.5rem, 1.2fr)
+            minmax(4.5rem, 6rem) minmax(13.5rem, 1fr) auto;
+        grid-template-areas: "time type value details remove";
+    }
+
+    .timeline-row:has(.cell-details select) {
         grid-template-areas: "time type value details remove";
     }
 }
