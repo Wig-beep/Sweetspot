@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
 [![PR's welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://LT1.org/contribute)
-![Test](test/badge.svg)
+[![Test](https://github.com/Wig-beep/Sweetspot/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/Wig-beep/Sweetspot/actions/workflows/test.yml)
 
 <hr/>
 
@@ -21,10 +21,10 @@ Follow these instructions to use the simulator locally and modify its source cod
 
 * Install Node.js 20 or newer (22 recommended, see `.nvmrc`) and npm
 * Clone repository and enter your local directory.
-* Install project dependencies:
+* Install project dependencies (exactly the versions in `package-lock.json`):
 
 ```shell
-npm install
+npm ci
 ```
 * Run webpack server:
 
@@ -72,6 +72,16 @@ If you want to build an independent bundle that can be integrated into an html d
 ```shell
 npm run build
 ```
+
+# Dependencies and security
+
+`package-lock.json` is committed, and CI installs exactly what it lists with `npm ci`.
+The OpenAPS (oref0) algorithm files are included in [src/vendor/oref0](src/vendor/oref0) instead of installing the
+`oref0` package, whose command-line tools bring dependencies with known vulnerabilities.
+
+`npm audit` currently reports high findings in `braces` and `micromatch`, used by the development server's proxy
+module (`webpack-dev-server` → `http-proxy-middleware`). No patched versions exist yet. They only run on developers'
+machines (`npm run serve`), are not part of the app and are not given outside input.
 
 # License
 See the [LICENSE](LICENSE.md) file for license rights and limitations (MIT).

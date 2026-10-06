@@ -3,5 +3,4 @@ coverage
 dist
 examples/**.json
 examples/**.png
-package-lock.json
 deploy.sh

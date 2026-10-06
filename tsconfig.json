@@ -26,7 +26,4 @@
     "files": true,
     "esm": true,
   },
-  "files": [
-    "./@types/oref0.d.ts"
-  ],
 }

@@ -1,0 +1,7 @@
+{
+  "name": "oref0-algorithm",
+  "private": true,
+  "description": "Algorithm files of oref0 0.7.1 used by the OpenAPS controller. CommonJS.",
+  "type": "commonjs",
+  "license": "MIT"
+}

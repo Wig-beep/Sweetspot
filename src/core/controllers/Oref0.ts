@@ -5,11 +5,11 @@
  * See https://lt1.org for further information.
  */
 
-import tempBasalFunctions from 'oref0/lib/basal-set-temp.js'
-import determine_basal from 'oref0/lib/determine-basal/determine-basal.js'
-import glucoseGetLast from 'oref0/lib/glucose-get-last.js'
-import iob from 'oref0/lib/iob/index.js'
-import getMealData from 'oref0/lib/meal/total.js'
+import tempBasalFunctions from '../../vendor/oref0/lib/basal-set-temp.js'
+import determine_basal from '../../vendor/oref0/lib/determine-basal/determine-basal.js'
+import glucoseGetLast from '../../vendor/oref0/lib/glucose-get-last.js'
+import iob from '../../vendor/oref0/lib/iob/index.js'
+import getMealData from '../../vendor/oref0/lib/meal/total.js'
 import Oref0ConsoleLogger from '../../common/Oref0ConsoleLogger.js'
 import Controller, {
     AnnouncementList,
