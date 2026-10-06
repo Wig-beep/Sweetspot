@@ -29,6 +29,7 @@ import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
 import LoggedDoses from '../../core/controllers/LoggedDoses.js'
+import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 //import mealCSV from "../../core/MealTest.csv"
 //import insulinCSV from "../../core/BasalBolusTest.csv"
 //import patientDataCSV from "../../core/PatientDataTest.csv"
@@ -115,6 +116,16 @@ export default defineComponent({
         console.log("PROGRAM READY")
         //this.run()
     },
+    computed: {
+        /** time span covered by the loaded patient data */
+        simulationSpan(): { t0: Date, tmax: Date } | undefined {
+            if (!this.patientData) {
+                return undefined
+            }
+            return getPatientDataTimeSpan(
+                this.patientData.readings, this.patientData.meals)
+        },
+    },
     methods: {
             async onCsvFileSelected(event: Event): Promise<void> {
                 const input = event.target as HTMLInputElement
@@ -163,7 +174,8 @@ export default defineComponent({
                 sim.setMeals(this.getMeals())
             }
             sim.setExerciseUnits(this.getExerciseUnits())
-            sim.setOptions(this.getOptions())
+            // simulate the period covered by the CSV, if one is loaded
+            sim.setOptions({ ...this.getOptions(), ...this.simulationSpan })
             sim.setSensor(this.getSensor())
             sim.setActuator(this.getActuator())
             sim.runSimulation()
@@ -352,6 +364,10 @@ export default defineComponent({
                 <label for="csvUpload">Load patient data CSV:</label>
                 <input type="file" id="csvUpload" accept=".csv" @change="onCsvFileSelected" />
                 <span v-if="csvFileName">Loaded: {{ csvFileName }}</span>
+                <div v-if="simulationSpan">
+                    Simulating {{ simulationSpan.t0.toLocaleString() }}
+                    to {{ simulationSpan.tmax.toLocaleString() }}
+                </div>
             </div>
 
             <VirtualPatientSelection @patientChanged="patientChanged" />
