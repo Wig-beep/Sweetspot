@@ -1,0 +1,6 @@
+{
+  // type-checking of the end-to-end tests: npx tsc --noEmit -p e2e
+  "extends": "../tsconfig.json",
+  "include": ["./*.ts", "../playwright.config.ts"],
+  "exclude": []
+}

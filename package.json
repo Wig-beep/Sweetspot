@@ -6,7 +6,8 @@
   "scripts": {
     "serve": "npx cross-env NODE_OPTIONS=--import=./register.js --moduleResolution=nodenext --target=es2017 webpack serve --config webpack.dev.ts --stats-modules-space 999",
     "build": "npx cross-env NODE_OPTIONS=--import=./register.js --moduleResolution=nodenext --target=es2017 webpack build --config webpack.prod.ts --stats-modules-space 999",
-    "test": "npx c8 mocha"
+    "test": "npx c8 mocha",
+    "test:e2e": "npm run build && playwright test"
   },
   "author": "Heiko Peuscher",
   "license": "MIT",
@@ -23,7 +24,9 @@
     "use-resize-observer": "^9.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@intlify/vue-i18n-loader": "^4.2.0",
+    "@playwright/test": "^1.63.0",
     "@types/chai": "^5.0.1",
     "@types/d3": "^7.4.3",
     "@types/mocha": "^10.0.10",

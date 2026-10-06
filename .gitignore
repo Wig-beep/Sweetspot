@@ -4,3 +4,7 @@ dist
 examples/**.json
 examples/**.png
 deploy.sh
+
+# end-to-end test results
+test-results
+playwright-report

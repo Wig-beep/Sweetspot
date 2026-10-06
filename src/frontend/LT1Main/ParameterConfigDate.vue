@@ -6,6 +6,7 @@
  * See https://lt1.org for further information.
  */
 
+import uniqueId from '../util/UniqueId.js'
 import { defineComponent, PropType } from 'vue'
 import { ParameterDescription } from '../../types/ParametricModule.js'
 
@@ -26,6 +27,8 @@ export default defineComponent({
 
     data() {
         return {
+            /** unique on the page, as parameter names repeat across modules */
+            inputId: uniqueId('param-' + this.id),
             dateString: ""
         }
     },
@@ -53,13 +56,13 @@ export default defineComponent({
 
 <template>
     <li class="parameterlist-item">
-        <label :for="'param' + id">
+        <label :for="inputId">
             <div class="item-description" v-tooltip="{ content: tooltip }">
                 <span v-html="description"></span>
             </div>
             <div class="item-input">
                 <input type="datetime-local"
-                    :id="'param' + id" 
+                    :id="inputId" 
                     v-model=dateString
                     @change="valueChanged">
             </div>

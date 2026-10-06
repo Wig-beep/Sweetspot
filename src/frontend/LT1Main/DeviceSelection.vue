@@ -6,6 +6,7 @@
  * See https://lt1.org for further information.
  */
 
+import uniqueId from '../util/UniqueId.js'
 import { defineComponent, PropType } from 'vue'
 import { ParameterFileContents, ParameterFileList } from '../../types/ParameterFileContents.js'
 
@@ -21,6 +22,8 @@ export default defineComponent({
 
     data() {
         return {
+            /** unique on the page, as the component is used more than once */
+            inputId: uniqueId('device'),
             selectedDevice: "",
         }
     },
@@ -51,8 +54,8 @@ export default defineComponent({
 
 <template>
     <div style="text-align:center;">
-        <label for="model" class="labelpre">{{ $t("selectdevice") }}:</label>
-        <select id="model" v-model="selectedDevice" @change="deviceChanged">
+        <label :for="inputId" class="labelpre">{{ $t("selectdevice") }}:</label>
+        <select :id="inputId" v-model="selectedDevice" @change="deviceChanged">
             <option v-for="(device, key) in deviceInfo" :key="key" :value="key">
                 {{ device.name }}
             </option>

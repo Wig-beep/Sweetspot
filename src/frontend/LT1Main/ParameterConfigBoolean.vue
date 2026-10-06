@@ -6,6 +6,7 @@
  * See https://lt1.org for further information.
  */
 
+import uniqueId from '../util/UniqueId.js'
 import plainText from '../util/PlainText.js'
 import { defineComponent, PropType } from 'vue'
 import { ParameterDescription } from '../../types/ParametricModule.js'
@@ -27,6 +28,8 @@ export default defineComponent({
 
     data() {
         return {
+            /** unique on the page, as parameter names repeat across modules */
+            inputId: uniqueId('param-' + this.id),
             value: this.defaultValue
         }
     },
@@ -60,7 +63,7 @@ export default defineComponent({
 <template>
     <li class="parameterlist-item parameterlist-item-boolean">
         <div class="item-input">
-            <input type="checkbox" v-model=value :id="'param' + id"
+            <input type="checkbox" v-model=value :id="inputId"
                 :aria-label="accessibleName"
                 @change="valueChanged()">
         </div>

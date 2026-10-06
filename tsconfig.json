@@ -20,7 +20,10 @@
     "./@types/*"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    // end-to-end tests are type-checked with e2e/tsconfig.json
+    "e2e",
+    "playwright.config.ts"
   ],
   "ts-node": {
     "files": true,

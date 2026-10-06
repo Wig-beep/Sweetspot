@@ -6,6 +6,7 @@
  * See https://lt1.org for further information.
  */
 
+import uniqueId from '../util/UniqueId.js'
 import { defineComponent, PropType } from 'vue'
 import DailyProfile from '../../common/DailyProfile.js'
 import { displayUnit } from '../../common/GlucoseUnits.js'
@@ -31,6 +32,8 @@ export default defineComponent({
     },
     data() {
         return {
+            /** unique on the page, as parameter names repeat across modules */
+            inputId: uniqueId('param-' + this.id),
             value: NaN
         };
     },
@@ -106,7 +109,7 @@ export default defineComponent({
         </div>
         <div class="item-input">
             <input type="number" v-model.number=displayValue
-                :id="'param' + id" 
+                :id="inputId" 
                 :aria-label="accessibleName"
                 :min="isFinite(min) ? min : undefined"
                 :max="isFinite(max) ? max : undefined"
