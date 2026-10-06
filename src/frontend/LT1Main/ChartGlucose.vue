@@ -18,27 +18,13 @@ import glucoseColor, {
     glucoseColorLine,
     glucoseColorLineSegment
 } from '../util/ChartGlucoseColor.js'
+import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
 import AccordionBox from './AccordionBox.vue'
 
 /** index of the dataset showing the logged day in a what-if comparison */
 const LOGGED_DAY_DATASET = 2
 /** number of datasets that are always present (prediction, measured, logged) */
 const FIXED_DATASETS = 3
-
-/**
- * Line patterns that identify curves. All curves are coloured by glucose
- * range, so they are told apart by their pattern; the latest run is solid.
- */
-const LOGGED_DAY_DASH = [10, 5]
-
-/** patterns of simulation runs, used in turn */
-const RUN_DASHES = [
-    [2, 4],
-    [12, 4, 2, 4],
-    [6, 3],
-    [16, 6],
-    [2, 3, 8, 3],
-]
 
 /** line width of curves, of the latest run, and of a curve hovered in the legend */
 const LINE_WIDTH = 2.5
@@ -48,37 +34,11 @@ const HOVER_LINE_WIDTH = 6
 /** colour of legend symbols (the curves themselves are coloured by range) */
 const LEGEND_COLOR = "rgb(128,128,128)"
 
-/** legend symbols showing line patterns, by pattern and width */
-const swatches = new Map<string, HTMLCanvasElement>()
-
-/**
- * Returns a legend symbol showing a short line with the given pattern.
- * @param {number[]} dash - line pattern
- * @param {number} width - line width
- */
-function lineSwatch(dash: number[], width: number): HTMLCanvasElement {
-    const key = dash.join(",") + "/" + width
-    let canvas = swatches.get(key)
-    if (!canvas) {
-        canvas = document.createElement("canvas")
-        canvas.width = 40
-        canvas.height = 12
-        const ctx = canvas.getContext("2d")!
-        ctx.strokeStyle = LEGEND_COLOR
-        ctx.lineWidth = width
-        ctx.setLineDash(dash)
-        ctx.beginPath()
-        ctx.moveTo(0, 6)
-        ctx.lineTo(40, 6)
-        ctx.stroke()
-        swatches.set(key, canvas)
-    }
-    return canvas
-}
+let circleCanvas: HTMLCanvasElement | undefined
 
 /** legend symbol for measured glucose (a circle in the target range colour) */
 function circleSwatch(): HTMLCanvasElement {
-    let canvas = swatches.get("circle")
+    let canvas = circleCanvas
     if (!canvas) {
         canvas = document.createElement("canvas")
         canvas.width = 12
@@ -88,7 +48,7 @@ function circleSwatch(): HTMLCanvasElement {
         ctx.beginPath()
         ctx.arc(6, 6, 5, 0, 2 * Math.PI)
         ctx.fill()
-        swatches.set("circle", canvas)
+        circleCanvas = canvas
     }
     return canvas
 }
@@ -118,6 +78,7 @@ export default defineComponent({
     components: {
         AccordionBox
     },
+    emits: ["runVisibilityChanged"],
     data() {
         return {
             preserveOldCurves: true,
@@ -201,6 +162,11 @@ export default defineComponent({
                         },
                     },
                     legend: {
+                        onClick: (event, item, legend) => {
+                            Chart.defaults.plugins.legend.onClick.call(
+                                legend, event, item, legend)
+                            this.$emit("runVisibilityChanged")
+                        },
                         // emphasise the curve whose legend entry is hovered
                         onHover: (_event, item) =>
                             this.emphasize(item.datasetIndex ?? null),
@@ -220,7 +186,8 @@ export default defineComponent({
                                         chart.data.datasets[index]
                                     item.pointStyle = lineSwatch(
                                         <number[]>dataset.borderDash ?? [],
-                                        Math.min(<number>dataset.borderWidth, 4))
+                                        Math.min(<number>dataset.borderWidth, 4),
+                                        LEGEND_COLOR)
                                 }
                                 return items
                             },
@@ -283,8 +250,7 @@ export default defineComponent({
                 const number = datasets.slice(FIXED_DATASETS).filter(
                     (dataset) => dataset.label?.startsWith(name)).length + 1
                 const i = this.runKeys.length
-                const curve = glucoseCurve(`${name} ${number}`,
-                    RUN_DASHES[i % RUN_DASHES.length], data)
+                const curve = glucoseCurve(`${name} ${number}`, runDash(i), data)
                 datasets.push(<ChartDataset>{ ...curve, baseLabel: curve.label })
                 this.runKeys.push(key)
                 // hide earlier runs; they stay available in the legend
@@ -307,8 +273,7 @@ export default defineComponent({
                 const dataset = <ChartDataset<"line"> & { baseLabel: string }>
                     datasets[FIXED_DATASETS + i]
                 const isLatest = runKey === key
-                dataset.borderDash = isLatest
-                    ? [] : RUN_DASHES[i % RUN_DASHES.length]
+                dataset.borderDash = isLatest ? [] : runDash(i)
                 dataset.order = isLatest ? 0 : 1
                 dataset.label = isLatest
                     ? `${dataset.baseLabel} (${this.$t("latest")})`
@@ -335,6 +300,26 @@ export default defineComponent({
                     : isLatest ? LATEST_LINE_WIDTH : LINE_WIDTH
             }
             this.update()
+        },
+        /** returns the label of the run with the given key */
+        getRunLabel(key: string): string {
+            const index = this.runKeys.indexOf(key)
+            const dataset = <{ baseLabel?: string }>
+                this.chart.data.datasets[FIXED_DATASETS + index]
+            return dataset?.baseLabel ?? ""
+        },
+        /** returns the visibility of all runs, by key */
+        getRunVisibility(): Record<string, boolean> {
+            return Object.fromEntries(this.runKeys.map((key, i) =>
+                [key, this.chart.isDatasetVisible(FIXED_DATASETS + i)]))
+        },
+        /** shows or hides the run with the given key */
+        setRunVisible(key: string, visible: boolean) {
+            const index = this.runKeys.indexOf(key)
+            if (index >= 0) {
+                this.chart.setDatasetVisibility(FIXED_DATASETS + index, visible)
+                this.update()
+            }
         },
         /**
          * Shows the simulated logged day, or hides it if no results are given.

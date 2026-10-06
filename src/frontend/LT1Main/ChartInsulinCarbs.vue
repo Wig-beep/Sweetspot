@@ -6,7 +6,7 @@
  * See https://lt1.org for further information.
  */
 
-import { ChartDatasetCustomTypesPerDataset, Point } from 'chart.js'
+import { ChartDataset, ChartDatasetCustomTypesPerDataset, Point } from 'chart.js'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
 import { defineComponent, toRaw } from 'vue'
@@ -14,18 +14,28 @@ import { ControllerInternals } from '../../types/Controller.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import colors from '../util/Colors.js'
+import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
 import AccordionBox from './AccordionBox.vue'
 
 /** index of the dataset showing long-acting injections */
 const LONG_ACTING_DATASET = 7
-/** indices of the datasets showing the logged day in a what-if comparison */
-const LOGGED_BASAL_DATASET = 8
-const LOGGED_BOLUS_DATASET = 9
-const LOGGED_MEAL_DATASET = 10
-const LOGGED_LONG_ACTING_DATASET = 11
+/**
+ * number of datasets showing the main simulation (the logged day, if patient
+ * data is loaded); datasets of what-if runs follow
+ */
+const BASE_DATASETS = 8
+
+/** colour of filled markers in a comparison: hollow */
+const HOLLOW = "rgba(0,0,0,0)"
+
+/** dataset of a what-if run, tagged with the run and its role */
+type RunDataset = ChartDataset & {
+    runKey: string
+    runRole: "basal" | "bolus" | "meal" | "longacting"
+}
 
 export default defineComponent({
-    emits: ["selectLog"],
+    emits: ["selectLog", "runVisibilityChanged"],
     components: {
         AccordionBox
     },
@@ -127,50 +137,6 @@ export default defineComponent({
                         radius: 10,
                         pointStyle: "rectRot",
                     },
-                    // logged day: dashed line and hollow markers
-                    <ChartDatasetCustomTypesPerDataset>{
-                        type: "line",
-                        data: [],
-                        yAxisID: 'y',
-                        label: this.$t("loggedIir"),
-                        borderColor: colors['THURed'],
-                        borderDash: [6, 4],
-                        stepped: "before",
-                    },
-                    <ChartDatasetCustomTypesPerDataset>{
-                        type: "scatter",
-                        data: [],
-                        yAxisID: 'y',
-                        label: this.$t("loggedIbolus"),
-                        backgroundColor: "rgba(0,0,0,0)",
-                        borderColor: colors['THURed'],
-                        borderWidth: 2,
-                        radius: 10,
-                        pointStyle: "triangle",
-                        rotation: 180,
-                    },
-                    <ChartDatasetCustomTypesPerDataset>{
-                        type: "scatter",
-                        data: [],
-                        yAxisID: 'yG',
-                        label: this.$t("loggedMeal"),
-                        backgroundColor: "rgba(0,0,0,0)",
-                        borderColor: colors['THUDarkBlue'],
-                        borderWidth: 2,
-                        radius: 10,
-                        pointStyle: "triangle",
-                    },
-                    <ChartDatasetCustomTypesPerDataset>{
-                        type: "scatter",
-                        data: [],
-                        yAxisID: 'yLong',
-                        label: this.$t("loggedLongacting"),
-                        backgroundColor: "rgba(0,0,0,0)",
-                        borderColor: colors['THUGreen'],
-                        borderWidth: 2,
-                        radius: 10,
-                        pointStyle: "rectRot",
-                    },
                 ]
             },
             options: {
@@ -218,14 +184,49 @@ export default defineComponent({
                 },
                 plugins: {
                     legend: {
+                        // a what-if run is shown and hidden as a whole
+                        onClick: (event, item, legend) => {
+                            const dataset = <RunDataset>
+                                this.chart.data.datasets[item.datasetIndex ?? 0]
+                            if (!dataset.runKey) {
+                                Chart.defaults.plugins.legend.onClick.call(
+                                    legend, event, item, legend)
+                                return
+                            }
+                            const visible = !this.chart.isDatasetVisible(
+                                item.datasetIndex ?? 0)
+                            this.setRunVisible(dataset.runKey, visible)
+                            this.$emit("runVisibilityChanged",
+                                dataset.runKey, visible)
+                        },
                         labels: {
-                            // no legend for long-acting insulin and the logged
-                            // day if there is none
+                            // no legend for long-acting insulin if there is
+                            // none; one entry per what-if run
                             filter: (item, data) => {
                                 const index = item.datasetIndex ?? 0
-                                return index < LONG_ACTING_DATASET ||
-                                    data.datasets[index].data.length > 0
-                            }
+                                const dataset = <RunDataset>data.datasets[index]
+                                if (dataset.runKey) {
+                                    return dataset.runRole === "basal"
+                                }
+                                return index !== LONG_ACTING_DATASET ||
+                                    dataset.data.length > 0
+                            },
+                            // show the line pattern of what-if runs
+                            generateLabels: (chart) => {
+                                const items = Chart.defaults.plugins.legend
+                                    .labels.generateLabels(chart)
+                                for (const item of items) {
+                                    const dataset = <RunDataset &
+                                        ChartDataset<"line">>
+                                        chart.data.datasets[item.datasetIndex ?? 0]
+                                    if (dataset.runKey || item.datasetIndex === 0) {
+                                        item.pointStyle = lineSwatch(
+                                            <number[]>dataset.borderDash ?? [],
+                                            2, colors['THURed'])
+                                    }
+                                }
+                                return items
+                            },
                         }
                     },
                     tooltip: {
@@ -248,9 +249,10 @@ export default defineComponent({
         })
     },
     methods: {
+        /** clears the main simulation; what-if runs are kept */
         reset() {
             let datasets = this.chart.data.datasets
-            for (let i = 0; i < datasets.length; i++) {
+            for (let i = 0; i < BASE_DATASETS; i++) {
                 datasets[i].data = []
             }
             this.controllerOutput = []
@@ -293,40 +295,137 @@ export default defineComponent({
             this.updateLongActingScale()
         },
         /**
-         * Shows the treatment of the logged day next to a what-if day, or
-         * hides it if no results are given.
-         * @param {SimulationResult[] | null} results - simulated logged day
-         * @param {PatientEvent[]} events - logged events
+         * Switches between showing a single day (filled markers, solid line)
+         * and comparing the logged day with what-if runs: the main simulation
+         * is then labelled as the logged day and drawn with hollow markers
+         * and a dashed line, while what-if runs use filled markers.
+         * @param {boolean} active - whether what-if runs are compared
          */
-        setLoggedDay(results: SimulationResult[] | null, events: PatientEvent[]) {
-            const datasets = this.chart.data.datasets
-            const runs = results ?? []
-            // in a comparison, label the current treatment as what-if
-            const isWhatIf = results !== null
-            datasets[0].label = this.$t(isWhatIf ? "whatifIir" : "iir")
-            datasets[1].label = this.$t(isWhatIf ? "whatifIbolus" : "ibolus")
-            datasets[3].label = this.$t(isWhatIf ? "whatifMeal" : "totalmeal")
-            datasets[LONG_ACTING_DATASET].label =
-                this.$t(isWhatIf ? "whatifLongacting" : "longacting")
-            datasets[LOGGED_BASAL_DATASET].data = runs
-                .filter((r) => typeof r.c.iir !== "undefined")
-                .map((r) => ({ x: r.t.valueOf(), y: r.c.iir! }))
-            datasets[LOGGED_BOLUS_DATASET].data = runs
-                .filter((r) => (r.c.ibolus ?? 0) > 0)
-                .map((r) => ({ x: r.t.valueOf(), y: r.c.ibolus! }))
-            datasets[LOGGED_MEAL_DATASET].data = runs
-                .filter((r) => (r.u.meal ?? 0) > 0)
-                .map((r) => ({ x: r.t.valueOf(), y: r.u.meal! }))
-            datasets[LOGGED_LONG_ACTING_DATASET].data = results ? events
-                .filter((event) => event.type === "longacting")
-                .map((event) => ({ x: event.time.valueOf(), y: event.value })) : []
+        setComparison(active: boolean) {
+            const datasets = <ChartDataset<"line">[]>this.chart.data.datasets
+            datasets[0].label = this.$t(active ? "loggedIir" : "iir")
+            datasets[0].borderDash = active ? LOGGED_DAY_DASH : []
+            const markers: [number, string, string, string][] = [
+                [1, "ibolus", "loggedIbolus", colors['THURed']],
+                [3, "totalmeal", "loggedMeal", colors['THUDarkBlue']],
+                [LONG_ACTING_DATASET, "longacting", "loggedLongacting",
+                    colors['THUGreen']],
+            ]
+            for (const [i, label, loggedLabel, color] of markers) {
+                datasets[i].label = this.$t(active ? loggedLabel : label)
+                datasets[i].backgroundColor = active ? HOLLOW : color
+                datasets[i].borderColor = active ? color : colors['THUAnthrazit']
+                datasets[i].borderWidth = active ? 2 : 1
+            }
+            this.update()
+        },
+        /**
+         * Adds the treatment of a what-if run (basal line and filled markers
+         * for boluses, meals and long-acting injections), unless a run with
+         * the same key is already shown.
+         * @param {SimulationResult[]} results - results of the run
+         * @param {PatientEvent[]} events - events of the run
+         * @param {string} key - identifies the run (as in the glucose chart)
+         * @param {string} label - name of the run (e.g. what-if 2)
+         */
+        addRun(results: SimulationResult[], events: PatientEvent[],
+            key: string, label: string) {
+            if (this.runKeys().includes(key)) {
+                return
+            }
+            const point = (t: Date, y: number) => ({ x: t.valueOf(), y })
+            const tag = { runKey: key }
+            const runDatasets = <RunDataset[]><unknown>[
+                {
+                    ...tag, runRole: "basal",
+                    type: "line", yAxisID: 'y', label,
+                    data: results.filter((r) => typeof r.c.iir !== "undefined")
+                        .map((r) => point(r.t, r.c.iir!)),
+                    borderColor: colors['THURed'],
+                    borderWidth: 2,
+                    stepped: "before",
+                },
+                {
+                    ...tag, runRole: "bolus",
+                    type: "scatter", yAxisID: 'y', label: `${label}: bolus`,
+                    data: results.filter((r) => (r.c.ibolus ?? 0) > 0)
+                        .map((r) => point(r.t, r.c.ibolus!)),
+                    backgroundColor: colors['THURed'],
+                    borderColor: colors['THUAnthrazit'],
+                    radius: 10, pointStyle: "triangle", rotation: 180,
+                },
+                {
+                    ...tag, runRole: "meal",
+                    type: "scatter", yAxisID: 'yG', label: `${label}: meal`,
+                    data: results.filter((r) => (r.u.meal ?? 0) > 0)
+                        .map((r) => point(r.t, r.u.meal!)),
+                    backgroundColor: colors['THUDarkBlue'],
+                    borderColor: colors['THUAnthrazit'],
+                    radius: 10, pointStyle: "triangle",
+                },
+                {
+                    ...tag, runRole: "longacting",
+                    type: "scatter", yAxisID: 'yLong',
+                    label: `${label}: long-acting`,
+                    data: events.filter((e) => e.type === "longacting")
+                        .map((e) => point(e.time, e.value)),
+                    backgroundColor: colors['THUGreen'],
+                    borderColor: colors['THUAnthrazit'],
+                    radius: 10, pointStyle: "rectRot",
+                },
+            ]
+            this.chart.data.datasets.push(...runDatasets)
             this.updateLongActingScale()
+        },
+        /** returns the keys of the what-if runs in the order they were added */
+        runKeys(): string[] {
+            const keys: string[] = []
+            for (const dataset of this.chart.data.datasets) {
+                const key = (<RunDataset>dataset).runKey
+                if (key && !keys.includes(key)) keys.push(key)
+            }
+            return keys
+        },
+        /** shows or hides all datasets of a what-if run */
+        setRunVisible(key: string, visible: boolean) {
+            this.chart.data.datasets.forEach((dataset, i) => {
+                if ((<RunDataset>dataset).runKey === key) {
+                    this.chart.setDatasetVisibility(i, visible)
+                }
+            })
+            this.update()
+        },
+        /**
+         * Applies the visibility of runs (as in the glucose chart) and draws
+         * the latest run's basal line solid, others with their own pattern.
+         * @param {Record<string, boolean>} visibility - visibility by run key
+         * @param {string | null} latestKey - key of the latest run
+         */
+        syncRuns(visibility: Record<string, boolean>, latestKey: string | null) {
+            const keys = this.runKeys()
+            this.chart.data.datasets.forEach((dataset, i) => {
+                const run = <RunDataset & ChartDataset<"line">>dataset
+                if (!run.runKey) return
+                this.chart.setDatasetVisibility(i, visibility[run.runKey] ?? true)
+                if (run.runRole === "basal") {
+                    run.borderDash = run.runKey === latestKey
+                        ? [] : runDash(keys.indexOf(run.runKey))
+                }
+            })
+            this.update()
+        },
+        /** removes all what-if runs */
+        clearRuns() {
+            this.chart.data.datasets = this.chart.data.datasets
+                .slice(0, BASE_DATASETS)
+            this.setComparison(false)
         },
         /** places long-acting markers near the top of the chart */
         updateLongActingScale() {
             const datasets = this.chart.data.datasets
-            const doses = [LONG_ACTING_DATASET, LOGGED_LONG_ACTING_DATASET]
-                .flatMap((i) => datasets[i].data.map((p) => (<Point>p).y ?? 0))
+            const doses = datasets
+                .filter((dataset) => (<{ yAxisID?: string }>dataset).yAxisID === 'yLong')
+                .flatMap((dataset) => dataset.data.map((p) => (<Point>p).y ?? 0))
             this.chart.options.scales!.yLong!.max = 1.2 * Math.max(0, ...doses)
             this.update()
         },
@@ -352,10 +451,6 @@ export default defineComponent({
 	"title":		"Insulin dosage and carb intake",
 	"iir":			"basal insulin in U/h",
 	"longacting":	"long-acting injection in U",
-	"whatifIir":	"what-if basal insulin in U/h",
-	"whatifIbolus":	"what-if bolus in U",
-	"whatifMeal":	"what-if meal in g",
-	"whatifLongacting":	"what-if long-acting injection in U",
 	"loggedIir":	"logged basal insulin in U/h",
 	"loggedIbolus":	"logged bolus in U",
 	"loggedMeal":	"logged meal in g",
@@ -373,10 +468,6 @@ export default defineComponent({
 	"title": 		"Insulindosierung und Mahlzeiten",
 	"iir":			"Basalinsulin in U/h",
 	"longacting":	"Langzeitinsulin in U",
-	"whatifIir":	"Was-wäre-wenn Basalinsulin in U/h",
-	"whatifIbolus":	"Was-wäre-wenn Bolus in U",
-	"whatifMeal":	"Was-wäre-wenn Mahlzeit in g",
-	"whatifLongacting":	"Was-wäre-wenn Langzeitinsulin in U",
 	"loggedIir":	"Protokolliertes Basalinsulin in U/h",
 	"loggedIbolus":	"Protokollierter Bolus in U",
 	"loggedMeal":	"Protokollierte Mahlzeit in g",

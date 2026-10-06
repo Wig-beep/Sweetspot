@@ -155,9 +155,8 @@ export default defineComponent({
                     this.originalPatientEvents = structuredClone(parsed)
                     this.patientEvents = parsed
                     // what-ifs of previously loaded data do not apply any more
-                    const chartGlucose = <InstanceType<typeof ChartGlucose>>
-                        this.$refs.chartGlucose
-                    chartGlucose.clearRuns()
+                    this.chartGlucose().clearRuns()
+                    this.chartInsulinCarbs().clearRuns()
 
                     console.log("CSV PARSED:", parsed)
                 } catch (err) {
@@ -175,8 +174,8 @@ export default defineComponent({
 
             const events = toRaw(this.patientEvents)
             const original = toRaw(this.originalPatientEvents)
-            const chartGlucose = <InstanceType<typeof ChartGlucose>>
-                this.$refs.chartGlucose
+            const chartGlucose = this.chartGlucose()
+            const chartInsulinCarbs = this.chartInsulinCarbs()
 
             // with patient data, the logged day is always shown; an edited
             // timeline is simulated as a what-if on top of it
@@ -185,12 +184,15 @@ export default defineComponent({
             const results = (loggedDay && !isWhatIf)
                 ? loggedDay : this.simulate(events)
 
-            // propagate results to charts
-            this.propagateSimulationResults(results)
+            // propagate results to charts; with patient data, the charts'
+            // main simulation is the logged day and what-ifs are added to it
+            this.propagateSimulationResults(loggedDay ?? results)
             chartGlucose.setLoggedDay(loggedDay)
             if (isWhatIf) {
-                chartGlucose.addRun(results, JSON.stringify(events),
-                    this.$t("whatif"))
+                const key = JSON.stringify(events)
+                chartGlucose.addRun(results, key, this.$t("whatif"))
+                chartInsulinCarbs.addRun(results, events ?? [], key,
+                    chartGlucose.getRunLabel(key))
             }
             else if (loggedDay) {
                 chartGlucose.highlightRun(null)
@@ -200,18 +202,40 @@ export default defineComponent({
                 chartGlucose.addRun(results, String(Date.now()),
                     this.$t("simulated"))
             }
+            const mainEvents = original ?? events ?? []
             chartGlucose.setMeasuredGlucose(
-                (events ?? []).filter((event) => event.type === "glucose"))
-            const chartInsulinCarbs = <InstanceType<typeof ChartInsulinCarbs>>
-                this.$refs.chartInsulinCarbs
+                mainEvents.filter((event) => event.type === "glucose"))
             chartInsulinCarbs.setLongActingInjections(
-                (events ?? []).filter((event) => event.type === "longacting"))
-            chartInsulinCarbs.setLoggedDay(isWhatIf ? loggedDay : null,
-                original ?? [])
+                mainEvents.filter((event) => event.type === "longacting"))
+            this.syncInsulinRuns()
 
             this.metrics = computeGlucoseMetrics(results)
             this.baselineMetrics = (isWhatIf && loggedDay)
                 ? computeGlucoseMetrics(loggedDay) : null
+        },
+        chartGlucose(): InstanceType<typeof ChartGlucose> {
+            return <InstanceType<typeof ChartGlucose>>this.$refs.chartGlucose
+        },
+        chartInsulinCarbs(): InstanceType<typeof ChartInsulinCarbs> {
+            return <InstanceType<typeof ChartInsulinCarbs>>
+                this.$refs.chartInsulinCarbs
+        },
+        /**
+         * Shows the what-if runs on the insulin chart as they are shown on
+         * the glucose chart.
+         */
+        syncInsulinRuns(): void {
+            const chartGlucose = this.chartGlucose()
+            const chartInsulinCarbs = this.chartInsulinCarbs()
+            const visibility = chartGlucose.getRunVisibility()
+            chartInsulinCarbs.setComparison(this.patientEvents !== null &&
+                Object.keys(visibility).length > 0)
+            chartInsulinCarbs.syncRuns(visibility, chartGlucose.latestKey)
+        },
+        /** a what-if run was shown or hidden in the insulin chart's legend */
+        insulinRunVisibilityChanged(key: string, visible: boolean): void {
+            this.chartGlucose().setRunVisible(key, visible)
+            this.syncInsulinRuns()
         },
         /**
          * Runs a simulation.
@@ -401,8 +425,10 @@ export default defineComponent({
         </div>
         <div class="box lt1-results">
             <h2>{{ $t("results") }}</h2>
-            <ChartGlucose ref="chartGlucose" />
-            <ChartInsulinCarbs ref="chartInsulinCarbs" @selectLog="controllerDataHover" />
+            <ChartGlucose ref="chartGlucose"
+                @runVisibilityChanged="syncInsulinRuns" />
+            <ChartInsulinCarbs ref="chartInsulinCarbs" @selectLog="controllerDataHover"
+                @runVisibilityChanged="insulinRunVisibilityChanged" />
             <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
                 :isLoggedDay="patientEvents !== null" />
             <div style="display: none;">  
