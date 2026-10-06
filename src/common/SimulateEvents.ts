@@ -16,6 +16,11 @@ import { SimulationResult } from '../types/SimulationResult.js'
 import { getExercisesFromEvents, getMealsFromEvents } from './PatientEvents.js'
 import { getPatientDataTimeSpan } from './PatientDataTimeSpan.js'
 
+/** whether any of the events is exercise */
+export function hasExercise(events: PatientEvent[]): boolean {
+    return getExercisesFromEvents(events).length > 0
+}
+
 export declare type EventSimulation = {
     results: SimulationResult[]
     /**
@@ -38,16 +43,20 @@ export declare type EventSimulation = {
  * @param {Sensor} sensor - glucose sensor
  * @param {Partial<SimulatorOptions>} options - simulator options
  * @param {Simulator} simulator - simulator to use (a new one by default)
+ * @param {boolean} withExercise - simulate as for a day with exercise, even
+ *      if these events have none; use it when comparing days so that all
+ *      of them are simulated with the same virtual person and steps
  */
 export function simulateEvents(
     events: PatientEvent[],
     patient: Patient,
     sensor: Sensor,
     options: Partial<SimulatorOptions> = {},
-    simulator = new Simulator()
+    simulator = new Simulator(),
+    withExercise = hasExercise(events),
 ): EventSimulation {
     const exercises = getExercisesFromEvents(events)
-    const usedExerciseModel = exercises.length > 0 &&
+    const usedExerciseModel = withExercise &&
         !patient.getInputList().includes("exercise")
     simulator.setPatient(usedExerciseModel ? new Deichmann2021() : patient)
 
@@ -64,7 +73,7 @@ export function simulateEvents(
     simulator.setOptions({
         ...getPatientDataTimeSpan(events),
         ...options,
-        ...(exercises.length > 0 ? { dt: 1 } : {}),
+        ...(withExercise ? { dt: 1 } : {}),
     })
     return { results: simulator.runSimulation(), usedExerciseModel }
 }

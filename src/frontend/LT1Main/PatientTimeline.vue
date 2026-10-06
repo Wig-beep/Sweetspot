@@ -6,11 +6,28 @@
             "Show this change" to compare it with the original day.
         </p>
 
+        <!-- error summary, as in the NHS design system -->
+        <div v-if="errorRows.length" class="timeline-error-summary"
+            role="alert" tabindex="-1" ref="errorSummary">
+            <h4>There is a problem</h4>
+            <ul>
+                <li v-for="row in errorRows" :key="row.id">
+                    <a :href="'#row-' + row.id" @click.prevent="focusRow(row.id)">
+                        {{ rowName(row) }}: {{ errors[row.id] }}
+                    </a>
+                </li>
+            </ul>
+        </div>
+
         <ul class="timeline-rows" aria-label="Patient events">
-            <li v-for="(row, index) in rows" :key="row.id" class="timeline-row">
+            <li v-for="(row, index) in rows" :key="row.id" class="timeline-row"
+                :class="{ 'has-error': errors[row.id] }">
                 <input
                     class="cell-time"
                     type="datetime-local"
+                    :id="'row-' + row.id"
+                    :aria-invalid="!!errors[row.id]"
+                    :aria-describedby="errors[row.id] ? 'row-error-' + row.id : undefined"
                     aria-label="Time"
                     v-model="row.timeString"
                 />
@@ -55,6 +72,9 @@
 
                 <button class="cell-remove" @click="removeRow(index)"
                     title="Remove this entry" aria-label="Remove this entry">✕</button>
+                <p v-if="errors[row.id]" class="cell-error" :id="'row-error-' + row.id">
+                    <span class="visually-hidden">Error:</span> {{ errors[row.id] }}
+                </p>
             </li>
         </ul>
 
@@ -70,7 +90,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 import { DEFAULT_LONG_ACTING_INSULIN } from "../../common/LongActingInsulin.js"
-import { sortByTime } from "../../common/PatientEvents.js"
+import { checkEvent, sortByTime } from "../../common/PatientEvents.js"
 import PatientEvent, {
     LONG_ACTING_INSULINS,
     LongActingInsulin,
@@ -120,11 +140,20 @@ export default defineComponent({
     data() {
         return {
             rows: [] as TimelineRow[],
+            /** problems found when showing a change, by row id */
+            errors: {} as Record<number, string>,
             eventTypes: PATIENT_EVENT_TYPES,
             typeLabels,
             insulins: LONG_ACTING_INSULINS,
             insulinLabels,
         }
+    },
+
+    computed: {
+        /** rows with a problem, in the order shown */
+        errorRows(): TimelineRow[] {
+            return this.rows.filter((row) => this.errors[row.id])
+        },
     },
 
     watch: {
@@ -133,6 +162,7 @@ export default defineComponent({
             deep: true,
 
             handler() {
+                this.errors = {}
                 this.rows = this.events.map(event => ({
                     id: nextRowId++,
                     timeString: this.toDateTimeLocal(event.time),
@@ -180,29 +210,51 @@ export default defineComponent({
 
         applyChanges() {
             const events: PatientEvent[] = []
+            const errors: Record<number, string> = {}
+            const isEmpty = (value: unknown) =>
+                value === "" || value === null || typeof value === "undefined"
 
             for (const row of this.rows) {
-                const time = new Date(row.timeString)
-                if (isNaN(time.valueOf())) {
-                    continue
-                }
                 const event: PatientEvent = {
-                    time,
+                    time: new Date(row.timeString),
                     type: row.type,
-                    value: Number(row.value) || 0,
+                    value: Number(row.value),
                 }
                 if ((row.type === "carbs" || row.type === "exercise")
-                    && Number(row.duration) > 0) {
+                    && !isEmpty(row.duration)) {
                     event.duration = Number(row.duration)
                 }
                 if (row.type === "longacting") {
                     event.insulin = row.insulin
                 }
+                const problem = isNaN(event.time.valueOf())
+                    ? "enter a date and time"
+                    : isEmpty(row.value) ? "enter an amount" : checkEvent(event)
+                if (problem) {
+                    errors[row.id] = problem.charAt(0).toUpperCase() + problem.slice(1)
+                    continue
+                }
                 events.push(event)
             }
 
+            this.errors = errors
+            if (Object.keys(errors).length > 0) {
+                // nothing is changed until all entries are valid
+                this.$nextTick(() => (<HTMLElement>this.$refs.errorSummary)?.focus())
+                return
+            }
             this.$emit("timelineChanged", sortByTime(events))
-        }
+        },
+
+        /** short name of a row for the error summary, e.g. "07:30 bolus" */
+        rowName(row: TimelineRow): string {
+            const time = row.timeString ? row.timeString.slice(11, 16) : "Entry"
+            return `${time} ${typeLabels[row.type].replace(/ \(.*\)$/, "").toLowerCase()}`
+        },
+
+        focusRow(id: number) {
+            document.getElementById("row-" + id)?.focus()
+        },
     }
 })
 </script>
@@ -283,6 +335,37 @@ export default defineComponent({
     .timeline-row:has(.cell-details select) {
         grid-template-areas: "time type value details remove";
     }
+}
+
+/* errors: red bar on the left and a message below the entry */
+.timeline-row.has-error {
+    border-left: 4px solid var(--ss-error);
+}
+
+.cell-error {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--ss-error);
+    font-weight: bold;
+}
+
+.timeline-error-summary {
+    border: 4px solid var(--ss-error);
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
+}
+
+.timeline-error-summary h4 {
+    margin-top: 0;
+}
+
+.timeline-error-summary ul {
+    padding-left: 1.25rem;
+}
+
+.timeline-error-summary a {
+    color: var(--ss-error);
+    font-weight: bold;
 }
 
 .cell-time { grid-area: time; }

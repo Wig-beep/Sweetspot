@@ -84,10 +84,9 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
             throw new Error(`Line ${lineNumber}: ${message}`)
         }
 
-        const time = new Date(cells[timeCol] ?? "")
-        if (isNaN(time.valueOf())) {
-            fail(`invalid time "${cells[timeCol] ?? ""}"`)
-        }
+        const time = parseDateTime(cells[timeCol] ?? "") ?? fail(
+            `invalid time "${cells[timeCol] ?? ""}" (use YYYY-MM-DD HH:MM `
+            + `or DD/MM/YYYY HH:MM)`)
         const readNumber = (col: number, name: string) => {
             const value = Number(cells[col])
             if (!cells[col] || !isFinite(value) || value < 0) {
@@ -117,16 +116,14 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
                 + PATIENT_EVENT_TYPES.join(", ") + ")")
         }
         const value = readNumber(valueCol, type)
-        if (type === "glucose" && value > MAX_GLUCOSE_MMOL) {
-            fail(`glucose ${value} looks like mg/dl, please use mmol/L`)
-        }
         const event: PatientEvent = { time, type, value }
-        if (type === "exercise" && value > 100) {
-            fail(`exercise intensity ${value} must be at most 100 %`)
-        }
         if ((type === "carbs" || type === "exercise") &&
             durationCol >= 0 && cells[durationCol]) {
             event.duration = readNumber(durationCol, "duration")
+        }
+        const problem = checkEvent(event)
+        if (problem) {
+            fail(problem)
         }
         if (type === "exercise" && !event.duration) {
             event.duration = DEFAULT_EXERCISE_DURATION
@@ -148,6 +145,66 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
     })
 
     return sortByTime(events)
+}
+
+/**
+ * Reads a date and time, either as YYYY-MM-DD HH:MM (also with "T" between
+ * date and time) or in the UK order DD/MM/YYYY HH:MM, optionally with
+ * seconds. Other formats are rejected rather than guessed, since for
+ * example 05/10/2026 means 5 October in the UK but 10 May in the US.
+ *
+ * @param {string} text - date and time
+ * @returns {Date | undefined} local date and time, or undefined if invalid
+ */
+export function parseDateTime(text: string): Date | undefined {
+    const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/
+    const uk = /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2})(?::(\d{2}))?$/
+    let parts: number[]
+    let match = text.trim().match(iso)
+    if (match) {
+        parts = [match[1], match[2], match[3], match[4], match[5], match[6] ?? "0"]
+            .map(Number)
+    }
+    else if ((match = text.trim().match(uk))) {
+        parts = [match[3], match[2], match[1], match[4], match[5], match[6] ?? "0"]
+            .map(Number)
+    }
+    else {
+        return undefined
+    }
+    const [year, month, day, hour, minute, second] = parts
+    const date = new Date(year, month - 1, day, hour, minute, second)
+    // reject dates that do not exist, e.g. 31/02, and invalid times
+    const exists = date.getFullYear() === year && date.getMonth() === month - 1
+        && date.getDate() === day && hour < 24 && minute < 60 && second < 60
+    return exists ? date : undefined
+}
+
+/**
+ * Checks whether the values of an event make sense, e.g. no negative
+ * amounts. Used for imported data and for changes made in the timeline.
+ *
+ * @param {PatientEvent} event - event to check
+ * @returns {string | undefined} description of the problem, if any
+ */
+export function checkEvent(event: PatientEvent): string | undefined {
+    const { type, value, duration } = event
+    if (!isFinite(event.time.valueOf())) {
+        return "invalid time"
+    }
+    if (!isFinite(value) || value < 0) {
+        return "the amount must be 0 or more"
+    }
+    if (type === "glucose" && value > MAX_GLUCOSE_MMOL) {
+        return `glucose ${value} looks like mg/dl, please use mmol/L`
+    }
+    if (type === "exercise" && value > 100) {
+        return `exercise intensity ${value} must be at most 100 %`
+    }
+    if (typeof duration !== "undefined" && (!isFinite(duration) || duration <= 0)) {
+        return "the duration must be more than 0 minutes"
+    }
+    return undefined
 }
 
 /**

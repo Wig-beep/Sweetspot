@@ -7,8 +7,10 @@
 
 import { expect } from 'chai'
 import {
+    checkEvent,
     getExercisesFromEvents,
     getMealsFromEvents,
+    parseDateTime,
     parsePatientEventsCSV
 } from '../../src/common/PatientEvents.js'
 
@@ -123,5 +125,62 @@ describe("getMealsFromEvents", () => {
             { start: at(7, 30), carbs: 50, duration: 20 },
             { start: at(12, 0), carbs: 40, duration: undefined },
         ])
+    })
+})
+
+describe("parseDateTime", () => {
+    const at = (d: number, h: number, m: number, sec = 0) =>
+        new Date(2026, 9, d, h, m, sec)
+
+    it("should read YYYY-MM-DD with a space or T, with or without seconds", () => {
+        expect(parseDateTime("2026-10-05 07:30")).to.deep.equal(at(5, 7, 30))
+        expect(parseDateTime("2026-10-05T07:30")).to.deep.equal(at(5, 7, 30))
+        expect(parseDateTime(" 2026-10-05 7:30:15 ")).to.deep.equal(at(5, 7, 30, 15))
+    })
+
+    it("should read UK dates as day/month/year", () => {
+        expect(parseDateTime("05/10/2026 08:00")).to.deep.equal(at(5, 8, 0))
+        expect(parseDateTime("5/10/2026 08:00")).to.deep.equal(at(5, 8, 0))
+    })
+
+    it("should reject dates and times that do not exist", () => {
+        expect(parseDateTime("31/02/2026 08:00")).to.be.undefined
+        expect(parseDateTime("2026-13-01 08:00")).to.be.undefined
+        expect(parseDateTime("2026-10-05 24:00")).to.be.undefined
+        expect(parseDateTime("2026-10-05 07:60")).to.be.undefined
+    })
+
+    it("should reject other formats instead of guessing", () => {
+        for (const text of ["yesterday", "05/10/2026", "10-05-2026 08:00",
+            "2026/10/05 08:00", "Oct 5 2026 08:00", ""]) {
+            expect(parseDateTime(text), text).to.be.undefined
+        }
+    })
+
+    it("should be used for CSV files", () => {
+        const [event] = parsePatientEventsCSV("time,type,value\n05/10/2026 08:00,bolus,4")
+        expect(event.time).to.deep.equal(at(5, 8, 0))
+        expect(() => parsePatientEventsCSV("time,type,value\n10-05-2026 08:00,bolus,4"))
+            .to.throw(/Line 2: invalid time.*DD\/MM\/YYYY/)
+    })
+})
+
+describe("checkEvent", () => {
+    const time = new Date(2026, 9, 5, 8)
+
+    it("should accept sensible events", () => {
+        expect(checkEvent({ time, type: "bolus", value: 4 })).to.be.undefined
+        expect(checkEvent({ time, type: "basal", value: 0 })).to.be.undefined
+        expect(checkEvent({ time, type: "carbs", value: 50, duration: 15 })).to.be.undefined
+    })
+
+    it("should reject impossible values", () => {
+        expect(checkEvent({ time, type: "basal", value: -1 })).to.match(/amount must be 0 or more/)
+        expect(checkEvent({ time, type: "longacting", value: -16 })).to.match(/amount must be 0 or more/)
+        expect(checkEvent({ time, type: "bolus", value: NaN })).to.match(/amount must be 0 or more/)
+        expect(checkEvent({ time, type: "glucose", value: 120 })).to.match(/mmol\/L/)
+        expect(checkEvent({ time, type: "exercise", value: 150 })).to.match(/at most 100/)
+        expect(checkEvent({ time, type: "carbs", value: 50, duration: 0 })).to.match(/duration must be more than 0/)
+        expect(checkEvent({ time: new Date(NaN), type: "bolus", value: 1 })).to.match(/time/)
     })
 })

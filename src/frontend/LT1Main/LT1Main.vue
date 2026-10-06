@@ -25,7 +25,7 @@ import Actuator from '../../types/Actuator.js'
 import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
-import { simulateEvents } from '../../common/SimulateEvents.js'
+import { hasExercise, simulateEvents } from '../../common/SimulateEvents.js'
 import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
@@ -338,9 +338,15 @@ export default defineComponent({
             if (events) {
                 // replay logged doses, meals and exercise over the period
                 // covered by the patient data
+                // the logged day and the what-if are simulated alike, so that
+                // they stay comparable: if either has exercise, both use the
+                // exercise model
+                const withExercise = hasExercise(toRaw(this.patientEvents) ?? [])
+                    || hasExercise(toRaw(this.originalPatientEvents) ?? [])
                 const { results, usedExerciseModel } = simulateEvents(events,
                     this.getPatient(), this.getSensor(),
-                    { ...this.getOptions(), ...this.simulationSpan }, sim)
+                    { ...this.getOptions(), ...this.simulationSpan }, sim,
+                    withExercise)
                 this.usedExerciseModel ||= usedExerciseModel
                 return results
             }
@@ -385,11 +391,17 @@ export default defineComponent({
         },
         patientChanged(newPatient: Patient): void {
             if (typeof newPatient !== "undefined") {
-                console.log("Patient changed")
                 this.patient = newPatient
                 const profile = newPatient?.getPatientProfile?.()
                 if (typeof profile !== "undefined") {
                     this.patientProfile = profile
+                }
+                // results simulated with the old settings no longer apply:
+                // remove earlier what-ifs and simulate the day again
+                if (this.patientEvents) {
+                    this.chartGlucose().clearRuns()
+                    this.chartInsulinCarbs().clearRuns()
+                    this.run()
                 }
             }
         },

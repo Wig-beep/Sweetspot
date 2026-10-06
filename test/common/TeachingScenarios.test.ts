@@ -63,6 +63,17 @@ describe("TeachingScenarios", function () {
         }
     })
 
+    it("should simulate a day without exercise with the exercise model if asked", () => {
+        // e.g. a what-if that removes the exercise from a day with exercise
+        const s = scenario("exercise")
+        const withoutExercise = s.events.filter((e) => e.type !== "exercise")
+        const patient = new VirtualPatientUvaPadova()
+        expect(simulateEvents(withoutExercise, patient, new IdealCGM(), spanOf(s))
+            .usedExerciseModel).to.be.false
+        expect(simulateEvents(withoutExercise, patient, new IdealCGM(), spanOf(s),
+            undefined, true).usedExerciseModel).to.be.true
+    })
+
     // the lessons each scenario is meant to show
 
     it("bolus timing: injecting before eating lowers the peak, late raises it", () => {
