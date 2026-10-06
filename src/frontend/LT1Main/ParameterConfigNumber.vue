@@ -11,6 +11,7 @@ import DailyProfile from '../../common/DailyProfile.js'
 import { displayUnit } from '../../common/GlucoseUnits.js'
 import { ParameterDescription } from '../../types/ParametricModule.js'
 import countDecimals from '../util/CountDecimals.js'
+import plainText from '../util/PlainText.js'
 import InfoboxTooltip from './InfoboxTooltip.vue'
 
 export default defineComponent({
@@ -55,6 +56,11 @@ export default defineComponent({
         },
         unit(): string {
             return this.display.unit
+        },
+        /** name of the input for assistive technology */
+        accessibleName(): string {
+            return [plainText(this.description), this.unit]
+                .filter((part) => part).join(", ")
         },
         /** value as shown to the user, in display units */
         displayValue: {
@@ -101,8 +107,9 @@ export default defineComponent({
         <div class="item-input">
             <input type="number" v-model.number=displayValue
                 :id="'param' + id" 
-                :min="min"
-                :max="max"
+                :aria-label="accessibleName"
+                :min="isFinite(min) ? min : undefined"
+                :max="isFinite(max) ? max : undefined"
                 :step="step"
                 @change="valueChanged()">
             <svg v-tooltip="{ content: $t('toProfile') }" 

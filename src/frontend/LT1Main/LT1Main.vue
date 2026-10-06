@@ -41,6 +41,11 @@ import {
     WhatIf
 } from '../../common/TeachingScenarios.js'
 import { computeGlucoseMetrics, GlucoseMetrics } from '../../common/GlucoseMetrics.js'
+import {
+    DescribedDay,
+    describeGlucose,
+    describeInsulin
+} from '../../common/ChartDescriptions.js'
 
 // prepare simulator
 const sim = new Simulator()
@@ -105,6 +110,8 @@ export default defineComponent({
             originalPatientEvents: null as PatientEvent[] | null,  // never mutated — baseline for comparison
             patientEvents: null as PatientEvent[] | null,          // working copy the timeline will edit
             csvFileName: '' as string,
+            /** problem with the last CSV file, shown next to the upload */
+            csvError: '' as string,
             /** teaching scenarios (on the current day) */
             scenarios: getTeachingScenarios(new Date()),
             /** id of the loaded teaching scenario, if any */
@@ -113,6 +120,8 @@ export default defineComponent({
             usedExerciseModel: false,
             /** metrics of the latest simulation (what-if day, if edited) */
             metrics: null as GlucoseMetrics | null,
+            /** name of the latest what-if, if the timeline has been edited */
+            whatIfName: '' as string,
             /** metrics of the logged day, if the timeline has been edited */
             baselineMetrics: null as GlucoseMetrics | null,
         }
@@ -139,6 +148,37 @@ export default defineComponent({
                 ...this.patientEvents,
                 ...(this.originalPatientEvents ?? []),
             ])
+        },
+        /** days summarised in the text alternatives of the charts */
+        describedDays(): DescribedDay[] {
+            if (!this.metrics) {
+                return []
+            }
+            if (this.baselineMetrics) {
+                return [
+                    { name: "Logged day", metrics: this.baselineMetrics },
+                    { name: `What-if (${this.whatIfName})`, metrics: this.metrics },
+                ]
+            }
+            const name = this.patientEvents ? "Logged day" : "Simulated day"
+            return [{ name, metrics: this.metrics }]
+        },
+        /** short announcement for screen readers after each simulation */
+        statusMessage(): string {
+            const [first, second] = this.describedDays
+            if (!first) {
+                return ""
+            }
+            const tir = (d: DescribedDay) =>
+                `${d.name}: ${Math.round(d.metrics.timeInRange)}% in range, `
+                + `${Math.round(d.metrics.timeBelowRange)}% below 3.9.`
+            return "Simulation updated. " + tir(first) + (second ? " " + tir(second) : "")
+        },
+        glucoseDescription(): string {
+            return describeGlucose(this.describedDays)
+        },
+        insulinDescription(): string {
+            return describeInsulin(this.describedDays)
         },
         /** whether the timeline differs from the logged day */
         isEdited(): boolean {
@@ -173,9 +213,12 @@ export default defineComponent({
 
                     console.log("CSV PARSED:", parsed)
                 } catch (err) {
-                    alert(`Could not parse ${file.name}: ${(err as Error).message}`)
+                    this.csvError =
+                        `Could not load ${file.name}: ${(err as Error).message}`
+                    input.value = ''
                     return
                 }
+                this.csvError = ''
 
                 // Allows the user to select the same file again later
                 input.value = ''
@@ -208,6 +251,7 @@ export default defineComponent({
                     this.scenarioWhatIfLabel(key))
                 chartInsulinCarbs.addRun(results, events ?? [], key,
                     chartGlucose.getRunLabel(key))
+                this.whatIfName = chartGlucose.getRunLabel(key)
             }
             else if (loggedDay) {
                 chartGlucose.highlightRun(null)
@@ -234,6 +278,7 @@ export default defineComponent({
             this.originalPatientEvents = structuredClone(events)
             this.patientEvents = events
             this.csvFileName = ''
+            this.csvError = ''
             this.activeScenarioId = scenario.id
             this.chartGlucose().clearRuns()
             this.chartInsulinCarbs().clearRuns()
@@ -426,7 +471,8 @@ export default defineComponent({
             <div class="lt1-csv-input">
                 <label for="csvUpload">Or load patient data CSV:</label>
                 <input type="file" id="csvUpload" accept=".csv" @change="onCsvFileSelected" />
-                <span v-if="csvFileName">Loaded: {{ csvFileName }}</span>
+                <span v-if="csvFileName && !csvError">Loaded: {{ csvFileName }}</span>
+                <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
                 <div v-if="simulationSpan">
                     Simulating {{ simulationSpan.t0.toLocaleString() }}
                     to {{ simulationSpan.tmax.toLocaleString() }}
@@ -470,9 +516,11 @@ export default defineComponent({
         </div>
         <div class="box lt1-results">
             <h2>{{ $t("results") }}</h2>
-            <ChartGlucose ref="chartGlucose"
+            <p class="visually-hidden" role="status">{{ statusMessage }}</p>
+            <ChartGlucose ref="chartGlucose" :description="glucoseDescription"
                 @runVisibilityChanged="syncInsulinRuns" />
             <ChartInsulinCarbs ref="chartInsulinCarbs" @selectLog="controllerDataHover"
+                :description="insulinDescription"
                 @runVisibilityChanged="insulinRunVisibilityChanged" />
             <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
                 :isLoggedDay="patientEvents !== null" />
@@ -487,6 +535,12 @@ export default defineComponent({
 
 
 <style lang="css">
+.csv-error {
+    color: #b00020;
+    font-weight: bold;
+    margin: 4px 0;
+}
+
 .exercise-note {
     font-size: 0.8rem;
     font-style: italic;

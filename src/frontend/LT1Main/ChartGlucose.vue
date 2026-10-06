@@ -6,11 +6,11 @@
  * See https://lt1.org for further information.
  */
 
-import { ChartDataset, Point } from 'chart.js'
+import { ChartDataset, Plugin, Point } from 'chart.js'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
 import { defineComponent } from 'vue'
-import { toMmolL } from '../../common/GlucoseUnits.js'
+import { GLUCOSE_RANGE, toMmolL } from '../../common/GlucoseUnits.js'
 import { BGPrediction, ControllerInternals } from '../../types/Controller.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
@@ -36,6 +36,35 @@ const HOVER_LINE_WIDTH = 6
 const LEGEND_COLOR = "rgb(128,128,128)"
 
 let circleCanvas: HTMLCanvasElement | undefined
+
+/**
+ * Plugin that shades the target range (3.9-10.0 mmol/L) behind the curves
+ * and marks the hypo threshold with a dashed line.
+ */
+const TARGET_BAND_COLOR = "rgba(120, 176, 89, 0.15)"
+
+const targetRangeBand: Plugin = {
+    id: "targetRangeBand",
+    beforeDatasetsDraw(chart) {
+        const { ctx, chartArea: area, scales: { y } } = chart
+        if (!area || !y) return
+        const clamp = (pixel: number) =>
+            Math.min(area.bottom, Math.max(area.top, pixel))
+        const top = clamp(y.getPixelForValue(GLUCOSE_RANGE.high))
+        const bottom = clamp(y.getPixelForValue(GLUCOSE_RANGE.low))
+        ctx.save()
+        ctx.fillStyle = TARGET_BAND_COLOR
+        ctx.fillRect(area.left, top, area.width, bottom - top)
+        ctx.strokeStyle = "rgba(194, 1, 18, 0.7)"
+        ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
+        ctx.beginPath()
+        ctx.moveTo(area.left, bottom)
+        ctx.lineTo(area.right, bottom)
+        ctx.stroke()
+        ctx.restore()
+    },
+}
 
 /** legend symbol for measured glucose (a circle in the target range colour) */
 function circleSwatch(): HTMLCanvasElement {
@@ -80,6 +109,10 @@ export default defineComponent({
         AccordionBox
     },
     emits: ["runVisibilityChanged"],
+    props: {
+        /** text alternative of the chart */
+        description: { type: String, default: "Glucose chart" },
+    },
     data() {
         return {
             preserveOldCurves: true,
@@ -108,6 +141,7 @@ export default defineComponent({
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
             type: "line",
+            plugins: [targetRangeBand],
             data: {
                 datasets: [
                     <ChartDataset>{
@@ -165,6 +199,8 @@ export default defineComponent({
                     },
                     legend: {
                         onClick: (event, item, legend) => {
+                            // the target range entry cannot be hidden
+                            if ((item.datasetIndex ?? -1) < 0) return
                             Chart.defaults.plugins.legend.onClick.call(
                                 legend, event, item, legend)
                             this.$emit("runVisibilityChanged")
@@ -183,6 +219,7 @@ export default defineComponent({
                                     if (index === 1) {
                                         item.pointStyle = circleSwatch()
                                     }
+                                    if (index < 0) continue
                                     if (index < LOGGED_DAY_DATASET) continue
                                     const dataset = <ChartDataset<"line">>
                                         chart.data.datasets[index]
@@ -191,17 +228,35 @@ export default defineComponent({
                                         Math.min(<number>dataset.borderWidth, 4),
                                         LEGEND_COLOR)
                                 }
+                                // explain the shaded target range
+                                items.push({
+                                    text: `target range ${GLUCOSE_RANGE.low.toFixed(1)}`
+                                        + `–${GLUCOSE_RANGE.high.toFixed(1)}`,
+                                    fillStyle: "rgba(120, 176, 89, 0.35)",
+                                    strokeStyle: "rgba(120, 176, 89, 0.8)",
+                                    lineWidth: 1,
+                                    pointStyle: "rect",
+                                    hidden: false,
+                                    datasetIndex: -1,
+                                })
                                 return items
                             },
                             // room for the line pattern symbols
                             pointStyleWidth: 40,
                             // keep runs in order, although the current one is
                             // drawn on top
-                            sort: (a, b) => a.datasetIndex! - b.datasetIndex!,
+                            // (the target range entry comes last)
+                            sort: (a, b) => {
+                                const order = (i?: number) =>
+                                    (i ?? -1) < 0 ? Infinity : i!
+                                return order(a.datasetIndex) - order(b.datasetIndex)
+                            },
                             // no legend for controller prediction, and for
                             // measured glucose and logged day if there are none
                             filter: (item, data) => {
                                 const index = item.datasetIndex || 0
+                                // target range entry
+                                if (index < 0) return true
                                 if (index === 0) return false
                                 return index >= FIXED_DATASETS ||
                                     data.datasets[index].data.length > 0
@@ -383,7 +438,7 @@ export default defineComponent({
             <label for="preserveOldCurves">{{ $t("preserveOldCurves") }}</label>
         </div>
         <div class="canvas-chart">
-            <canvas :id="canvasid"></canvas>
+            <canvas :id="canvasid" role="img" :aria-label="description"></canvas>
         </div>
     </AccordionBox>
 </template>

@@ -39,6 +39,10 @@ type RunDataset = ChartDataset & {
 
 export default defineComponent({
     emits: ["selectLog", "runVisibilityChanged"],
+    props: {
+        /** text alternative of the chart */
+        description: { type: String, default: "Insulin and carbs chart" },
+    },
     components: {
         AccordionBox
     },
@@ -453,7 +457,7 @@ export default defineComponent({
 <template>
     <AccordionBox :title="$t('title')" :initial="true">
         <div class="canvas-chart">
-            <canvas :id="canvasid"></canvas>
+            <canvas :id="canvasid" role="img" :aria-label="description"></canvas>
         </div>
     </AccordionBox>
 </template>

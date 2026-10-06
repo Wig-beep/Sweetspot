@@ -17,6 +17,8 @@ export default defineComponent({
     data() {
         return {
             boxactive: this.initial,
+            // unique id linking the header button to the content
+            contentId: "accordion-" + Math.random().toString(36).slice(2),
         }
     },
 })
@@ -25,8 +27,12 @@ export default defineComponent({
 
 <template>
     <div :class="{ accordionbox: true, boxactive }">
-        <h3 @click="[boxactive = !boxactive]">{{ title }}</h3>
-        <div class="accordioncontent">
+        <h3>
+            <button type="button" :aria-expanded="boxactive"
+                :aria-controls="contentId"
+                @click="boxactive = !boxactive">{{ title }}</button>
+        </h3>
+        <div class="accordioncontent" :id="contentId" :inert="!boxactive">
             <slot></slot>
         </div>
     </div>
@@ -69,10 +75,35 @@ h3 {
     box-sizing: content-box;
 }
 
+/* the header button looks like the header itself */
+h3 button {
+    all: inherit;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    cursor: pointer;
+}
+
+h3 button:focus-visible {
+    outline: 3px solid #0055A3;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .accordionbox,
+    .accordionbox h3::after {
+        transition: none;
+    }
+}
+
 /* arrow to open or close box content */
 .accordionbox h3::after {
     position: absolute;
+    top: 0.5rem;
     right: 0.5rem;
+    pointer-events: none;
     transition: all 0.5s;
     content: "\25BC";
 }

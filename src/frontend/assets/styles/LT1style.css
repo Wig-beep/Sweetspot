@@ -1,4 +1,34 @@
 
+/* the app is designed for a light background; keep it readable when the
+   browser or system prefers a dark theme */
+:root {
+    color-scheme: light;
+}
+
+body {
+    background-color: #ffffff;
+    color: #1f2328;
+}
+
+/* clearly visible keyboard focus */
+:focus-visible {
+    outline: 3px solid #0055A3;
+    outline-offset: 2px;
+}
+
+/* hidden visually, but read by screen readers */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .lt1-container { 
     margin: auto;
 }

@@ -182,7 +182,8 @@ export default defineComponent({
     <li>
         <div style="width:100%;text-align: right;font-size: 0.9em;">
             {{ $t('intmethod') }}:
-            <select v-model="interpolationMethod" @change="valueChanged">
+            <select v-model="interpolationMethod" @change="valueChanged"
+                :aria-label="$t('intmethod')">
                 <option value="0">{{ $t('zero-order') }}</option>
                 <option value="1">{{ $t('linear') }}</option>
                 <option value="2">{{ $t('smoothstep') }}</option>

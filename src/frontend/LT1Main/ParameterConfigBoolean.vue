@@ -6,6 +6,7 @@
  * See https://lt1.org for further information.
  */
 
+import plainText from '../util/PlainText.js'
 import { defineComponent, PropType } from 'vue'
 import { ParameterDescription } from '../../types/ParametricModule.js'
 
@@ -40,6 +41,13 @@ export default defineComponent({
 		},
 	},
 
+    computed: {
+        /** name of the input for assistive technology */
+        accessibleName(): string {
+            return plainText(this.description)
+        },
+    },
+
     methods: {
         valueChanged() {
             this.$emit("valueChanged", this.value)
@@ -53,6 +61,7 @@ export default defineComponent({
     <li class="parameterlist-item parameterlist-item-boolean">
         <div class="item-input">
             <input type="checkbox" v-model=value :id="'param' + id"
+                :aria-label="accessibleName"
                 @change="valueChanged()">
         </div>
         <div class="item-description" v-tooltip="{ content: tooltip }">
