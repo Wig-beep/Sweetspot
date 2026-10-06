@@ -386,10 +386,10 @@ export const MPCParameters = {
     predictionHorizon: { unit: "steps", default: 12, step: 1 },
     /** prediction horizon (number of steps) */
     predictionStep: { unit: "min", default: 15, step: 5 },
-    /**  lower constraint of control size */
-    lowerBound: { unit: "mg/dL", default: 0, step: 0.1 },
-    /**  upper constraint of control size */
-    upperBound: { unit: "mg/dL", default: 4, step: 0.1 },
+    /** lower constraint of insulin infusion rate */
+    lowerBound: { unit: "U/h", default: 0, step: 0.1 },
+    /** upper constraint of insulin infusion rate */
+    upperBound: { unit: "U/h", default: 4, step: 0.1 },
     /** Process noise */
     processNoise: { unit: "1", default: Object.fromEntries(
         Object.keys(stateDescription).map((e) => [e, {default: 1, step: 0.1 }])) },

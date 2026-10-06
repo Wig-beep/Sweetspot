@@ -10,6 +10,7 @@ import { defineComponent } from 'vue'
 import AccordionBox from './AccordionBox.vue'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import Statistics from '../../common/Statistics.js'
+import { GLUCOSE_RANGE, toMmolL } from '../../common/GlucoseUnits.js'
 
 export default defineComponent({
     components: {
@@ -25,8 +26,13 @@ export default defineComponent({
             tir_verylow: 0,
             t_total: 0,
             tir_height: 2,
+            /** mean glucose in mmol/L */
             averageGlucose: 0,
+            /** glucose management indicator in % */
             GMI: 0,
+            /** glucose management indicator in mmol/mol */
+            GMI_mmolmol: 0,
+            range: GLUCOSE_RANGE,
             glucoseVariability: 0,
         }
     },
@@ -35,7 +41,7 @@ export default defineComponent({
             this.reset()
             for (const result of simResults) {
                 if (typeof result.s.CGM !== "undefined") {
-                    this._pushRecord(result.s.CGM)
+                    this._pushRecord(toMmolL(result.s.CGM))
                 }
             }
             this.update()
@@ -50,22 +56,26 @@ export default defineComponent({
             this.t_total = 0
         },
         update() {
-            this.averageGlucose = Math.round(Statistics.mean(this.G))
-            this.GMI = Math.round((3.38 + 0.02345 * this.averageGlucose) * 10) / 10
+            const mean = Statistics.mean(this.G)
+            this.averageGlucose = Math.round(mean * 10) / 10
+            // GMI according to Bergenstal et al., Diabetes Care 2018
+            this.GMI = Math.round((3.31 + 0.02392 * 18.018 * mean) * 10) / 10
+            this.GMI_mmolmol = Math.round(12.71 + 4.70587 * mean)
             this.glucoseVariability = Math.round(
                 100 * Statistics.coefficientOfVariation(this.G)
             )
         },
+        /** adds a glucose value in mmol/L */
         _pushRecord(G: number) {
             this.G.push(G)
             this.t_total++
-            if (G < 54) {
+            if (G < GLUCOSE_RANGE.veryLow) {
                 this.tir_verylow++
-            } else if (G < 70) {
+            } else if (G < GLUCOSE_RANGE.low) {
                 this.tir_low++
-            } else if (G > 250) {
+            } else if (G > GLUCOSE_RANGE.veryHigh) {
                 this.tir_veryhigh++
-            } else if (G > 180) {
+            } else if (G > GLUCOSE_RANGE.high) {
                 this.tir_high++
             } else {
                 this.tir_target++
@@ -109,9 +119,9 @@ export default defineComponent({
             <h4>{{ $t("Statistics") }}</h4>
             <div id="AGPstatisticstable">
                 <div>{{ $t("stats.averageGlucose") }}</div>
-                <div>{{ averageGlucose }} mg/dl</div>
+                <div>{{ averageGlucose }} mmol/L</div>
                 <div>{{ $t("stats.GMI") }}</div>
-                <div>{{ GMI }} %</div>
+                <div>{{ GMI_mmolmol }} mmol/mol ({{ GMI }} %)</div>
                 <div>{{ $t("stats.glucoseVariability") }}</div>
                 <div>{{ glucoseVariability }} %</div>
             </div>
@@ -127,7 +137,7 @@ export default defineComponent({
                 <tbody>
                     <tr>
                         <td></td>
-                        <td>{{ $t("tir.veryhigh") }} (>250 mg/dl)</td>
+                        <td>{{ $t("tir.veryhigh") }} (&gt;{{ range.veryHigh.toFixed(1) }} mmol/L)</td>
                         <td>{{ tir_veryhigh_percent }} %</td>
                     </tr>
                     <tr>
@@ -137,7 +147,7 @@ export default defineComponent({
                             <div class="barCell" id="tir_high" :style="'height: ' + tir_high_percent * tir_height + 'px'"></div>
                         </td>
                         <td style="vertical-align: bottom">
-                            {{ $t("tir.high") }} (181-250 mg/dl)
+                            {{ $t("tir.high") }} ({{ range.high.toFixed(1) }}-{{ range.veryHigh.toFixed(1) }} mmol/L)
                         </td>
                         <td style="vertical-align: bottom">{{ tir_high_percent }} %</td>
                     </tr>
@@ -146,7 +156,7 @@ export default defineComponent({
                             <div class="barCell" id="tir_target" :style="'height: ' + tir_target_percent * tir_height + 'px'">
                             </div>
                         </td>
-                        <td>{{ $t("tir.targetrange") }} (70-180 mg/dl)</td>
+                        <td>{{ $t("tir.targetrange") }} ({{ range.low.toFixed(1) }}-{{ range.high.toFixed(1) }} mmol/L)</td>
                         <td>{{ tir_target_percent }} %</td>
                     </tr>
                     <tr>
@@ -157,7 +167,7 @@ export default defineComponent({
                         </td>
                         <td style="vertical-align: top">
                             <div style="vertical-align: top">
-                                {{ $t("tir.low") }} (54-69 mg/dl)
+                                {{ $t("tir.low") }} ({{ range.veryLow.toFixed(1) }}-{{ range.low.toFixed(1) }} mmol/L)
                             </div>
                         </td>
                         <td style="vertical-align: top">
@@ -166,7 +176,7 @@ export default defineComponent({
                     </tr>
                     <tr>
                         <td></td>
-                        <td>{{ $t("tir.verylow") }} (&lt;54 mg/dl)</td>
+                        <td>{{ $t("tir.verylow") }} (&lt;{{ range.veryLow.toFixed(1) }} mmol/L)</td>
                         <td>{{ tir_verylow_percent }} %</td>
                     </tr>
                 </tbody>

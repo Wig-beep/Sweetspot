@@ -8,6 +8,7 @@
 
 import { defineComponent, PropType } from 'vue'
 import DailyProfile from '../../common/DailyProfile.js'
+import { displayUnit } from '../../common/GlucoseUnits.js'
 import { ParameterDescription } from '../../types/ParametricModule.js'
 import countDecimals from '../util/CountDecimals.js'
 import InfoboxTooltip from './InfoboxTooltip.vue'
@@ -36,17 +37,35 @@ export default defineComponent({
         stepDistance(): number {
             return Math.pow(10, countDecimals(this.defaultValue || 1))
         },
+        /** unit and conversion factor for display (e.g., mg/dl -> mmol/L) */
+        display(): { unit: string, factor: number } {
+            return displayUnit(this.config?.unit || "")
+        },
         min(): number {
-            return this.config?.min ?? -Infinity
+            return (this.config?.min ?? -Infinity) * this.display.factor
         },
         max(): number {
-            return this.config?.max ?? +Infinity
+            return (this.config?.max ?? +Infinity) * this.display.factor
         },
         step(): number {
+            if (this.display.factor !== 1) {
+                return 0.1
+            }
             return this.config?.step || this?.stepDistance || 0
         },
         unit(): string {
-            return this.config?.unit || ""
+            return this.display.unit
+        },
+        /** value as shown to the user, in display units */
+        displayValue: {
+            get(): number {
+                const { factor } = this.display
+                return factor === 1 ? this.value
+                    : Number((this.value * factor).toPrecision(3))
+            },
+            set(value: number) {
+                this.value = value / this.display.factor
+            },
         },
     },
     watch: {
@@ -80,7 +99,7 @@ export default defineComponent({
             <InfoboxTooltip :description="description" :tooltip="tooltip" />
         </div>
         <div class="item-input">
-            <input type="number" v-model.number=value
+            <input type="number" v-model.number=displayValue
                 :id="'param' + id" 
                 :min="min"
                 :max="max"

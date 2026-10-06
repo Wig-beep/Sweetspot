@@ -10,6 +10,7 @@ import { ChartDataset, Point } from 'chart.js'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
 import { defineComponent } from 'vue'
+import { toMmolL } from '../../common/GlucoseUnits.js'
 import { BGPrediction, ControllerInternals } from '../../types/Controller.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
@@ -87,13 +88,10 @@ export default defineComponent({
                     },
                     y: {
                         type: "linear",
-                        //title: { display: true, text: "mg/dl" },
-                        //ticks: { stepSize: 20 },
-                        //min: 40,
-                        //suggestedMax: 200,
                         title: { display: true, text: "mmol/L" },
                         ticks: { stepSize: 1 },
-                        min: 2,
+                        // extend below 2 mmol/L so that severe hypos stay visible
+                        suggestedMin: 2,
                         suggestedMax: 12,
                     },
                 },
@@ -165,7 +163,7 @@ export default defineComponent({
             const datasets = this.chart.data.datasets
             // add to glucose plot (most recent simulation)
             datasets[this.currentDatasetID - 1].data
-                .push({ x: result.t.valueOf(), y: result.y.Gp / 18.018 })
+                .push({ x: result.t.valueOf(), y: toMmolL(result.y.Gp) })
             /*if (typeof result.s.CGM !== "undefined") {
                 datasets[this.currentDatasetID].data
                     .push({ x: result.t.valueOf(), y: result.s.CGM })
@@ -203,7 +201,7 @@ export default defineComponent({
             const predBG = data?.predictedBG
             if (typeof predBG !== "undefined") {
                 this.chart.data.datasets[0].data = predBG.map(
-                    (p: BGPrediction) => <Point>{ x: p.t.valueOf(), y: p.Gp })
+                    (p: BGPrediction) => <Point>{ x: p.t.valueOf(), y: toMmolL(p.Gp) })
                 this.update()
             }
         },

@@ -6,6 +6,7 @@
  * See https://lt1.org for further information.
  */
 
+import { toMmolL } from '../../common/GlucoseUnits.js'
 import { defineComponent } from 'vue'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
@@ -53,10 +54,10 @@ export default defineComponent({
                     },
                     y: {
                         type: "linear",
-                        title: { display: true, text: "mg/dl" },
-                        ticks: { stepSize: 20 },
-                        min: 40,
-                        suggestedMax: 200,
+                        title: { display: true, text: "mmol/L" },
+                        ticks: { stepSize: 1 },
+                        suggestedMin: 2,
+                        suggestedMax: 12,
                     },
                 },
                 plugins: {
@@ -70,7 +71,7 @@ export default defineComponent({
             this.reset()
             for (const result of simResults) {
                 this.chart.data.datasets[0].data
-                    .push({ x: result.t.valueOf(), y: result.y.Gp })
+                    .push({ x: result.t.valueOf(), y: toMmolL(result.y.Gp) })
             }
             this.update()
         },

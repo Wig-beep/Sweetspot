@@ -9,6 +9,7 @@
 import Chart from 'chart.js/auto'
 import { defineComponent, PropType, toRaw } from 'vue'
 import DailyProfile from '../../common/DailyProfile.js'
+import { displayUnit } from '../../common/GlucoseUnits.js'
 import { ParameterDescription } from '../../types/ParametricModule.js'
 import InfoboxTooltip from './InfoboxTooltip.vue'
 
@@ -58,8 +59,12 @@ export default defineComponent({
         points(): Array<[number, number]> {
             return this.profile.nodes
         },
+        /** unit and conversion factor for display (e.g., mg/dl -> mmol/L) */
+        display(): { unit: string, factor: number } {
+            return displayUnit(this.config?.unit || "")
+        },
         unit(): string {
-            return this.config?.unit || ""
+            return this.display.unit
         },
     },
 
@@ -123,6 +128,7 @@ export default defineComponent({
 
             const x = this.chart.scales.x.getValueForPixel(x_)!
             const y = this.chart.scales.y.getValueForPixel(y_)!
+                / this.display.factor
 
             if (event.button === 0) {
                 // left button -> add
@@ -151,7 +157,7 @@ export default defineComponent({
                 this.chart.data.datasets[0].data = []
                 for (let t = 0; t <= 24; t += 0.05) {
                     this.chart.data.datasets[0].data.push({
-                        x: t, y: this.profile.getAtTOD(t)
+                        x: t, y: this.profile.getAtTOD(t) * this.display.factor
                     })
                 }
                 // update chart
