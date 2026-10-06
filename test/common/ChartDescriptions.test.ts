@@ -19,23 +19,23 @@ describe("ChartDescriptions", () => {
 
     it("should describe glucose of each day", () => {
         expect(describeGlucose([
-            { name: "Logged day", metrics },
-            { name: "What-if (one correction)", metrics: { ...metrics, minGlucose: 5.1 } },
+            { name: "Original day", metrics },
+            { name: "With change (1 correction)", metrics: { ...metrics, minGlucose: 5.1 } },
         ])).to.equal("Glucose chart in mmol/L. "
-            + "Logged day: 51% of the time in range 3.9 to 10.0, 33% below 3.9, "
-            + "16% above 10.0; lowest 1.3, highest 11.5, mean 6.0. "
-            + "What-if (one correction): 51% of the time in range 3.9 to 10.0, "
-            + "33% below 3.9, 16% above 10.0; lowest 5.1, highest 11.5, mean 6.0.")
+            + "Original day: 51% of the time in range (3.9 to 10), 33% low (below 3.9), "
+            + "16% high (above 10). Lowest 1.3, highest 11.5, average 6.0. "
+            + "With change (1 correction): 51% of the time in range (3.9 to 10), "
+            + "33% low (below 3.9), 16% high (above 10). Lowest 5.1, highest 11.5, average 6.0.")
     })
 
     it("should describe insulin and carbs", () => {
-        expect(describeInsulin([{ name: "Logged day", metrics }])).to.equal(
-            "Insulin and carbs chart. Logged day: 12.0 U bolus insulin, "
-            + "13.9 U basal or long-acting insulin, 100 g carbs.")
+        expect(describeInsulin([{ name: "Original day", metrics }])).to.equal(
+            "Insulin and food chart. Original day: 12.0 units of quick-acting insulin, "
+            + "13.9 units of background insulin, 100g of carbs.")
     })
 
     it("should say when nothing has been simulated", () => {
-        expect(describeGlucose([])).to.match(/No simulation/)
-        expect(describeInsulin([])).to.match(/No simulation/)
+        expect(describeGlucose([])).to.match(/no results yet/)
+        expect(describeInsulin([])).to.match(/no results yet/)
     })
 })

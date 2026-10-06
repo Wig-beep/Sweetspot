@@ -68,9 +68,9 @@ describe("TeachingScenarios", function () {
     it("bolus timing: injecting before eating lowers the peak, late raises it", () => {
         const s = scenario("bolus-timing")
         const logged = simulate(s, s.events).metrics
-        expect(whatIf(s, "bolus 20 min before").maxGlucose)
+        expect(whatIf(s, "20 minutes before eating").maxGlucose)
             .to.be.lessThan(logged.maxGlucose - 0.4)
-        expect(whatIf(s, "bolus 60 min after").maxGlucose)
+        expect(whatIf(s, "1 hour after eating").maxGlucose)
             .to.be.greaterThan(logged.maxGlucose + 1)
     })
 
@@ -78,7 +78,7 @@ describe("TeachingScenarios", function () {
         const s = scenario("stacking")
         const logged = simulate(s, s.events).metrics
         expect(logged.minGlucose).to.be.lessThan(3)
-        expect(whatIf(s, "one correction, then wait").minGlucose)
+        expect(whatIf(s, "1 correction, then wait").minGlucose)
             .to.be.greaterThan(4)
     })
 
@@ -86,10 +86,10 @@ describe("TeachingScenarios", function () {
         const s = scenario("high-fat-meal")
         const logged = simulate(s, s.events).metrics
         expect(logged.maxGlucose).to.be.greaterThan(12)
-        const split = whatIf(s, "split 6 U + 5 U")
+        const split = whatIf(s, "split dose: 6 + 5 units")
         expect(split.maxGlucose).to.be.lessThan(logged.maxGlucose - 2)
         expect(split.minGlucose).to.be.greaterThan(4)
-        expect(whatIf(s, "11 U all at once").minGlucose).to.be.lessThan(3.9)
+        expect(whatIf(s, "11 units all at once").minGlucose).to.be.lessThan(3.9)
     })
 
     it("exercise: uses the exercise model; usual dose causes a hypo, adjusting prevents it", () => {
@@ -97,16 +97,16 @@ describe("TeachingScenarios", function () {
         const logged = simulate(s, s.events)
         expect(logged.usedExerciseModel).to.be.true
         expect(logged.metrics.minGlucose).to.be.lessThan(3.9)
-        expect(whatIf(s, "half bolus + 20 g").minGlucose).to.be.greaterThan(4)
+        expect(whatIf(s, "half the insulin and 20g of carbs").minGlucose).to.be.greaterThan(4)
     })
 
     it("hypo: one 15 g treatment is not enough, repeating it helps, 60 g overshoots", () => {
         const s = scenario("hypo-treatment")
         const logged = simulate(s, s.events).metrics
-        const repeated = whatIf(s, "15 g, recheck, 15 g more")
+        const repeated = whatIf(s, "15g, check again, 15g more")
         expect(repeated.timeBelowRange).to.be.lessThan(logged.timeBelowRange / 2)
-        expect(whatIf(s, "over-treated with 60 g").maxGlucose)
+        expect(whatIf(s, "too much: 60g").maxGlucose)
             .to.be.greaterThan(repeated.maxGlucose + 1.5)
-        expect(whatIf(s, "right lunch bolus").minGlucose).to.be.greaterThan(4)
+        expect(whatIf(s, "right lunch dose").minGlucose).to.be.greaterThan(4)
     })
 })

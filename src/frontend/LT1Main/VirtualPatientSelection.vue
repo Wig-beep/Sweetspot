@@ -145,7 +145,7 @@ export default defineComponent({
 <i18n locale="en">
 {
 	"model"				: "Choose physiological model",
-	"patientsettings"	: "Patient Settings",
+	"patientsettings"	: "Advanced: virtual person settings",
 	"savepatient"		: "save patient",
 	"loadpatient"		: "load patient",
 }

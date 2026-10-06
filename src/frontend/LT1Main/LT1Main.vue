@@ -26,6 +26,7 @@ import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
 import { simulateEvents } from '../../common/SimulateEvents.js'
+import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { parsePatientEventsCSV } from '../../common/PatientEvents.js'
@@ -66,6 +67,11 @@ export default defineComponent({
         defaults.interaction.intersect = false
 
         defaults.parsing = false
+
+        // readable chart text in the app's font
+        defaults.font.family = 'Arial, "Helvetica Neue", Helvetica, sans-serif'
+        defaults.font.size = 13
+        defaults.color = '#212b32'
     },
 
     components: {
@@ -150,11 +156,11 @@ export default defineComponent({
             }
             if (this.baselineMetrics) {
                 return [
-                    { name: "Logged day", metrics: this.baselineMetrics },
-                    { name: `What-if (${this.whatIfName})`, metrics: this.metrics },
+                    { name: "Original day", metrics: this.baselineMetrics },
+                    { name: `With change (${this.whatIfName})`, metrics: this.metrics },
                 ]
             }
-            const name = this.patientEvents ? "Logged day" : "Simulated day"
+            const name = this.patientEvents ? "Original day" : "Simulated day"
             return [{ name, metrics: this.metrics }]
         },
         /** short announcement for screen readers after each simulation */
@@ -166,13 +172,18 @@ export default defineComponent({
             const tir = (d: DescribedDay) =>
                 `${d.name}: ${Math.round(d.metrics.timeInRange)}% in range, `
                 + `${Math.round(d.metrics.timeBelowRange)}% below 3.9.`
-            return "Simulation updated. " + tir(first) + (second ? " " + tir(second) : "")
+            return "Results updated. " + tir(first) + (second ? " " + tir(second) : "")
         },
         glucoseDescription(): string {
             return describeGlucose(this.describedDays)
         },
         insulinDescription(): string {
             return describeInsulin(this.describedDays)
+        },
+        /** simulated period in plain words */
+        friendlySpan(): string {
+            const span = this.simulationSpan
+            return span ? `${friendlyDateTime(span.t0)} to ${friendlyDateTime(span.tmax)}` : ""
         },
         /** whether the timeline differs from the logged day */
         isEdited(): boolean {
@@ -207,8 +218,8 @@ export default defineComponent({
 
                     console.log("CSV PARSED:", parsed)
                 } catch (err) {
-                    this.csvError =
-                        `Could not load ${file.name}: ${(err as Error).message}`
+                    this.csvError = `We could not read ${file.name}. `
+                        + `${(err as Error).message}. Check the file and try again.`
                     input.value = ''
                     return
                 }
@@ -449,35 +460,41 @@ export default defineComponent({
 
 <template>
     <div class="lt1-container">
-        <div class="box lt1-controls">
-            <h2>{{ $t("Patient Input") }}</h2>
+        <section class="box lt1-controls" aria-labelledby="day-heading">
+            <h2 id="day-heading">Choose a day</h2>
             <div style="display: none;">    
                 <ControllerSelection @controllerChanged="controllerChanged" 
                     :patientProfile="patientProfile" ref="controller" />
                 <SensorSelection @valueChanged="sensorChanged" />
                 <ActuatorSelection @valueChanged="actuatorChanged" />
+                <MealTable v-if='options.t0' :t0="options.t0" @mealsChanged="mealsChanged" ref="meals" />
+                <ExerciseTable v-if='options.t0' :t0="options.t0" @exercisesChanged="exercisesChanged" />
+                <SimulationOptionsConfig @valueChanged="optionsChanged" ref="options" />
             </div>
-            
+
             <TeachingScenarioPanel :scenarios="scenarios"
                 :activeId="activeScenarioId"
                 @load="loadScenario" @whatIf="applyWhatIf" />
 
             <div class="lt1-csv-input">
-                <label for="csvUpload">Or load patient data CSV:</label>
+                <h3>Or use your own day</h3>
+                <p class="ss-hint">
+                    Upload a CSV file with the insulin, food and glucose
+                    readings of a day. It stays on this device.
+                </p>
+                <label for="csvUpload">Upload a CSV file</label>
                 <input type="file" id="csvUpload" accept=".csv" @change="onCsvFileSelected" />
-                <span v-if="csvFileName && !csvError">Loaded: {{ csvFileName }}</span>
+                <p v-if="csvFileName && !csvError" class="ss-hint">Using {{ csvFileName }}</p>
                 <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
-                <div v-if="simulationSpan">
-                    Simulating {{ simulationSpan.t0.toLocaleString() }}
-                    to {{ simulationSpan.tmax.toLocaleString() }}
-                </div>
-                <div v-if="usedExerciseModel" class="exercise-note">
-                    Exercise is simulated with the Deichmann 2021 virtual
-                    patient, as the selected one does not respond to exercise.
-                </div>
             </div>
 
-            <VirtualPatientSelection @patientChanged="patientChanged" />
+            <p v-if="simulationSpan" class="ss-hint">
+                Showing {{ friendlySpan }}.
+            </p>
+            <p v-if="usedExerciseModel" class="ss-hint">
+                Exercise is shown using a virtual person who responds to
+                exercise (the Deichmann 2021 model).
+            </p>
 
             <PatientTimeline
                 v-if="patientEvents"
@@ -485,31 +502,16 @@ export default defineComponent({
                 @timelineChanged="timelineChanged"
             />
             <button v-if="isEdited" @click="resetToLoggedDay">
-                Reset to logged day
+                Undo all changes
             </button>
 
-            <div style="display: none;">    
-            <MealTable v-if='options.t0' :t0="options.t0" @mealsChanged="mealsChanged" ref="meals" />
-            <ExerciseTable v-if='options.t0' :t0="options.t0" @exercisesChanged="exercisesChanged" />
-            <SimulationOptionsConfig @valueChanged="optionsChanged" ref="options" />
-            </div>
-            <div style="text-align:center;">
-                <input type="button" id="startbutton" :value="$t('run')" @click="run" v-tooltip="{
-                    global: true,
-                    theme: {
-                        placement: 'bottom',
-                        width: 'fit-content',
-                        padding: '2rem'
-                    },
-                }">
-                <br />
-                <!--<div style="font-size: 0.8em;">
-                    {{ $t("shortcut") }}
-                </div>-->
-            </div>
-        </div>
-        <div class="box lt1-results">
-            <h2>{{ $t("results") }}</h2>
+            <VirtualPatientSelection @patientChanged="patientChanged" />
+        </section>
+        <section class="box lt1-results" aria-labelledby="results-heading">
+            <h2 id="results-heading">What happens to glucose</h2>
+            <p v-if="!metrics" class="ss-hint">
+                Choose a practice scenario or upload a day to see the results here.
+            </p>
             <p class="visually-hidden" role="status">{{ statusMessage }}</p>
             <ChartGlucose ref="chartGlucose" :description="glucoseDescription"
                 @runVisibilityChanged="syncInsulinRuns" />
@@ -518,22 +520,34 @@ export default defineComponent({
                 @runVisibilityChanged="insulinRunVisibilityChanged" />
             <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
                 :isLoggedDay="patientEvents !== null" />
-        </div>
+        </section>
     </div>
 </template>
 
 
 <style lang="css">
+/* error message: red bar on the left, as in the NHS design system */
 .csv-error {
-    color: #b00020;
+    color: var(--ss-error);
     font-weight: bold;
-    margin: 4px 0;
+    border-left: 4px solid var(--ss-error);
+    padding-left: 0.75rem;
+    margin: 0.5rem 0;
 }
 
-.exercise-note {
-    font-size: 0.8rem;
-    font-style: italic;
-    opacity: 0.8;
+.lt1-csv-input {
+    margin: 1.5rem 0 1rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ss-border);
+}
+
+.lt1-csv-input input[type=file] {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.25rem;
+    border: none;
+    padding-left: 0;
 }
 </style>
 
@@ -541,9 +555,9 @@ export default defineComponent({
 <i18n locale="en">
 {
 	"settings": 	"Settings",
-	"run": 			"run simulation",
-	"results":		"Results",
-	"whatif":		"what-if",
+	"run": 			"Show results",
+	"results":		"What happens to glucose",
+	"whatif":		"your change",
 	"simulated":	"simulated glucose",
     "shortcut":     "or press Ctrl+Enter",
 }

@@ -163,13 +163,13 @@ export default defineComponent({
                         },
                     },
                     y: {
-                        title: { display: true, text: "U, U/h" },
+                        title: { display: true, text: "insulin (units)" },
                         min: 0,
                         ticks: { stepSize: 1 },
                         suggestedMax: 2,
                     },
                     yG: {
-                        title: { display: true, text: "g, g/min" },
+                        title: { display: true, text: "carbs (grams)" },
                         position: 'right',
                         min: 0,
                         suggestedMax: 30,
@@ -365,7 +365,7 @@ export default defineComponent({
                 },
                 {
                     ...tag, runRole: "bolus",
-                    type: "scatter", yAxisID: 'y', label: `${label}: bolus`,
+                    type: "scatter", yAxisID: 'y', label: `${label}: quick-acting insulin`,
                     data: results.filter((r) => (r.c.ibolus ?? 0) > 0)
                         .map((r) => point(r.t, r.c.ibolus!)),
                     backgroundColor: colors['THURed'],
@@ -384,7 +384,7 @@ export default defineComponent({
                 {
                     ...tag, runRole: "longacting",
                     type: "scatter", yAxisID: 'yLong',
-                    label: `${label}: long-acting`,
+                    label: `${label}: background injection`,
                     data: events.filter((e) => e.type === "longacting")
                         .map((e) => point(e.time, e.value)),
                     backgroundColor: colors['THUGreen'],
@@ -466,19 +466,19 @@ export default defineComponent({
 
 <i18n locale="en">
 {
-	"title":		"Insulin dosage and carb intake",
-	"iir":			"basal insulin in U/h",
-	"longacting":	"long-acting injection in U",
-	"loggedIir":	"logged basal insulin in U/h",
-	"loggedIbolus":	"logged bolus in U",
-	"loggedMeal":	"logged meal in g",
-	"loggedLongacting":	"logged long-acting injection in U",
-	"ibolus":		"insulin bolus in U",
-    "pumpoutput":   "insulin pump output in U/h",
-	"iob":			"calculated IOB in U",
-	"totalmeal":	"total meal in g",
-	"carbspermin":	"intake in g/min",
-	"exIntensity":	"exercise intensity in %",
+	"title":		"Insulin and food",
+	"iir":			"background insulin (units an hour)",
+	"longacting":	"background insulin injection (units)",
+	"loggedIir":	"original background insulin (units an hour)",
+	"loggedIbolus":	"original quick-acting insulin (units)",
+	"loggedMeal":	"original meal (grams of carbs)",
+	"loggedLongacting":	"original background injection (units)",
+	"ibolus":		"quick-acting insulin (units)",
+    "pumpoutput":   "insulin pump output (units an hour)",
+	"iob":			"insulin on board (units)",
+	"totalmeal":	"meal (grams of carbs)",
+	"carbspermin":	"carbs being absorbed (grams a minute)",
+	"exIntensity":	"exercise effort (%)",
 }
 </i18n>
 <i18n locale="de">

@@ -448,11 +448,11 @@ export default defineComponent({
 
 <i18n locale="en">
 {
-	"title": "Glucose concentration",
+	"title": "Glucose levels",
 	"actual": "actual concentration",
 	"prediction": "prediction by algorithm",
-	"measured": "measured glucose",
-	"logged": "logged day",
+	"measured": "glucose readings",
+	"logged": "original day",
 	"latest": "latest",
 	"preserveOldCurves": "preserve old curves",
 }

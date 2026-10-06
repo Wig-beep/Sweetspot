@@ -1,6 +1,10 @@
 <template>
     <div class="patient-timeline">
-        <h3>Patient Timeline</h3>
+        <h3>Timeline</h3>
+        <p class="ss-hint">
+            Change a time or an amount, or add an entry. Then select
+            "Show this change" to compare it with the original day.
+        </p>
 
         <ul class="timeline-rows" aria-label="Patient events">
             <li v-for="(row, index) in rows" :key="row.id" class="timeline-row">
@@ -32,7 +36,7 @@
                         type="number"
                         min="1"
                         step="1"
-                        placeholder="duration (min)"
+                        placeholder="minutes"
                         :title="durationLabel(row.type)"
                         :aria-label="durationLabel(row.type)"
                         v-model.number="row.duration"
@@ -50,15 +54,15 @@
                 </div>
 
                 <button class="cell-remove" @click="removeRow(index)"
-                    title="Remove event" aria-label="Remove event">✕</button>
+                    title="Remove this entry" aria-label="Remove this entry">✕</button>
             </li>
         </ul>
 
-        <button @click="addRow">
-            Add event
+        <button class="ss-primary" @click="applyChanges">
+            Show this change
         </button>
-        <button @click="applyChanges">
-            Apply changes
+        <button @click="addRow">
+            Add an entry
         </button>
     </div>
 </template>
@@ -84,11 +88,11 @@ type TimelineRow = {
 }
 
 const typeLabels: Record<PatientEventType, string> = {
-    basal: "Basal rate (U/h)",
-    bolus: "Bolus (U)",
-    carbs: "Carbs (g)",
-    longacting: "Long-acting (U)",
-    exercise: "Exercise (intensity %)",
+    basal: "Pump rate (units an hour)",
+    bolus: "Quick-acting insulin (units)",
+    carbs: "Carbs (grams)",
+    longacting: "Background insulin (units)",
+    exercise: "Exercise (effort %)",
     glucose: "Glucose (mmol/L)",
 }
 
@@ -154,8 +158,8 @@ export default defineComponent({
 
         durationLabel(type: PatientEventType): string {
             return type === "exercise"
-                ? "Duration of the exercise in min"
-                : "Duration of the meal in min"
+                ? "How long the exercise lasts, in minutes"
+                : "How long the meal takes to eat, in minutes"
         },
 
         addRow() {
@@ -223,7 +227,7 @@ export default defineComponent({
  */
 .timeline-row {
     display: grid;
-    grid-template-columns: 1.3fr 0.8fr 1.3fr auto;
+    grid-template-columns: minmax(0, 1.6fr) minmax(4.5rem, 0.7fr) minmax(0, 1.2fr) auto;
     grid-template-areas:
         "time  time  time    remove"
         "type  value details .";
@@ -238,9 +242,10 @@ export default defineComponent({
 }
 
 /* wide: one line per event */
-@container (min-width: 520px) {
+@container (min-width: 720px) {
     .timeline-row {
-        grid-template-columns: 1.5fr 1.3fr 0.6fr 1.4fr auto;
+        grid-template-columns: minmax(13rem, 1.2fr) minmax(11rem, 1.4fr)
+            minmax(4.5rem, 0.5fr) minmax(6rem, 1fr) auto;
         grid-template-areas: "time type value details remove";
     }
 }
@@ -259,13 +264,14 @@ export default defineComponent({
 }
 
 .patient-timeline > button {
-    margin-top: 10px;
-    margin-right: 6px;
-    padding: 6px 12px;
+    margin-top: 0.75rem;
 }
 
+/* compact, but still a comfortable target (at least 36px) */
 .timeline-row .cell-remove {
     margin: 0;
-    padding: 2px 6px;
+    padding: 0;
+    min-height: 2.25rem;
+    min-width: 2.25rem;
 }
 </style>

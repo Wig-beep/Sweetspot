@@ -203,7 +203,7 @@ export default defineComponent({
 {
 	"selectmodel"			: "Choose model",
 	"selectdevice"			: "Load preconfigured device",
-    "restoreDefaultValues"  : "restore default values",
+    "restoreDefaultValues"  : "Reset to default values",
 	"online_info"			: "online info",
 	"online_info_tooltip"	: "follow this link to learn more about the model.",
 }

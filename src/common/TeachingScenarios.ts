@@ -85,31 +85,31 @@ const builders: ScenarioBuilder[] = [
         ]
         return {
             id: "bolus-timing",
-            title: "Timing of the meal bolus",
-            goal: "See how the time of the bolus before a meal changes the rise in glucose after it.",
-            story: "Breakfast with 60 g of carbs (6 CP). The 6 U bolus is given just as eating starts.",
+            title: "When to take your mealtime insulin",
+            goal: "How the timing of your quick-acting insulin changes your glucose after a meal.",
+            story: "You have breakfast with 60g of carbs (6 CP). You take 6 units of quick-acting insulin as you start eating.",
             events: logged,
             whatIfs: [
                 {
-                    label: "bolus 20 min before",
-                    description: "Same dose, injected 20 minutes before eating.",
+                    label: "20 minutes before eating",
+                    description: "You take the same dose 20 minutes before you start eating.",
                     events: replace(logged, isBolusAt(at(8)), bolus(at(7, 40), 6)),
                 },
                 {
-                    label: "bolus 30 min after",
-                    description: "Same dose, injected 30 minutes after starting to eat.",
+                    label: "30 minutes after eating",
+                    description: "You take the same dose 30 minutes after you start eating.",
                     events: replace(logged, isBolusAt(at(8)), bolus(at(8, 30), 6)),
                 },
                 {
-                    label: "bolus 60 min after",
-                    description: "Same dose, remembered an hour after the meal.",
+                    label: "1 hour after eating",
+                    description: "You remember your insulin an hour after the meal.",
                     events: replace(logged, isBolusAt(at(8)), bolus(at(9), 6)),
                 },
             ],
             keyPoints: [
-                "Rapid-acting insulin takes time to start working, while carbs start raising glucose within minutes.",
-                "Injecting before eating lowers the peak after the meal; injecting late makes it higher.",
-                "If glucose is low or falling before a meal, injecting early can be risky. Follow what you agreed with your diabetes team.",
+                "Quick-acting insulin takes time to start working, but carbs start to raise your glucose within minutes.",
+                "Taking your insulin before you eat keeps the rise after the meal lower. Taking it late makes the rise higher.",
+                "If your glucose is low or falling before a meal, taking insulin early can cause a hypo. Follow the advice of your diabetes team.",
             ],
         }
     },
@@ -126,14 +126,14 @@ const builders: ScenarioBuilder[] = [
         ]
         return {
             id: "stacking",
-            title: "Stacking correction doses",
-            goal: "Understand why repeated corrections close together can lead to a hypo hours later.",
-            story: "A 40 g snack at 10:30 was not covered with insulin. Glucose is 11.5 mmol/L at lunchtime, so a 2 U correction is given. Glucose is still high an hour later, so another 2 U is given, and again an hour after that.",
+            title: "Taking correction doses too close together",
+            goal: "Why taking several correction doses close together can cause a hypo hours later.",
+            story: "You had a 40g snack at 10:30am without insulin. At lunchtime your glucose is 11.5mmol/L, so you take 2 units to correct it. An hour later it is still high, so you take another 2 units. An hour after that, you take 2 more.",
             events: logged,
             whatIfs: [
                 {
-                    label: "one correction, then wait",
-                    description: "A single 3 U correction at 12:00, giving it time to work.",
+                    label: "1 correction, then wait",
+                    description: "You take 1 correction of 3 units at 12pm and give it time to work.",
                     events: sortByTime([
                         ...logged.filter((e) => e.type !== "bolus" ||
                             e.time.valueOf() < at(12).valueOf()),
@@ -141,13 +141,13 @@ const builders: ScenarioBuilder[] = [
                     ]),
                 },
                 {
-                    label: "two corrections",
-                    description: "Corrections at 12:00 and 13:00, but not at 14:00.",
+                    label: "2 corrections",
+                    description: "You correct at 12pm and 1pm, but not at 2pm.",
                     events: replace(logged, isBolusAt(at(14))),
                 },
                 {
-                    label: "snack covered",
-                    description: "The 10:30 snack is covered with 4 U, so no correction is needed.",
+                    label: "insulin for the snack",
+                    description: "You take 4 units for the snack at 10:30am, so you do not need a correction.",
                     events: sortByTime([
                         ...logged.filter((e) => e.type !== "bolus" ||
                             e.time.valueOf() < at(12).valueOf()),
@@ -156,9 +156,9 @@ const builders: ScenarioBuilder[] = [
                 },
             ],
             keyPoints: [
-                "A correction keeps working for several hours, so glucose falls slowly after it.",
-                "Correcting again while earlier insulin is still active adds up (stacking) and can cause a hypo later.",
-                "Before correcting, think about how much insulin is still working, and follow the correction rules from your course.",
+                "A correction dose keeps working for several hours, so your glucose comes down slowly.",
+                "If you correct again while earlier insulin is still working, the doses add up (this is called stacking) and can cause a hypo later.",
+                "Before you correct, think about how much insulin is still working. Follow the correction rules from your course.",
             ],
         }
     },
@@ -174,34 +174,34 @@ const builders: ScenarioBuilder[] = [
         ]
         return {
             id: "high-fat-meal",
-            title: "High-fat or slow meals",
-            goal: "See why a high-fat meal such as pizza can raise glucose late into the night, and how splitting the dose can help.",
-            story: "Pizza in the evening: 80 g of carbs (8 CP) with lots of fat. The full 8 U are given at the start of the meal.",
+            title: "High-fat meals, like pizza",
+            goal: "Why a high-fat meal can raise your glucose late into the night, and how splitting your dose can help.",
+            story: "You have pizza in the evening: 80g of carbs (8 CP) with lots of fat. You take all 8 units of quick-acting insulin at the start of the meal.",
             events: logged,
             whatIfs: [
                 {
-                    label: "extra 3 U after 2 h",
-                    description: "8 U at the start of the meal and another 3 U two hours later.",
+                    label: "3 extra units 2 hours later",
+                    description: "You take 8 units at the start of the meal and 3 more units 2 hours later.",
                     events: sortByTime([...logged, bolus(at(21), 3)]),
                 },
                 {
-                    label: "split 6 U + 5 U",
-                    description: "6 U at the start of the meal and 5 U 90 minutes later.",
+                    label: "split dose: 6 + 5 units",
+                    description: "You take 6 units at the start of the meal and 5 units 90 minutes later.",
                     events: replace(logged, isBolusAt(at(19)),
                         bolus(at(19), 6), bolus(at(20, 30), 5)),
                 },
                 {
-                    label: "11 U all at once",
-                    description: "The same total of 11 U, all given at the start of the meal.",
+                    label: "11 units all at once",
+                    description: "You take the same total of 11 units, all at the start of the meal.",
                     events: replace(logged, isBolusAt(at(19)), bolus(at(19), 11)),
                 },
             ],
             keyPoints: [
-                "Fat slows down digestion, so carbs from a high-fat meal arrive later and glucose can keep rising for hours.",
-                "Giving all the insulin at the start can be too early for a slow meal, and a larger dose at once can cause an early hypo.",
-                "Splitting the dose matches insulin to the slower rise. Discuss how to split doses with your diabetes team.",
+                "Fat slows down digestion. Carbs from a high-fat meal arrive later, so your glucose can keep rising for hours.",
+                "Taking all your insulin at the start can be too early for a slow meal. Taking a bigger dose all at once can cause a hypo soon after eating.",
+                "Splitting your dose matches the insulin to the slower rise. Ask your diabetes team how to split doses.",
             ],
-            modelNote: "The simulation does not model fat itself. Its later effect is approximated as 30 g of carbohydrate absorbed between 2 and 6 hours after the meal, shown as a separate carbs event in the timeline.",
+            modelNote: "The simulation cannot show fat directly. Its later effect is shown as an extra 30g of carbs absorbed between 2 and 6 hours after the meal. You can see this as a separate carbs entry in the timeline.",
         }
     },
 
@@ -215,24 +215,24 @@ const builders: ScenarioBuilder[] = [
         ]
         return {
             id: "exercise",
-            title: "Exercise",
-            goal: "See how exercise lowers glucose during and after activity, and how adjusting insulin and carbs can prevent a hypo.",
-            story: "A 45 minute jog at moderate intensity two hours after lunch. The usual 6 U lunch bolus was given.",
+            title: "Exercise after a meal",
+            goal: "How exercise lowers your glucose during and after activity, and how changing your insulin or carbs can prevent a hypo.",
+            story: "You go for a 45-minute jog at a moderate pace, 2 hours after lunch. You took your usual 6 units of quick-acting insulin for lunch.",
             events: logged,
             whatIfs: [
                 {
-                    label: "half lunch bolus",
-                    description: "The lunch bolus is reduced by half to 3 U.",
+                    label: "half the lunch insulin",
+                    description: "You take half your usual lunch insulin: 3 units.",
                     events: replace(logged, isBolusAt(at(12)), bolus(at(12), 3)),
                 },
                 {
-                    label: "20 g before exercise",
-                    description: "The usual lunch bolus, plus 20 g of carbs just before the jog.",
+                    label: "20g of carbs before the jog",
+                    description: "You take your usual lunch insulin and eat 20g of carbs just before the jog.",
                     events: sortByTime([...logged, carbs(at(13, 50), 20, 10)]),
                 },
                 {
-                    label: "half bolus + 20 g",
-                    description: "Lunch bolus reduced to 3 U and 20 g of carbs before the jog.",
+                    label: "half the insulin and 20g of carbs",
+                    description: "You take 3 units for lunch and eat 20g of carbs before the jog.",
                     events: sortByTime([
                         ...replace(logged, isBolusAt(at(12)), bolus(at(12), 3)),
                         carbs(at(13, 50), 20, 10),
@@ -240,11 +240,11 @@ const builders: ScenarioBuilder[] = [
                 },
             ],
             keyPoints: [
-                "Exercise makes the body use more glucose and makes insulin work harder, during and for hours after activity.",
-                "Planned exercise after a meal is a reason to reduce the bolus for that meal.",
-                "Extra carbs before or during exercise can help as well. Combining both is often needed for longer activity.",
+                "Exercise makes your body use more glucose and makes insulin work harder, during exercise and for hours afterwards.",
+                "If you plan to exercise after a meal, you may need less insulin for that meal.",
+                "Extra carbs before or during exercise can also help. For longer exercise, you may need to do both.",
             ],
-            modelNote: "Exercise is simulated with the Deichmann 2021 virtual patient, as the default virtual patient does not respond to exercise.",
+            modelNote: "This scenario uses a different virtual person who responds to exercise (the Deichmann 2021 model).",
         }
     },
 
@@ -260,32 +260,32 @@ const builders: ScenarioBuilder[] = [
         return {
             id: "hypo-treatment",
             title: "Treating a hypo",
-            goal: "Practise treating a hypo with 15-20 g of fast-acting carbs, rechecking, and repeating if needed, without over-treating.",
-            story: "Too much insulin for lunch (9 U for 50 g) leads to a hypo in the afternoon. At 16:45 glucose is 3.7 mmol/L and 15 g of fast-acting carbs are taken, but glucose is not rechecked.",
+            goal: "How to treat a hypo with 15 to 20g of fast-acting carbs, check again, and treat again if you need to, without taking too much.",
+            story: "You took too much insulin for lunch (9 units for 50g of carbs), so you have a hypo in the afternoon. At 4:45pm your glucose is 3.7mmol/L. You have 15g of fast-acting carbs, but you do not check your glucose again.",
             events: logged,
             whatIfs: [
                 {
-                    label: "15 g, recheck, 15 g more",
-                    description: "15 g at 16:45, glucose rechecked after 15 minutes, and another 15 g because it is still low.",
+                    label: "15g, check again, 15g more",
+                    description: "You have 15g at 4:45pm, check again after 15 minutes, and have another 15g because your glucose is still low.",
                     events: sortByTime([...logged, carbs(at(17), 15, 5)]),
                 },
                 {
-                    label: "over-treated with 60 g",
-                    description: "60 g of carbs at 16:45 instead of 15 g.",
+                    label: "too much: 60g",
+                    description: "You have 60g of carbs at 4:45pm instead of 15g.",
                     events: replace(logged, isTreatment, carbs(at(16, 45), 60, 10)),
                 },
                 {
-                    label: "right lunch bolus",
-                    description: "5 U for the 50 g lunch, so there is no hypo to treat.",
+                    label: "right lunch dose",
+                    description: "You take 5 units for the 50g lunch, so you do not have a hypo.",
                     events: replace(
                         replace(logged, isBolusAt(at(12)), bolus(at(12), 5)),
                         isTreatment),
                 },
             ],
             keyPoints: [
-                "Treat a hypo with 15-20 g of fast-acting carbs, then recheck glucose after 10-15 minutes.",
-                "If glucose is still low, treat again. Insulin that is still working can keep glucose down.",
-                "Taking much more than needed causes a high glucose later. Find out why the hypo happened to prevent the next one.",
+                "Treat a hypo with 15 to 20g of fast-acting carbs, like glucose tablets or a sugary drink. Check your glucose again after 10 to 15 minutes.",
+                "If your glucose is still below 4mmol/L, treat it again. Insulin that is still working can keep your glucose low.",
+                "Having much more than you need can make your glucose high later. Think about why the hypo happened, so you can prevent the next one.",
             ],
         }
     },

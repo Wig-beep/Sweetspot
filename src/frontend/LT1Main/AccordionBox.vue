@@ -41,54 +41,53 @@ export default defineComponent({
 
 <style scoped>
 .accordionbox {
-    border: solid;
-    border-width: 1px;
-    border-color: #aaaaaa;
-    padding: .5rem;
-    margin-top: 0.5rem;
+    border: 1px solid var(--ss-border, #d8dde0);
+    border-radius: var(--ss-radius, 4px);
+    margin-top: 1rem;
     display: grid;
-    grid-template-rows: 1rem 0fr;
-    transition: grid-template-rows 0.5s;
+    grid-template-rows: auto 0fr;
+    transition: grid-template-rows 0.4s;
 }
 
 .boxactive {
-    grid-template-rows: 2rem 1fr !important;
+    grid-template-rows: auto 1fr;
 }
 
 div.accordioncontent {
     overflow: hidden;
+    padding: 0 0.75rem;
+}
+
+.boxactive div.accordioncontent {
+    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
 }
 
 h3 {
-    font-size: 1rem;
-    line-height: 1rem;
-    font-weight: bold;
     position: relative;
-    margin-bottom: 1rem;
-    color: #586067;
-    background-color: #f4f4ff;
-    width: 100%;
-    padding: .5rem;
-    margin: -.5rem;
-    height: 1rem;
-    border-bottom: 1px solid #aaaaaa;
-    box-sizing: content-box;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: var(--ss-text, #212b32);
+    background-color: var(--ss-primary-light, #e3f1f2);
+    border-radius: var(--ss-radius, 4px) var(--ss-radius, 4px) 0 0;
 }
 
-/* the header button looks like the header itself */
+/* the header button fills the header: a large, easy target */
 h3 button {
     all: inherit;
     display: block;
     width: 100%;
-    margin: 0;
-    padding: 0;
-    border: none;
+    box-sizing: border-box;
+    min-height: 2.75rem;
+    padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+    text-align: left;
     cursor: pointer;
+    border-radius: inherit;
 }
 
 h3 button:focus-visible {
-    outline: 3px solid #0055A3;
-    outline-offset: 2px;
+    background-color: var(--ss-focus, #ffeb3b);
+    box-shadow: inset 0 -4px 0 var(--ss-text, #212b32);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -101,11 +100,12 @@ h3 button:focus-visible {
 /* arrow to open or close box content */
 .accordionbox h3::after {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
+    top: 0.6rem;
+    right: 0.75rem;
     pointer-events: none;
-    transition: all 0.5s;
+    transition: transform 0.4s;
     content: "\25BC";
+    color: var(--ss-primary-dark, #004e57);
 }
 
 .boxactive h3::after {

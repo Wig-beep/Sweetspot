@@ -48,19 +48,25 @@ export default defineComponent({
 
 <template>
     <div class="teaching-scenarios">
-        <label for="scenarioSelect">Teaching scenario:</label>
-        <select id="scenarioSelect" :value="activeId ?? ''" @change="selected">
-            <option value="" disabled>Choose a scenario…</option>
+        <label for="scenarioSelect">Practice scenario</label>
+        <p class="ss-hint" id="scenarioHint">
+            Each scenario is a day in the life of a made-up person who takes
+            insulin injections. Try different choices and see what happens.
+        </p>
+        <select id="scenarioSelect" aria-describedby="scenarioHint"
+            :value="activeId ?? ''" @change="selected">
+            <option value="" disabled>Choose a scenario</option>
             <option v-for="scenario in scenarios" :key="scenario.id" :value="scenario.id">
                 {{ scenario.title }}
             </option>
         </select>
 
         <div v-if="active" class="scenario-card">
-            <p><strong>Goal:</strong> {{ active.goal }}</p>
+            <h3>{{ active.title }}</h3>
+            <p><strong>What you will learn:</strong> {{ active.goal }}</p>
             <p>{{ active.story }}</p>
 
-            <p class="scenario-try">Try a what-if:</p>
+            <h4>Try a change</h4>
             <ul class="scenario-whatifs">
                 <li v-for="whatIf in active.whatIfs" :key="whatIf.label">
                     <button @click="tryWhatIf(whatIf)">{{ whatIf.label }}</button>
@@ -69,81 +75,69 @@ export default defineComponent({
             </ul>
 
             <details>
-                <summary>Key points</summary>
+                <summary>Things to remember</summary>
                 <ul>
                     <li v-for="point in active.keyPoints" :key="point">{{ point }}</li>
                 </ul>
             </details>
 
-            <p v-if="active.modelNote" class="scenario-note">{{ active.modelNote }}</p>
-            <p class="scenario-note">
-                A simulated virtual person for learning, not advice on your own
-                doses. Discuss changes with your diabetes team.
-            </p>
+            <p v-if="active.modelNote" class="ss-hint">{{ active.modelNote }}</p>
+            <div class="ss-inset">
+                This is practice with a made-up person. It cannot tell you what
+                dose to take. Always follow the advice of your diabetes team.
+            </div>
         </div>
     </div>
 </template>
 
 
 <style scoped>
-.teaching-scenarios {
-    margin: 10px 0;
-}
-
 .teaching-scenarios select {
     width: 100%;
     box-sizing: border-box;
-    margin-top: 4px;
 }
 
 .scenario-card {
-    margin-top: 8px;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-.scenario-card p {
-    margin: 0 0 8px 0;
-}
-
-.scenario-try {
-    font-weight: bold;
+    margin-top: 1rem;
 }
 
 .scenario-whatifs {
     list-style: none;
     padding: 0;
-    margin: 0 0 8px 0;
+    margin: 0 0 1rem 0;
 }
 
 .scenario-whatifs li {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 8px;
-    margin-bottom: 6px;
+    align-items: center;
+    gap: 0 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .scenario-whatifs span {
     flex: 1 1 12rem;
-    font-size: 0.85rem;
-    opacity: 0.85;
+    color: var(--ss-text-secondary);
 }
 
 .scenario-card details {
-    margin-bottom: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.scenario-card summary {
+    cursor: pointer;
+    color: var(--ss-primary-dark);
+    font-weight: bold;
+    text-decoration: underline;
+    padding: 0.25rem 0;
 }
 
 .scenario-card details ul {
-    padding-left: 1.2rem;
-    margin: 4px 0;
+    padding-left: 1.25rem;
+    margin: 0.5rem 0;
 }
 
-.scenario-note {
-    font-size: 0.8rem;
-    font-style: italic;
-    opacity: 0.8;
+.scenario-card details li {
+    margin-bottom: 0.5rem;
 }
 </style>

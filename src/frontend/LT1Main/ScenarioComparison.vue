@@ -26,8 +26,8 @@ const rows: Row[] = [
     { key: "meanGlucose", unit: "mmol/L", decimals: 1 },
     { key: "minGlucose", unit: "mmol/L", decimals: 1 },
     { key: "maxGlucose", unit: "mmol/L", decimals: 1 },
-    { key: "bolusInsulin", unit: "U", decimals: 1 },
-    { key: "basalInsulin", unit: "U", decimals: 1 },
+    { key: "bolusInsulin", unit: "units", decimals: 1 },
+    { key: "basalInsulin", unit: "units", decimals: 1 },
     { key: "carbs", unit: "g", decimals: 0 },
 ]
 
@@ -103,6 +103,9 @@ export default defineComponent({
                     <td>{{ format(metrics[row.key], row) }}</td>
                     <td v-if="baseline" :class="differenceClass(row)">
                         {{ difference(row) }}
+                        <span v-if="differenceClass(row)" class="verdict">
+                            {{ differenceClass(row) === "improved" ? $t("better") : $t("worse") }}
+                        </span>
                     </td>
                 </tr>
             </tbody>
@@ -144,19 +147,26 @@ export default defineComponent({
     background: rgba(127, 127, 127, 0.1);
 }
 
+/* colours with enough contrast; the words better/worse say the same
+   for people who cannot tell the colours apart */
 .scenario-comparison .improved {
-    color: rgb(80, 160, 60);
+    color: #007f3b;
     font-weight: bold;
 }
 
 .scenario-comparison .worsened {
-    color: rgb(210, 40, 40);
+    color: #d5281b;
     font-weight: bold;
 }
 
+.scenario-comparison .verdict {
+    display: block;
+    font-size: 0.85em;
+}
+
 .scenario-hint {
-    font-size: 0.9em;
-    opacity: 0.8;
+    color: var(--ss-text-secondary);
+    margin-top: 0.5rem;
 }
 </style>
 
@@ -164,21 +174,23 @@ export default defineComponent({
 <i18n locale="en">
 {
     "title": "Day summary",
-    "logged": "Logged day",
-    "whatif": "What-if",
-    "simulated": "Simulated",
-    "change": "Change",
-    "hint": "Edit the patient timeline and apply the changes to compare a what-if day with the logged day.",
-    "timeInRange": "Time in range (3.9-10.0 mmol/L)",
-    "timeBelowRange": "Time below 3.9 mmol/L",
-    "timeVeryLow": "Time below 3.0 mmol/L",
-    "timeAboveRange": "Time above 10.0 mmol/L",
-    "meanGlucose": "Mean glucose",
+    "logged": "Original day",
+    "whatif": "With change",
+    "simulated": "Simulated day",
+    "change": "Difference",
+    "hint": "Try a change in a scenario, or change the timeline, to compare it with the original day.",
+    "timeInRange": "Time in range (3.9 to 10 mmol/L)",
+    "timeBelowRange": "Time low (below 3.9 mmol/L)",
+    "timeVeryLow": "Time very low (below 3 mmol/L)",
+    "timeAboveRange": "Time high (above 10 mmol/L)",
+    "meanGlucose": "Average glucose",
     "minGlucose": "Lowest glucose",
     "maxGlucose": "Highest glucose",
-    "bolusInsulin": "Bolus insulin",
-    "basalInsulin": "Basal / long-acting insulin",
+    "bolusInsulin": "Quick-acting insulin",
+    "basalInsulin": "Background insulin",
     "carbs": "Carbs",
+    "better": "better",
+    "worse": "worse",
 }
 </i18n>
 <i18n locale="de">
@@ -199,5 +211,7 @@ export default defineComponent({
     "bolusInsulin": "Bolusinsulin",
     "basalInsulin": "Basal-/Langzeitinsulin",
     "carbs": "Kohlenhydrate",
+    "better": "besser",
+    "worse": "schlechter",
 }
 </i18n>

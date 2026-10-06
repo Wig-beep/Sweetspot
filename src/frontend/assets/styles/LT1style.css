@@ -1,19 +1,57 @@
+/*
+ * SweetSpot styles.
+ *
+ * Accessible, calm styling following the NHS digital service manual's
+ * general guidance (readable type, high contrast, large touch targets,
+ * strong focus) without using the NHS identity. Brand colours are defined
+ * once below and can be replaced, e.g. with approved DAFNE colours.
+ */
 
-/* the app is designed for a light background; keep it readable when the
-   browser or system prefers a dark theme */
 :root {
+    /* the app is designed for a light background; keep it readable when
+       the browser or system prefers a dark theme */
     color-scheme: light;
+
+    --ss-text: #212b32;
+    --ss-text-secondary: #4c6272;
+    --ss-page: #f0f4f5;
+    --ss-card: #ffffff;
+    --ss-border: #d8dde0;
+    --ss-border-strong: #aeb7bd;
+    --ss-primary: #006d7a;
+    --ss-primary-dark: #004e57;
+    --ss-primary-light: #e3f1f2;
+    --ss-focus: #ffeb3b;
+    --ss-error: #d5281b;
+    --ss-font: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    --ss-radius: 4px;
 }
 
 body {
-    background-color: #ffffff;
-    color: #1f2328;
+    margin: 0;
+    background-color: var(--ss-page);
+    color: var(--ss-text);
+    font-family: var(--ss-font);
+    font-size: 1rem;
+    line-height: 1.5;
+    overflow-y: scroll;
 }
 
-/* clearly visible keyboard focus */
+/* clearly visible keyboard focus: yellow with a dark underline */
 :focus-visible {
-    outline: 3px solid #0055A3;
-    outline-offset: 2px;
+    outline: 4px solid transparent;
+    background-color: var(--ss-focus);
+    box-shadow: 0 -2px var(--ss-focus), 0 4px var(--ss-text);
+    color: var(--ss-text);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    background-color: var(--ss-card);
+    outline: 3px solid var(--ss-focus);
+    outline-offset: 0;
+    box-shadow: inset 0 0 0 2px var(--ss-text);
 }
 
 /* hidden visually, but read by screen readers */
@@ -29,13 +67,51 @@ body {
     border: 0;
 }
 
-.lt1-container { 
+/* page header and footer */
+.ss-header {
+    background-color: var(--ss-primary);
+    color: #ffffff;
+    padding: 0.75rem 1rem;
+}
+
+.ss-header-inner,
+.ss-footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.ss-header .ss-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.ss-header .ss-purpose {
+    margin: 0.25rem 0 0 0;
+    font-size: 1rem;
+}
+
+.ss-footer {
+    border-top: 4px solid var(--ss-primary);
+    background-color: var(--ss-card);
+    color: var(--ss-text-secondary);
+    padding: 1rem;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+}
+
+.ss-footer p {
+    margin: 0 0 0.5rem 0;
+}
+
+/* main layout: settings next to results on wide screens, otherwise above */
+.lt1-container {
     margin: auto;
 }
 
-/* for wide screen, show results next to settings. otherwise below */
 div.lt1-container {
-    font-family: ABeeZee, Candara, Helvetica, sans-serif;
+    font-family: var(--ss-font);
     max-width: 1200px;
     width: 100%;
     display: flex;
@@ -45,89 +121,162 @@ div.lt1-container {
 
 div.lt1-controls {
     /* full width (minus margins) when shown above the results */
-    width: calc(100% - 10px);
+    width: calc(100% - 16px);
     box-sizing: border-box;
     height: min-content;
 }
 
 div.lt1-results {
     /* full width (minus margins) when shown below the settings */
-    width: calc(100% - 10px);
+    width: calc(100% - 16px);
     box-sizing: border-box;
     max-width: 850px;
     min-width: 0;
 }
 
-@media screen and (min-width: 850px) {
+@media screen and (min-width: 880px) {
     div.lt1-container {
         flex-wrap: nowrap;
     }
 
     div.lt1-controls {
-        width: 350px;
+        width: 380px;
     }
 
     div.lt1-results {
-        width: calc(100% - 370px);
+        width: calc(100% - 412px);
     }
 }
 
 .lt1-container a {
     cursor: pointer;
+    color: var(--ss-primary-dark);
 }
 
-.lt1-container ol,ul {
+.lt1-container ol,
+.lt1-container ul {
     margin: 0;
 }
 
-.lt1-container input, select {
-    padding: 0.25rem 0;
-    font-size: 0.85rem;
+/* form fields: 16px text (avoids zooming on phones), clear borders */
+.lt1-container input,
+.lt1-container select {
     font-family: inherit;
+    font-size: 1rem;
+    color: var(--ss-text);
+    padding: 0.3rem 0.4rem;
+    border: 2px solid var(--ss-border-strong);
+    border-radius: var(--ss-radius);
+    background-color: var(--ss-card);
+    min-height: 2.25rem;
 }
 
-/* outer boxes */
+.lt1-container input[type=checkbox] {
+    min-height: auto;
+}
+
+.lt1-container label {
+    font-weight: bold;
+}
+
+/* outer boxes (cards) */
 .box {
-    border: solid;
-    border-width: 1px;
-    border-radius: 4px;
-    border-color: #586067;
-    padding: 5px;
-    margin: 10px 5px;
+    background-color: var(--ss-card);
+    border: 1px solid var(--ss-border);
+    border-radius: var(--ss-radius);
+    padding: 1rem;
+    margin: 1rem 8px;
 }
 
-/* box title */
+/* headings: left aligned, sentence case */
 .lt1-container h2 {
-    font-size: 1.2rem;
-    color: #003160;
-    margin-left: 0.5rem;
+    font-size: 1.4rem;
+    line-height: 1.3;
+    color: var(--ss-text);
+    margin: 0 0 0.75rem 0;
+    text-align: left;
 }
 
 .lt1-container h3 {
-    font-size: 1rem;
-    color: #586067;
+    font-size: 1.1rem;
+    color: var(--ss-text);
+    text-align: left;
+    margin: 0.5rem 0;
 }
 
 .lt1-container h4 {
     font-size: 1rem;
     font-weight: bold;
-    margin-bottom: 0.25rem;
+    margin: 0.5rem 0 0.25rem 0;
+    text-align: left;
 }
 
-.lt1-container h2,h3,h4 {
-    text-align: center;
-    margin-block-start: 0.25rem;
+.lt1-container p {
+    margin: 0 0 0.75rem 0;
 }
 
-.lt1-container button {
-    color: #003160;
-    background-color: #ddd;
-	border: 1px solid #888;
+/* buttons: at least 44px high; primary for the main action */
+.lt1-container button,
+input[type=button],
+input[type=submit],
+input[type=reset] {
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: bold;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--ss-radius);
+    border: 2px solid var(--ss-primary);
+    background-color: var(--ss-card);
+    color: var(--ss-primary-dark);
+    cursor: pointer;
+    margin: 0.25rem 0.5rem 0.25rem 0;
 }
 
-/* Chart canvas */
+.lt1-container button:hover,
+input[type=button]:hover,
+input[type=submit]:hover,
+input[type=reset]:hover {
+    background-color: var(--ss-primary-light);
+}
+
+.lt1-container button.ss-primary,
+input[type=button].ss-primary {
+    background-color: var(--ss-primary);
+    color: #ffffff;
+    box-shadow: 0 4px 0 var(--ss-primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.lt1-container button.ss-primary:hover,
+input[type=button].ss-primary:hover {
+    background-color: var(--ss-primary-dark);
+}
+
+.lt1-container button:focus-visible,
+input[type=button]:focus-visible {
+    background-color: var(--ss-focus);
+    border-color: var(--ss-focus);
+    color: var(--ss-text);
+    box-shadow: 0 4px 0 var(--ss-text);
+}
+
+/* hints and notes */
+.ss-hint {
+    color: var(--ss-text-secondary);
+    font-size: 0.95rem;
+}
+
+.ss-inset {
+    border-left: 8px solid var(--ss-primary);
+    padding: 0.5rem 1rem;
+    background-color: var(--ss-primary-light);
+    margin: 0.75rem 0;
+}
+
+/* chart canvas */
 .canvas-chart {
-    height: 250px;
+    height: 260px;
     width: 100%;
     margin-top: 1rem;
 }
@@ -137,16 +286,20 @@ div.lt1-results {
     .canvas-chart {
         height: 320px;
     }
+
+    .box {
+        padding: 0.75rem;
+    }
 }
 
 /* tooltip popups */
 .v-popper__inner {
-    font-family: ABeeZee, Candara, Helvetica, sans-serif;
-    font-size: 0.85em;
+    font-family: var(--ss-font);
+    font-size: 0.9em;
     max-width: 300px;
 }
 
-
+/* structure diagrams (other pages) */
 text.axis-label {
     stroke: none;
     fill: #333333;
@@ -191,23 +344,4 @@ text.axis-label {
     margin: 0px;
     font-size: 0.8rem;
     pointer-events: none;
-}
-
-/* button "run simulation" */
-input[type=button], input[type=submit], input[type=reset] {
-    background-color: #f4f4ff;
-    border: 1px solid #aaaaaa;
-    color: #586067;
-    margin: 0.5rem;
-    padding: 0.3rem 0.5rem;
-    font-size: 0.9rem;
-    border-radius: 3px;
-}
-
-input[type=button]:hover, input[type=submit]:hover, input[type=reset]:hover {
-    background-color: #eeeeee;
-}
-
-input[type=button]:active, input[type=submit]:active, input[type=reset]:active {
-    border: 1px solid #555555;
 }

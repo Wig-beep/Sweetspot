@@ -29,14 +29,14 @@ const fixed = (value: number, decimals: number) =>
  */
 export function describeGlucose(days: DescribedDay[]): string {
     if (days.length === 0) {
-        return "Glucose chart. No simulation has been run yet."
+        return "Glucose chart. There are no results yet."
     }
     return "Glucose chart in mmol/L. " + days.map(({ name, metrics: m }) =>
-        `${name}: ${fixed(m.timeInRange, 0)}% of the time in range 3.9 to 10.0, `
-        + `${fixed(m.timeBelowRange, 0)}% below 3.9, `
-        + `${fixed(m.timeAboveRange, 0)}% above 10.0; `
-        + `lowest ${fixed(m.minGlucose, 1)}, highest ${fixed(m.maxGlucose, 1)}, `
-        + `mean ${fixed(m.meanGlucose, 1)}.`
+        `${name}: ${fixed(m.timeInRange, 0)}% of the time in range (3.9 to 10), `
+        + `${fixed(m.timeBelowRange, 0)}% low (below 3.9), `
+        + `${fixed(m.timeAboveRange, 0)}% high (above 10). `
+        + `Lowest ${fixed(m.minGlucose, 1)}, highest ${fixed(m.maxGlucose, 1)}, `
+        + `average ${fixed(m.meanGlucose, 1)}.`
     ).join(" ")
 }
 
@@ -46,11 +46,11 @@ export function describeGlucose(days: DescribedDay[]): string {
  */
 export function describeInsulin(days: DescribedDay[]): string {
     if (days.length === 0) {
-        return "Insulin and carbs chart. No simulation has been run yet."
+        return "Insulin and food chart. There are no results yet."
     }
-    return "Insulin and carbs chart. " + days.map(({ name, metrics: m }) =>
-        `${name}: ${fixed(m.bolusInsulin, 1)} U bolus insulin, `
-        + `${fixed(m.basalInsulin, 1)} U basal or long-acting insulin, `
-        + `${fixed(m.carbs, 0)} g carbs.`
+    return "Insulin and food chart. " + days.map(({ name, metrics: m }) =>
+        `${name}: ${fixed(m.bolusInsulin, 1)} units of quick-acting insulin, `
+        + `${fixed(m.basalInsulin, 1)} units of background insulin, `
+        + `${fixed(m.carbs, 0)}g of carbs.`
     ).join(" ")
 }
