@@ -206,6 +206,8 @@ export default defineComponent({
                 this.$refs.chartInsulinCarbs
             chartInsulinCarbs.setLongActingInjections(
                 (events ?? []).filter((event) => event.type === "longacting"))
+            chartInsulinCarbs.setLoggedDay(isWhatIf ? loggedDay : null,
+                original ?? [])
 
             this.metrics = computeGlucoseMetrics(results)
             this.baselineMetrics = (isWhatIf && loggedDay)

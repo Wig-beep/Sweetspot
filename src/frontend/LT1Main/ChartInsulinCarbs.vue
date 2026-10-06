@@ -6,7 +6,7 @@
  * See https://lt1.org for further information.
  */
 
-import { ChartDatasetCustomTypesPerDataset } from 'chart.js'
+import { ChartDatasetCustomTypesPerDataset, Point } from 'chart.js'
 import Chart from 'chart.js/auto'
 import 'chartjs-adapter-luxon'
 import { defineComponent, toRaw } from 'vue'
@@ -18,6 +18,11 @@ import AccordionBox from './AccordionBox.vue'
 
 /** index of the dataset showing long-acting injections */
 const LONG_ACTING_DATASET = 7
+/** indices of the datasets showing the logged day in a what-if comparison */
+const LOGGED_BASAL_DATASET = 8
+const LOGGED_BOLUS_DATASET = 9
+const LOGGED_MEAL_DATASET = 10
+const LOGGED_LONG_ACTING_DATASET = 11
 
 export default defineComponent({
     emits: ["selectLog"],
@@ -122,6 +127,50 @@ export default defineComponent({
                         radius: 10,
                         pointStyle: "rectRot",
                     },
+                    // logged day: dashed line and hollow markers
+                    <ChartDatasetCustomTypesPerDataset>{
+                        type: "line",
+                        data: [],
+                        yAxisID: 'y',
+                        label: this.$t("loggedIir"),
+                        borderColor: colors['THURed'],
+                        borderDash: [6, 4],
+                        stepped: "before",
+                    },
+                    <ChartDatasetCustomTypesPerDataset>{
+                        type: "scatter",
+                        data: [],
+                        yAxisID: 'y',
+                        label: this.$t("loggedIbolus"),
+                        backgroundColor: "rgba(0,0,0,0)",
+                        borderColor: colors['THURed'],
+                        borderWidth: 2,
+                        radius: 10,
+                        pointStyle: "triangle",
+                        rotation: 180,
+                    },
+                    <ChartDatasetCustomTypesPerDataset>{
+                        type: "scatter",
+                        data: [],
+                        yAxisID: 'yG',
+                        label: this.$t("loggedMeal"),
+                        backgroundColor: "rgba(0,0,0,0)",
+                        borderColor: colors['THUDarkBlue'],
+                        borderWidth: 2,
+                        radius: 10,
+                        pointStyle: "triangle",
+                    },
+                    <ChartDatasetCustomTypesPerDataset>{
+                        type: "scatter",
+                        data: [],
+                        yAxisID: 'yLong',
+                        label: this.$t("loggedLongacting"),
+                        backgroundColor: "rgba(0,0,0,0)",
+                        borderColor: colors['THUGreen'],
+                        borderWidth: 2,
+                        radius: 10,
+                        pointStyle: "rectRot",
+                    },
                 ]
             },
             options: {
@@ -170,10 +219,13 @@ export default defineComponent({
                 plugins: {
                     legend: {
                         labels: {
-                            // no legend for long-acting insulin if there is none
-                            filter: (item, data) =>
-                                item.datasetIndex !== LONG_ACTING_DATASET ||
-                                data.datasets[LONG_ACTING_DATASET].data.length > 0
+                            // no legend for long-acting insulin and the logged
+                            // day if there is none
+                            filter: (item, data) => {
+                                const index = item.datasetIndex ?? 0
+                                return index < LONG_ACTING_DATASET ||
+                                    data.datasets[index].data.length > 0
+                            }
                         }
                     },
                     tooltip: {
@@ -238,9 +290,44 @@ export default defineComponent({
             const datasets = this.chart.data.datasets
             datasets[LONG_ACTING_DATASET].data = events.map(
                 (event) => ({ x: event.time.valueOf(), y: event.value }))
-            const scales = this.chart.options.scales!
-            // place markers near the top of the chart
-            scales.yLong!.max = 1.2 * Math.max(0, ...events.map((e) => e.value))
+            this.updateLongActingScale()
+        },
+        /**
+         * Shows the treatment of the logged day next to a what-if day, or
+         * hides it if no results are given.
+         * @param {SimulationResult[] | null} results - simulated logged day
+         * @param {PatientEvent[]} events - logged events
+         */
+        setLoggedDay(results: SimulationResult[] | null, events: PatientEvent[]) {
+            const datasets = this.chart.data.datasets
+            const runs = results ?? []
+            // in a comparison, label the current treatment as what-if
+            const isWhatIf = results !== null
+            datasets[0].label = this.$t(isWhatIf ? "whatifIir" : "iir")
+            datasets[1].label = this.$t(isWhatIf ? "whatifIbolus" : "ibolus")
+            datasets[3].label = this.$t(isWhatIf ? "whatifMeal" : "totalmeal")
+            datasets[LONG_ACTING_DATASET].label =
+                this.$t(isWhatIf ? "whatifLongacting" : "longacting")
+            datasets[LOGGED_BASAL_DATASET].data = runs
+                .filter((r) => typeof r.c.iir !== "undefined")
+                .map((r) => ({ x: r.t.valueOf(), y: r.c.iir! }))
+            datasets[LOGGED_BOLUS_DATASET].data = runs
+                .filter((r) => (r.c.ibolus ?? 0) > 0)
+                .map((r) => ({ x: r.t.valueOf(), y: r.c.ibolus! }))
+            datasets[LOGGED_MEAL_DATASET].data = runs
+                .filter((r) => (r.u.meal ?? 0) > 0)
+                .map((r) => ({ x: r.t.valueOf(), y: r.u.meal! }))
+            datasets[LOGGED_LONG_ACTING_DATASET].data = results ? events
+                .filter((event) => event.type === "longacting")
+                .map((event) => ({ x: event.time.valueOf(), y: event.value })) : []
+            this.updateLongActingScale()
+        },
+        /** places long-acting markers near the top of the chart */
+        updateLongActingScale() {
+            const datasets = this.chart.data.datasets
+            const doses = [LONG_ACTING_DATASET, LOGGED_LONG_ACTING_DATASET]
+                .flatMap((i) => datasets[i].data.map((p) => (<Point>p).y ?? 0))
+            this.chart.options.scales!.yLong!.max = 1.2 * Math.max(0, ...doses)
             this.update()
         },
         update() {
@@ -265,6 +352,14 @@ export default defineComponent({
 	"title":		"Insulin dosage and carb intake",
 	"iir":			"basal insulin in U/h",
 	"longacting":	"long-acting injection in U",
+	"whatifIir":	"what-if basal insulin in U/h",
+	"whatifIbolus":	"what-if bolus in U",
+	"whatifMeal":	"what-if meal in g",
+	"whatifLongacting":	"what-if long-acting injection in U",
+	"loggedIir":	"logged basal insulin in U/h",
+	"loggedIbolus":	"logged bolus in U",
+	"loggedMeal":	"logged meal in g",
+	"loggedLongacting":	"logged long-acting injection in U",
 	"ibolus":		"insulin bolus in U",
     "pumpoutput":   "insulin pump output in U/h",
 	"iob":			"calculated IOB in U",
@@ -278,6 +373,14 @@ export default defineComponent({
 	"title": 		"Insulindosierung und Mahlzeiten",
 	"iir":			"Basalinsulin in U/h",
 	"longacting":	"Langzeitinsulin in U",
+	"whatifIir":	"Was-wäre-wenn Basalinsulin in U/h",
+	"whatifIbolus":	"Was-wäre-wenn Bolus in U",
+	"whatifMeal":	"Was-wäre-wenn Mahlzeit in g",
+	"whatifLongacting":	"Was-wäre-wenn Langzeitinsulin in U",
+	"loggedIir":	"Protokolliertes Basalinsulin in U/h",
+	"loggedIbolus":	"Protokollierter Bolus in U",
+	"loggedMeal":	"Protokollierte Mahlzeit in g",
+	"loggedLongacting":	"Protokolliertes Langzeitinsulin in U",
 	"ibolus":		"Insulinbolus in U",
     "pumpoutput":   "Insulinabgabe der Pumpe in U/h",
 	"iob":			"Berechnetes IOB in U",
