@@ -28,6 +28,7 @@ import Actuator from '../../types/Actuator.js'
 import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
+import LoggedDoses from '../../core/controllers/LoggedDoses.js'
 //import mealCSV from "../../core/MealTest.csv"
 //import insulinCSV from "../../core/BasalBolusTest.csv"
 //import patientDataCSV from "../../core/PatientDataTest.csv"
@@ -148,21 +149,19 @@ export default defineComponent({
             },
         run(): void {
             this.resetCharts()
-            console.log("start simulation3")
 
             sim.setPatient(this.getPatient())
-            sim.setController(this.getController())
-            // read meals from a csv instead
-            //console.log("RAW CSV:", patientDataCSV)
-            //const patientData = this.loadPatientDataFromCSV(patientDataCSV)
-            //console.log("PATIENT DATA:", patientData)
-            //console.log("READINGS:", patientData.readings)
-            //console.log("MEALS:", patientData.meals)
-            //sim.setMeals(patientData.meals)
-            //sim.setInsulinData(patientData.readings)
-            sim.setMeals(this.patientData?.meals ?? [])
-            sim.setInsulinData(this.patientData?.readings ?? [])   
-            // sim.setMeals(this.getMeals())
+            if (this.patientData) {
+                // replay logged doses and meals from the loaded CSV
+                const loggedDoses = new LoggedDoses()
+                loggedDoses.setReadings(this.patientData.readings)
+                sim.setController(loggedDoses)
+                sim.setMeals(this.patientData.meals)
+            }
+            else {
+                sim.setController(this.getController())
+                sim.setMeals(this.getMeals())
+            }
             sim.setExerciseUnits(this.getExerciseUnits())
             sim.setOptions(this.getOptions())
             sim.setSensor(this.getSensor())

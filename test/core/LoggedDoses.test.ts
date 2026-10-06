@@ -1,0 +1,87 @@
+/**
+ * This file is part of LoopInsighT1, an open source tool to
+ * simulate closed-loop glycemic control in type 1 diabetes.
+ * Distributed under the MIT software license.
+ * See https://lt1.org for further information.
+ */
+
+import { expect } from 'chai'
+import Simulator from '../../src/core/Simulator.js'
+import StaticInsulinPump from '../../src/core/actuators/StaticInsulinPump.js'
+import LoggedDoses from '../../src/core/controllers/LoggedDoses.js'
+import VirtualPatientUvaPadova from '../../src/core/models/UvaPadova_T1DMS.js'
+import IdealCGM from '../../src/core/sensors/IdealCGM.js'
+import { InsulinReading } from '../../src/types/InsulinReading.js'
+
+const at = (h: number, m: number) => new Date(2026, 9, 5, h, m)
+
+describe("LoggedDoses", () => {
+
+    describe("#update", () => {
+        const controller = new LoggedDoses()
+        // deliberately unsorted
+        controller.setReadings([
+            { time: at(12, 0), basal: 0.5, bolus: 0 },
+            { time: at(8, 0), basal: 1, bolus: 4 },
+            { time: at(6, 0), basal: 0.8, bolus: 2 },
+        ])
+
+        it("should hold the basal rate of the latest reading", () => {
+            controller.reset(at(7, 0))
+            controller.update(at(7, 0), {})
+            expect(controller.getOutput().iir).to.equal(0.8)
+            controller.update(at(12, 30), {})
+            expect(controller.getOutput().iir).to.equal(0.5)
+        })
+
+        it("should not give boluses logged before the start", () => {
+            controller.reset(at(7, 0))
+            controller.update(at(7, 0), {})
+            expect(controller.getOutput().ibolus).to.equal(0)
+        })
+
+        it("should give a bolus once, even if no update hits its time", () => {
+            controller.reset(at(7, 0))
+            controller.update(at(7, 58), {})
+            expect(controller.getOutput().ibolus).to.equal(0)
+            controller.update(at(8, 3), {})
+            expect(controller.getOutput().ibolus).to.equal(4)
+            controller.update(at(8, 8), {})
+            expect(controller.getOutput().ibolus).to.equal(0)
+        })
+
+        it("should request an update at the next logged dose", () => {
+            controller.reset(at(7, 0))
+            expect(controller.getNextUpdateTime(at(7, 0))).to.deep.equal(at(8, 0))
+            expect(controller.getNextUpdateTime(at(13, 0))).to.be.undefined
+        })
+    })
+
+    describe("in Simulator", () => {
+        it("should deliver every logged bolus off the time grid", () => {
+            const readings: InsulinReading[] = [
+                { time: at(0, 0), basal: 0.8, bolus: 0 },
+                { time: at(7, 32), basal: 0.8, bolus: 5 },
+                { time: at(15, 7), basal: 0.8, bolus: 2 },
+            ]
+            const controller = new LoggedDoses()
+            controller.setReadings(readings)
+
+            const sim = new Simulator()
+            sim.setPatient(new VirtualPatientUvaPadova())
+            sim.setController(controller)
+            sim.setSensor(new IdealCGM())
+            sim.setActuator(new StaticInsulinPump())
+            sim.setOptions({ t0: at(0, 0), tmax: at(23, 55), dt: 5 })
+            const results = sim.runSimulation()
+
+            const boluses = results
+                .filter((r) => (r.c.ibolus ?? 0) > 0)
+                .map((r) => [r.t.valueOf(), r.c.ibolus])
+            expect(boluses).to.deep.equal([
+                [at(7, 32).valueOf(), 5],
+                [at(15, 7).valueOf(), 2],
+            ])
+        })
+    })
+})

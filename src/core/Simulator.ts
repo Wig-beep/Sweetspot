@@ -26,7 +26,6 @@ import { SimulationResult } from '../types/SimulationResult.js'
 import Solver from '../types/Solver.js'
 import ControllerUnion from './ControllerUnion.js'
 import SolverRK1_2 from './solvers/SolverRK1_2.js'
-import { InsulinReading } from '../types/InsulinReading.js'
 
 /** Class that describes the main simulator. */
 export default class Simulator {
@@ -51,45 +50,6 @@ export default class Simulator {
     protected callback: (r: SimulationResult) => void = () => {}
     /** ode solver */
     protected solver: Solver = new SolverRK1_2()
-
-    
-    private insulinData: InsulinReading[] = []
-
-    setInsulinData(data: InsulinReading[]): void {
-        this.insulinData = data
-        console.log("INSULIN DATA RECEIVED:", this.insulinData)
-    }
-
-    private getBasalAtTime(t: Date): number {
-        let basal = 0
-        
-        for (const reading of this.insulinData) {
-            if (reading.time <= t) {
-                basal = reading.basal
-            } else {
-                break
-                console.log("basalerror:")
-            }
-        }
-        //console.log("basal:", basal)
-        return basal
-    }
-
-    private getBolusAtTime(t: Date): number {
-        const tolerance = 1000
-
-        for (const reading of this.insulinData) {
-            if (
-                Math.abs(reading.time.getTime() - t.getTime())
-                <= tolerance
-            ) {
-                //console.log("bolus:", reading.bolus)
-                return reading.bolus
-            }
-        }
-        //console.log("boluserror:")
-        return 0
-    }
 
     /** create a new simulator instance */
     public constructor() {
@@ -271,33 +231,18 @@ export default class Simulator {
 
             // compute controller output
             const a = this._getActiveMealAnnouncements(t)
-            //this.controller.update(t, sTraced, a)
-            //const cNew = this.controller.getOutput()
+            this.controller.update(t, sTraced, a)
+            const cNew = this.controller.getOutput()
             // keep previous infusion rate, if no new value is set by controller
-            //if (isFinite(cNew.iir!)) {
-            //    c.iir = cNew.iir
-            //}
+            if (isFinite(cNew.iir!)) {
+                c.iir = cNew.iir
+            }
             // reset insulin bolus to zero unless new bolus is requested
-            //if ((cNew.ibolus ?? 0) > 0) {
-            //    c.ibolus = cNew.ibolus
-            //}
-            //else {
-             //   delete c.ibolus
-            //}
-
-            // csv basal and bolus implementation
-            // const cNew = getBasalAtTime(t,csv)
-            // if (isFinite(cNew.iir!)) {
-            //    c.iir = cNew.iir
-            //}
-            // c.ibolus = getBolusAtTime(t,csv)
-            // console.log("time:", t)
-            const basal = this.getBasalAtTime(t)
-            const bolus = this.getBolusAtTime(t)
-            
-            const c = {
-                iir: basal,
-                ibolus: bolus
+            if ((cNew.ibolus ?? 0) > 0) {
+                c.ibolus = cNew.ibolus
+            }
+            else {
+                delete c.ibolus
             }
 
             // update actuator
@@ -316,7 +261,7 @@ export default class Simulator {
                 t, x, y,
                 u,
                 s,
-                c,
+                c: { ...c },
                 a,
                 log: this.controller.getInternals()
             }
