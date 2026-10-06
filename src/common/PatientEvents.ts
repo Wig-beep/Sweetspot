@@ -5,6 +5,7 @@
  * See https://lt1.org for further information.
  */
 
+import { DEFAULT_LONG_ACTING_INSULIN } from './LongActingInsulin.js'
 import Meal from '../types/Meal.js'
 import PatientEvent, {
     LONG_ACTING_INSULINS,
@@ -117,6 +118,9 @@ export function parsePatientEventsCSV(csvText: string): PatientEvent[] {
         const event: PatientEvent = { time, type, value }
         if (type === "carbs" && durationCol >= 0 && cells[durationCol]) {
             event.duration = readNumber(durationCol, "duration")
+        }
+        if (type === "longacting") {
+            event.insulin = DEFAULT_LONG_ACTING_INSULIN
         }
         if (type === "longacting" && insulinCol >= 0 && cells[insulinCol]) {
             const name = cells[insulinCol].toLowerCase()

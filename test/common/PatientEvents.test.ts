@@ -51,7 +51,7 @@ describe("parsePatientEventsCSV", () => {
         expect(events).to.deep.equal([
             { time: at(22, 0), type: "longacting", value: 18, insulin: "degludec" },
             { time: at(22, 0), type: "longacting", value: 18, insulin: "degludec" },
-            { time: at(22, 0), type: "longacting", value: 18 },
+            { time: at(22, 0), type: "longacting", value: 18, insulin: "glargine" },
             { time: at(22, 0), type: "bolus", value: 2 },
         ])
     })

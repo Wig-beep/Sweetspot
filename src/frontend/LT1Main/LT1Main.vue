@@ -34,6 +34,8 @@ import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { getMealsFromEvents, parsePatientEventsCSV } from '../../common/PatientEvents.js'
 import PatientTimeline from './PatientTimeline.vue'
+import ScenarioComparison from './ScenarioComparison.vue'
+import { computeGlucoseMetrics, GlucoseMetrics } from '../../common/GlucoseMetrics.js'
 
 // prepare simulator
 const sim = new Simulator()
@@ -73,6 +75,7 @@ export default defineComponent({
         ChartAGP,
         ChartSignals,
         PatientTimeline,
+        ScenarioComparison,
     },
 
     created() {
@@ -96,6 +99,10 @@ export default defineComponent({
             originalPatientEvents: null as PatientEvent[] | null,  // never mutated — baseline for comparison
             patientEvents: null as PatientEvent[] | null,          // working copy the timeline will edit
             csvFileName: '' as string,
+            /** metrics of the latest simulation (what-if day, if edited) */
+            metrics: null as GlucoseMetrics | null,
+            /** metrics of the logged day, if the timeline has been edited */
+            baselineMetrics: null as GlucoseMetrics | null,
         }
     },
 
@@ -111,12 +118,20 @@ export default defineComponent({
         //this.run()
     },
     computed: {
-        /** time span covered by the loaded patient data */
+        /** time span covered by the logged and the edited patient data */
         simulationSpan(): { t0: Date, tmax: Date } | undefined {
             if (!this.patientEvents) {
                 return undefined
             }
-            return getPatientDataTimeSpan(this.patientEvents)
+            return getPatientDataTimeSpan([
+                ...this.patientEvents,
+                ...(this.originalPatientEvents ?? []),
+            ])
+        },
+        /** whether the timeline differs from the logged day */
+        isEdited(): boolean {
+            return JSON.stringify(this.patientEvents)
+                !== JSON.stringify(this.originalPatientEvents)
         },
     },
     methods: {
@@ -139,6 +154,10 @@ export default defineComponent({
 
                     this.originalPatientEvents = structuredClone(parsed)
                     this.patientEvents = parsed
+                    // what-ifs of previously loaded data do not apply any more
+                    const chartGlucose = <InstanceType<typeof ChartGlucose>>
+                        this.$refs.chartGlucose
+                    chartGlucose.clearRuns()
 
                     console.log("CSV PARSED:", parsed)
                 } catch (err) {
@@ -154,8 +173,52 @@ export default defineComponent({
         run(): void {
             this.resetCharts()
 
-            sim.setPatient(this.getPatient())
             const events = toRaw(this.patientEvents)
+            const original = toRaw(this.originalPatientEvents)
+            const chartGlucose = <InstanceType<typeof ChartGlucose>>
+                this.$refs.chartGlucose
+
+            // with patient data, the logged day is always shown; an edited
+            // timeline is simulated as a what-if on top of it
+            const loggedDay = original ? this.simulate(original) : null
+            const isWhatIf = loggedDay !== null && this.isEdited
+            const results = (loggedDay && !isWhatIf)
+                ? loggedDay : this.simulate(events)
+
+            // propagate results to charts
+            this.propagateSimulationResults(results)
+            chartGlucose.setLoggedDay(loggedDay)
+            if (isWhatIf) {
+                chartGlucose.addRun(results, JSON.stringify(events),
+                    this.$t("whatif"))
+            }
+            else if (loggedDay) {
+                chartGlucose.highlightRun(null)
+            }
+            else {
+                // without patient data, every run is kept as a new curve
+                chartGlucose.addRun(results, String(Date.now()),
+                    this.$t("simulated"))
+            }
+            chartGlucose.setMeasuredGlucose(
+                (events ?? []).filter((event) => event.type === "glucose"))
+            const chartInsulinCarbs = <InstanceType<typeof ChartInsulinCarbs>>
+                this.$refs.chartInsulinCarbs
+            chartInsulinCarbs.setLongActingInjections(
+                (events ?? []).filter((event) => event.type === "longacting"))
+
+            this.metrics = computeGlucoseMetrics(results)
+            this.baselineMetrics = (isWhatIf && loggedDay)
+                ? computeGlucoseMetrics(loggedDay) : null
+        },
+        /**
+         * Runs a simulation.
+         * @param {PatientEvent[] | null} events - logged events to replay, or
+         *      null to use the selected controller and meals
+         * @returns {SimulationResult[]} results
+         */
+        simulate(events: PatientEvent[] | null): SimulationResult[] {
+            sim.setPatient(this.getPatient())
             if (events) {
                 // replay logged doses and meals from the loaded CSV
                 const loggedDoses = new LoggedDoses()
@@ -175,19 +238,7 @@ export default defineComponent({
             sim.setActuator(events ? new StaticInsulinPump({
                 inc_basal: 0, inc_bolus: 0, max_basal: 100, max_bolus: 100,
             }) : this.getActuator())
-            sim.runSimulation()
-
-            // propagate results to charts
-            const results = sim.getSimulationResults()
-            this.propagateSimulationResults(results)
-            const chartGlucose = <InstanceType<typeof ChartGlucose>>
-                this.$refs.chartGlucose
-            chartGlucose.setMeasuredGlucose(
-                (events ?? []).filter((event) => event.type === "glucose"))
-            const chartInsulinCarbs = <InstanceType<typeof ChartInsulinCarbs>>
-                this.$refs.chartInsulinCarbs
-            chartInsulinCarbs.setLongActingInjections(
-                (events ?? []).filter((event) => event.type === "longacting"))
+            return sim.runSimulation()
         },
         getController(): Controller {
             return <Controller>toRaw(this.controller)
@@ -279,6 +330,15 @@ export default defineComponent({
                 return
             }
             this.patientEvents = events
+            this.run()
+        },
+        /** discards all edits of the timeline */
+        resetToLoggedDay(): void {
+            if (!this.originalPatientEvents) {
+                return
+            }
+            this.patientEvents = structuredClone(toRaw(this.originalPatientEvents))
+            this.run()
         },
     },
 })
@@ -313,6 +373,9 @@ export default defineComponent({
                 :events="patientEvents"
                 @timelineChanged="timelineChanged"
             />
+            <button v-if="isEdited" @click="resetToLoggedDay">
+                Reset to logged day
+            </button>
 
             <div style="display: none;">    
             <MealTable v-if='options.t0' :t0="options.t0" @mealsChanged="mealsChanged" ref="meals" />
@@ -338,6 +401,8 @@ export default defineComponent({
             <h2>{{ $t("results") }}</h2>
             <ChartGlucose ref="chartGlucose" />
             <ChartInsulinCarbs ref="chartInsulinCarbs" @selectLog="controllerDataHover" />
+            <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
+                :isLoggedDay="patientEvents !== null" />
             <div style="display: none;">  
                 <ChartControllerOutput ref="chartControllerOutput" />
                 <ChartSignals ref="chartSignals" />
@@ -358,6 +423,8 @@ export default defineComponent({
 	"settings": 	"Settings",
 	"run": 			"run simulation",
 	"results":		"Results",
+	"whatif":		"what-if",
+	"simulated":	"simulated glucose",
     "shortcut":     "or press Ctrl+Enter",
 }
 </i18n>
@@ -366,6 +433,8 @@ export default defineComponent({
 	"settings": 	"Einstellungen",
 	"run": 			"Simulation starten",
 	"results":		"Ergebnisse",
+	"whatif":		"Was-wäre-wenn",
+	"simulated":	"Simulierte Glukose",
     "shortcut":     "oder Strg+Eingabe drücken"
 }
 </i18n>

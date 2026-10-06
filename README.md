@@ -45,6 +45,11 @@ npm run serve
   The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.
   The simulation runs from the first event until 6 hours after the last one.
 
+  To try a what-if, edit the patient timeline (e.g. move a bolus earlier or change a dose) and apply the changes:
+  the glucose chart then shows the logged day (dashed) next to the what-if day, and the day summary compares
+  time in range, hypos, mean glucose, insulin and carbs. Every what-if is kept as a curve (the latest one bold);
+  click on a curve in the legend to show or hide it.
+
   Long-acting insulin is released over many hours using simplified profiles (see
   [src/common/LongActingInsulin.ts](src/common/LongActingInsulin.ts)); these are educational approximations, not
   validated pharmacokinetic models. The long-acting injections of the first day are assumed to have been taken on the
