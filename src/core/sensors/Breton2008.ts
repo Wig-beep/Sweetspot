@@ -198,12 +198,6 @@ export const i18n_label = {
         resolution: "Resolution",
         samplingTime: "Sampling time",
     },
-    de: {
-        min: "Minimum",
-        max: "Maximum",
-        resolution: "Auflösung",
-        samplingTime: "Abtastzeit",
-    },
 }
 
 

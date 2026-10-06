@@ -66,9 +66,3 @@ export default defineComponent({
 	"selectdevice"			: "Load preconfigured device",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"selectdevice"			: "Vorkonfiguriertes Gerät laden",
-}
-</i18n>

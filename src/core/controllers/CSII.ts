@@ -78,12 +78,6 @@ export const i18n_label = {
         "basalRate": "Basal rate",
         "inc_basal": "Increment",
     },
-
-    de: {
-        "name": "CSII (nur Basalrate)",
-        "basalRate": "Basalrate",
-        "inc_basal": "Inkrement",
-    }
 }
 
 
@@ -92,9 +86,4 @@ export const i18n_tooltip = {
         "basalRate": "Basal rate means the amount of insulin per time that is continuously administered. It is measured in units per hour (U/h).",
         "inc_basal": "This is the difference between possible values of the basal rate. If it is greater than zero, the desired basal rate will be rounded."
     },
-
-    de: {
-        "basalRate": "Die Basalrate ist die kontinuierlich zugeführte Insulindosis pro Zeit. Sie wird in Einheiten pro Stunde (U/h) angegeben.",
-        "inc_basal": "Der Abstand zwischen benachbarten Werten, die die Basalrate annehmen kann. Ist er größer als null, wird die Basalrate gerundet."
-    }
 }

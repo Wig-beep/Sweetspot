@@ -272,18 +272,3 @@ div.agpbox>h4 {
 	"stats.glucoseVariability": "Glucose Variability",
 }
 </i18n>
-<i18n locale="de">
-{
-	"title": "AGP Report",
-	"Statistics": "Glukose-Statistik",
-	"timeInRanges": "Zeit in Bereichen",
-	"tir.veryhigh": "Sehr hoch",
-	"tir.high": "Hoch",
-	"tir.targetrange": "Zielbereich",
-	"tir.low": "Niedrig",
-	"tir.verylow": "Sehr niedrig",
-	"stats.averageGlucose": "Mittelwert Glukose",
-	"stats.GMI": "Glukosemanagementindikator (GMI)",
-	"stats.glucoseVariability": "Glukosevariabilität",
-}
-</i18n>

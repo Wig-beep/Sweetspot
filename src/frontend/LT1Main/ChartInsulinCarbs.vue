@@ -481,20 +481,3 @@ export default defineComponent({
 	"exIntensity":	"exercise effort (%)",
 }
 </i18n>
-<i18n locale="de">
-{
-	"title": 		"Insulindosierung und Mahlzeiten",
-	"iir":			"Basalinsulin in U/h",
-	"longacting":	"Langzeitinsulin in U",
-	"loggedIir":	"Protokolliertes Basalinsulin in U/h",
-	"loggedIbolus":	"Protokollierter Bolus in U",
-	"loggedMeal":	"Protokollierte Mahlzeit in g",
-	"loggedLongacting":	"Protokolliertes Langzeitinsulin in U",
-	"ibolus":		"Insulinbolus in U",
-    "pumpoutput":   "Insulinabgabe der Pumpe in U/h",
-	"iob":			"Berechnetes IOB in U",
-	"totalmeal":	"Gesamte Mahlzeit in g",
-	"carbspermin":	"Aufnahme in g/min",
-	"exIntensity":	"Sportintensität in %",
-}
-</i18n>

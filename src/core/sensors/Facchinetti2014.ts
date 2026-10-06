@@ -171,9 +171,6 @@ export const i18n_label = {
     en: {
         samplingTime: "Sampling time",
     },
-    de: {
-        samplingTime: "Abtastzeit",
-    },
 }
 
 

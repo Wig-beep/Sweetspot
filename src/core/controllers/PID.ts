@@ -134,22 +134,9 @@ export const i18n_label = {
         "targetBG": "target glucose concentration",
         "samplingTime": "Sampling time",
     },
-
-    de: {
-        "name": "PID-Regler + Bolus",
-        "basalRate": "Standardbasalrate",
-        "kP": "Proportional-Faktor",
-        "kI": "Integral-Faktor",
-        "kD": "Differential-Faktor",
-        "targetBG": "Ziel-Konzentration",
-        "samplingTime": "Abtastzeit",
-    }
 }
 
 export const i18n_tooltip = {
     en: {
     },
-
-    de: {
-    }
 }

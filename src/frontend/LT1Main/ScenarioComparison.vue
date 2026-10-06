@@ -193,25 +193,3 @@ export default defineComponent({
     "worse": "worse",
 }
 </i18n>
-<i18n locale="de">
-{
-    "title": "Tageszusammenfassung",
-    "logged": "Protokollierter Tag",
-    "whatif": "Was-wäre-wenn",
-    "simulated": "Simuliert",
-    "change": "Änderung",
-    "hint": "Bearbeiten Sie die Zeitleiste und übernehmen Sie die Änderungen, um einen Was-wäre-wenn-Tag mit dem protokollierten Tag zu vergleichen.",
-    "timeInRange": "Zeit im Zielbereich (3,9-10,0 mmol/L)",
-    "timeBelowRange": "Zeit unter 3,9 mmol/L",
-    "timeVeryLow": "Zeit unter 3,0 mmol/L",
-    "timeAboveRange": "Zeit über 10,0 mmol/L",
-    "meanGlucose": "Mittlere Glukose",
-    "minGlucose": "Niedrigste Glukose",
-    "maxGlucose": "Höchste Glukose",
-    "bolusInsulin": "Bolusinsulin",
-    "basalInsulin": "Basal-/Langzeitinsulin",
-    "carbs": "Kohlenhydrate",
-    "better": "besser",
-    "worse": "schlechter",
-}
-</i18n>

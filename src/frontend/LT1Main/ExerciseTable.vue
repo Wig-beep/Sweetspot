@@ -54,7 +54,6 @@ export default defineComponent({
             this.exercisesChanged()
         },
     },
-
 })
 </script>
 
@@ -87,12 +86,5 @@ ul.exerciselist {
 {
 	"exercise.title"	: "Exercises",
 	"addrow"			: "add exercise",
-}
-</i18n>
-
-<i18n locale="de">
-{
-	"exercise.title"	: "Körperliche Aktivität",
-	"addrow"			: "Aktivität hinzufügen",
 }
 </i18n>

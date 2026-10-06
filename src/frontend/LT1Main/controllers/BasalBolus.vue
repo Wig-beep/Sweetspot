@@ -69,8 +69,3 @@ export default defineComponent({
 	"name": "basal + bolus",
 }
 </i18n>
-<i18n locale="de">
-{
-	"name": "Basal + Bolus",
-}
-</i18n>

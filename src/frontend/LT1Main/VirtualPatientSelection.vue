@@ -150,12 +150,3 @@ export default defineComponent({
 	"loadpatient"		: "load patient",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"model"				: "Physiologisches Modell auswählen",
-	"patientsettings"	: "Virtuelle Patient:in",
-	"savepatient"		: "Patient:in speichern",
-	"loadpatient"		: "Patient:in laden",
-}
-</i18n>

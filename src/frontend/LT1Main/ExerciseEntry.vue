@@ -141,16 +141,3 @@ ul.exerciselist li {
 	"intensity_TT"			: "intensity of exercise in %",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"Exercise"				: "sportliche Aktivität",
-	"delete"				: "löschen",
-	"start"					: "Startzeit",
-	"duration"				: "Dauer in min",
-	"intensity"				: "Intensität in %",
-	"start_TT"				: "Zeitpunkt zu dem sportliche Aktivität beginnt",
-	"duration_TT"			: "Dauer der sportlichen Aktivität in min",
-	"intensity_TT"			: "Intensität der sportlichen Aktivität in %",
-}
-</i18n>

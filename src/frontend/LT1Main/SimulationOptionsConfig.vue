@@ -21,13 +21,6 @@ const i18n: ModuleTranslationList = {
         "seed":         "Random seed",
         "dt":           "Maximum time step",
     },
-    de: {
-        "general":		"Allgemein",
-        "t0": 			"Beginn",
-        "tspan":		"Zeitraum",
-        "seed":         "Zufallszahl (Seed)",
-        "dt":           "Maximale Schrittweite",
-    }
 }
 
 
@@ -93,13 +86,5 @@ export default defineComponent({
 	"general": 		"General options",
     "t0": 			"Simulation start",
 	"tspan": 		"Simulation timespan",
-}
-</i18n>
-
-<i18n locale="de">
-{
-	"general":		"Allgemein",
-    "t0": 			"Simulationsbeginn",
-	"tspan":		"Simulationszeitraum",
 }
 </i18n>

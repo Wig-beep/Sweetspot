@@ -73,8 +73,3 @@ export default defineComponent({
     "name": "OpenAPS (oref0)",
 }
 </i18n>
-<i18n locale="de">
-{
-    "name": "OpenAPS (oref0)",
-}
-</i18n>

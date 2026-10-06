@@ -55,7 +55,6 @@ export default defineComponent({
         }
 
     },
-
 })
 
 export const html: any = {
@@ -64,12 +63,6 @@ export const html: any = {
         "Sensors": "Sensors",
         "Controller": "Controller",
         "Actuators": "Actuators",
-    },
-    de: {
-        "Patient": "Patienten-<br/>physiologie",
-        "Sensors": "Sensoren",
-        "Controller": "Controller",
-        "Actuators": "Aktoren",
     },
 }
 

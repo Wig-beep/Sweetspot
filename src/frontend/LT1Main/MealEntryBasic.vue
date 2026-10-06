@@ -153,16 +153,3 @@ ul {
 	"actual.carbs_TT"		: "mass of carbohydrates actually ingested",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"meal"					: "Mahlzeit",
-	"delete"				: "löschen",
-	"withAnnouncement"		: "Ankündigung",
-	"actualmeal"			: "Tatsächliche Mahlzeit",
-	"actual.start"			: "Beginn",
-	"actual.carbs"			: "Kohlenhydrate",
-	"actual.start_TT"		: "Zeitpunkt, zu dem die Mahlzeit tatsächlich beginnt",
-	"actual.carbs_TT"		: "Masse der tatsächlich aufgenommenen Kohlenhydrate",
-}
-</i18n>

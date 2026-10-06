@@ -19,13 +19,14 @@ export default function(id: string, component: Vue.Component): Vue.ComponentPubl
     // create Vue app
     const app = Vue.createApp(component)
 
-    // add multi-language support
-    const locale = (document.getElementsByTagName("html")[0].lang || 
-        navigator.language.split('-')[0]).substring(0, 2) || "en"
+    // the app is in English only; texts are kept in the components'
+    // <i18n> blocks
+    const locale = "en"
     const i18n = createI18n({
         globalInjection: true,
         inheritLocale: true,
-        locale: locale,
+        locale,
+        fallbackLocale: locale,
     })
     document.getElementsByTagName("html")[0].lang = locale
     app.use(i18n)

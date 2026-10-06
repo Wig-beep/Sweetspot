@@ -109,15 +109,3 @@ export default defineComponent({
 	"premealTime": "time between bolus and meal",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"name": "Mahlzeitenbolus mit Korrektur",
-    "useMealBolus": "Bolus zur Mahlzeit",
-    "useCorrectionBolus": "Korrekturfaktor verwenden",
-
-	"carbFactor": "KE-Faktor",
-	"premealTime": "Spritz-Ess-Abstand",
-    
-}
-</i18n>

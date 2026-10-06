@@ -380,18 +380,6 @@ export const i18n_label = {
         "max_iob": "maximum IOB",
         "max_basal": "maximum basal",
     },
-
-    de: {
-        "name": "OpenAPS (oref0)",
-        "sens": "Insulin sensitivity factor (ISF)",
-        "current_basal": "Standardbasalrate",
-        "min_bg": "Untergrenze Zielwert Glukose",
-        "max_bg": "Obergrenze Zielwert Glukose",
-        "dia": "Duration of Insulin Activity (DIA)",
-        "carb_ratio": "Carb Ratio (CR)",
-        "max_iob": "Maximalwert IOB",
-        "max_basal": "Maximale Basalrate",
-    },
 }
 
 
@@ -405,15 +393,4 @@ export const i18n_tooltip = {
         "max_iob": "The computed amount of insulin on board (IOB) is capped at this maximum.",
         "max_basal": "The basal rate is capped at this maximum.",
     },
-
-    de: {
-        "sens": "Der ISF dient zur Vorhersage des finalen Glukosespiegels, sobald alles verbleibende Insulin (IOB) seine Wirkung entfaltet hat.",
-        "min_bg": "Der Algorithmus versucht den Glukosespiegel über diesem Wert zu halten.",
-        "max_bg": "Der Algorithmus versucht den Glukosespiegel unter diesem Wert zu halten.",
-        "dia": "DIA beschreibt, wie lange es dauert, über welchen Zeitraum Insulin, das jetzt abgegeben wird, seine Wirkung entfaltet und abgebaut wird.",
-        "carb_ratio": "CR is das Verhältnis zwischen Kohlenhydraten und der ausgleichenden Insulinmenge.",
-        "max_iob": "Das berechnete im Körper befindliche Insulin (IOB) wird bei diesem Maximum abgeschnitten.",
-        "max_basal": "Die Basalrate wird bei diesem Maximum abgeschnitten.",
-    },
 }
-

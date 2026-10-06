@@ -457,14 +457,3 @@ export default defineComponent({
 	"preserveOldCurves": "preserve old curves",
 }
 </i18n>
-<i18n locale="de">
-{
-	"title": "Glukosekonzentration",
-	"actual": "Tatsächliche Glukosekonzentration",
-	"prediction": "Prädiktion des Algorithmus",
-	"measured": "Gemessene Glukose",
-	"logged": "Protokollierter Tag",
-	"latest": "neueste",
-	"preserveOldCurves": "Alte Kurven beibehalten",
-}
-</i18n>

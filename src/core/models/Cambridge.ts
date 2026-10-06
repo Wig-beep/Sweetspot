@@ -320,41 +320,6 @@ export const i18n_tooltip = {
         /* signals */
         "EGP": "endogenous glucose production",
     },
-
-    de: {
-        "name": "Cambridge / Cambridge",
-        /* states */
-        "Q1": "mass in accessible compartment (plasma)",
-        "Q2": "mass in non-accessible compartment",
-        "S1": "amount of insulin in compartment 1",
-        "S2": "amount of insulin in compartment 2",
-        "I": "plasma insulin",
-        "x1": "insulin action on glucose transport",
-        "x2": "insulin action on glucose disposal",
-        "x3": "insulin action on endogenous glucose production",
-        "D1": "glucose in compartment 1",
-        "D2": "glucose in compartment 2",
-        /* parameters */
-        "Gpeq": "Glukose im Plasma im Gleichgewicht",
-        "BW": "Körpergewicht",
-        "k12": "transfer rate from the non-accessible to the accessible compartment",
-        "ka1": "deactivation rate",
-        "ka2": "deactivation rate",
-        "ka3": "deactivation rate",
-        "ke": "insulin elimination from plasma",
-        "VI": "insulin distribution volume",
-        "VG": "distribution volume of the accessible compartment",
-        "AG": "Bioverfügbarkeit der Kohlenhydrate",
-        "tmaxG": "time-to-maximum of CHO absorption",
-        "SIT": "Insulinsensitivität of distribution/transport",
-        "SID": "Insulinsensitivität of disposal",
-        "SIE": "Insulin sensitivity of EGP",
-        "EGP0": "endogenous glucose production (EGP) extrapolated to the zero insulin concentration",
-        "F01": "non-insulin-dependent glucose ﬂux",
-        "tmaxI": "time-to-maximum of absorption of subcutaneously injected short-acting insulin",
-        /* signals */
-        "EGP": "endogene Glukoseproduktion",
-    },
 }
 
 /** Description of diagram that illustrates model structure. */
@@ -414,5 +379,4 @@ export const diagram = {
         "CHO": { to: { id: "D1", angle: 0 } },
         "IIR": { to: { id: "S1", angle: 0 } },
     },
-
 }

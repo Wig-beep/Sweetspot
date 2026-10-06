@@ -103,12 +103,6 @@ export const i18n_label = {
         "carbFactor": "carb factor",
         "premealTime": "time between bolus and meal",
     },
-
-    de: {
-        "name": "PID-Regler + Bolus",
-        "premealTime": "Spritz-Ess-Abstand",
-        "carbFactor": "KE-Faktor",
-    }
 }
 
 
@@ -118,11 +112,4 @@ export const i18n_tooltip = {
         "carbFactor": "The carb factor defines how much insulin is required to compensate for an amount of carbs.",
         "premealTime": "This defines how much before the meal a bolus is administered.",
     },
-
-    de: {
-        // "useBolus": "Legt fest, ob vom virtuellen Patienten ein manueller Mahlzeitenbolus abgegeben wird.",
-        "carbFactor": "Der KE-Faktor beschreibt, wie viel Insulin benötigt wird, um eine Kohlenhydrateinheit (10g) auszugleichen.",
-        "premealTime": "Der Spritz-Ess-Abstand legt fest, wie lange vor der Mahlzeit ein Bolus abgegeben wird.",
-    },
 }
-

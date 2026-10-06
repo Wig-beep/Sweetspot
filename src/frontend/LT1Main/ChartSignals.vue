@@ -111,8 +111,3 @@ export default defineComponent({
 	"title":		"Additional signals",
 }
 </i18n>
-<i18n locale="de">
-{
-	"title": 		"Weitere Signale",
-}
-</i18n>

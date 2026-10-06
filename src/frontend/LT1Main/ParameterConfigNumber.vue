@@ -145,10 +145,4 @@ export default defineComponent({
     "toProfile"			: "Click to convert to daily profile (Warning - experimental!)",
 }
 </i18n>
-
-<i18n locale="de">
-{
-    "toProfile"			: "Klicken, um in ein Tagesprofil umzuwandeln (Achtung, experimentell!)",
-}
-</i18n>
     

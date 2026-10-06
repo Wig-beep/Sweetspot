@@ -107,12 +107,6 @@ export const i18n_label = {
         "correctionFactor": "correction factor",
         "targetBG": "target blood glucose",
     },
-
-    de: {
-        "name": "PID-Regler + Bolus",
-        "correctionFactor": "Korrekturfaktor",
-        "targetBG": "Zielwert Glukose",
-    }
 }
 
 export const i18n_tooltip = {
@@ -120,9 +114,4 @@ export const i18n_tooltip = {
         "correctionFactor": "",
         "targetBG": "",
     },
-
-    de: {
-        "correctionFactor": "Der Korrekturfaktor (KF) dient zur Berechnung eines Korrekturbolus. Hierfür wird zunächst die Differenz zwischen aktueller und gewünschter Blutzuckerkonzentration ermittelt (in mg/dl) und diese Abweichung anschließend durch den KF geteilt. Ein größerer KF bewirkt somit einen kleineren Bolus.",
-        "targetBG": "Die gewünschte Blutzuckerkonzentration beeinflusst die Höhe des Korrekturbolus.",
-    }
 }

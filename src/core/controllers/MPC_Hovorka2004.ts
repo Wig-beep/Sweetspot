@@ -395,7 +395,6 @@ export const MPCParameters = {
         Object.keys(stateDescription).map((e) => [e, {default: 1, step: 0.1 }])) },
     /** Measurement noise */
     measurementNoise: { unit: "1", default: new Array(1).fill(4), step: 0.1 },
-
 } satisfies ParameterDescriptions
 
 
@@ -412,19 +411,6 @@ export const i18n_label = {
         "processNoise": {_: "Process noise"},
         "measurementNoise": "Measurement noise",
     },
-
-    de: {
-        "name": "PID-Regler + Bolus",
-        "targetBG": "Ziel-Konzentration",
-        "samplingTime": "Abtastzeit",
-        "predictionHorizon": "Prädiktions-Horizont",
-        "predictionStep": "Prädiktions-Schrittweite",
-        "kaggr": "Aggressivititäts-Faktor",
-        "lowerBound": "untere Grenze u",
-        "upperBound": "obere Grenze u",
-        "processNoise": {_: "Prozessrauschen"},
-        "measurementNoise": "Messrauschen",
-    },
 }
 
 export const i18n_tooltip = {
@@ -439,16 +425,4 @@ export const i18n_tooltip = {
         "processNoise": {_: "The larger these value is chosen, the more the measurement is trusted. Large values indicate high uncertainty in the respective state of the system.", ...stateTranslation.en},
         "measurementNoise": "The larger this value is chosen, the more the process model is trusted. High values indicate high uncertainties in the measurement model.",
     },
-
-    de: {
-        "targetBG": "Die gewünschte Blutzuckerkonzentration, die der Regler einzustellen versucht.",
-        "samplingTime": "In diesem zeitlichen Abstand wird der Regler aufgerufen und führt seine Berechnungen durch.",
-        "predictionHorizon": "So viele Zeitschritte blickt der Regler in die Zukunft. Der gesamte prädizierte Zeitraum ist das Produkt von Prädiktions-Horizont und Prädiktions-Schrittweite.",
-        "predictionStep": "Die Dauer eines Prädiktions-Zeitschritts. Der gesamte prädizierte Zeitraum ist das Produkt von Prädiktions-Horizont und Prädiktions-Schrittweite.",
-        "kaggr": "Je größer dieser Wert gewählt wird, desto stärker variiert der Regler die Basalrate, um den gewünschten Glukoseverlauf möglichst genau zu erreichen. Für kleinere Werte ist sein Vorgehen behutsamer.",
-        "lowerBound": "Das ist die untere Beschränkung der Stellgröße.",
-        "upperBound": "Das ist die obere Beschränkung der Stellgröße.",
-        "processNoise": {_: "Je größer dieser Wert gewählt werden, desto mehr wird auf die Messung vertraut. Große Werte bedeuten hohe Unsicherheit im jeweiligen Zustand des Systems.", ...stateTranslation.de},
-        "measurementNoise": "Je größer dieser Wert gewählt wird, desto mehr wird auf die Prozessmodell vertraut. Hohe Werte bedeuten hohe Unsicherheiten im Messmodell.",
-    }
 }

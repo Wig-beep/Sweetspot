@@ -46,9 +46,3 @@ export default defineComponent({
 	"name": "CSII (basal rate only)",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"name": "CSII (nur Basalrate)",
-}
-</i18n>

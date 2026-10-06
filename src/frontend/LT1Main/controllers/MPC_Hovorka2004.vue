@@ -49,9 +49,3 @@ export default defineComponent({
 	"name": "MPC (Hovorka 2004)",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"name": "MPC (Hovorka 2004)",
-}
-</i18n>

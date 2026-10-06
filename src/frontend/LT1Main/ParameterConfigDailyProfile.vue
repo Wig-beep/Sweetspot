@@ -217,13 +217,3 @@ select {
     "explanation"       : "Click left to add/modify a point,\nclick right to remove point",
 }
 </i18n>
-
-<i18n locale="de">
-{
-    "zero-order"		: "Stufe",
-    "linear"			: "linear",
-    "smoothstep"		: "Smoothstep",
-    "intmethod"	    	: "Interpolationsmethode",
-    "explanation"       : "Linke Maustaste zum Hinzufügen oder Verändern,\nrechte Maustaste zum Entfernen von Punkten",
-}
-</i18n>

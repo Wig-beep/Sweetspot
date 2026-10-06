@@ -111,11 +111,3 @@ export default defineComponent({
 	"prediction": "prediction by algorithm"
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"title": "Glukosekonzentration",
-	"actual": "Tatsächliche Glukosekonzentration",
-	"prediction": "Prädiktion des Algorithmus"
-}
-</i18n>

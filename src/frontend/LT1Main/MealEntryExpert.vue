@@ -69,7 +69,6 @@ export default defineComponent({
             this.$emit("mealDeleted", this.id)
         },
     },
-
 })
 </script>
 
@@ -188,26 +187,5 @@ ul {
 	"announcement.start_TT"	: "time for which the start of the meal was announced",
 	"announcement.carbs_TT"	: "announced (estimated) mass of carbohydrates",
 	"announcement.time_TT"	: "time at which this meal is announced; from this instant on, the algorithm knows about the upcoming meal. If the announcement time is later than the actual start, the meal is unannounced.",
-}
-</i18n>
-
-<i18n locale="de">
-{
-	"meal"					: "Mahlzeit",
-	"delete"				: "löschen",
-	"actualmeal"			: "Tatsächliche Mahlzeit",
-	"announcedmeal"			: "Ankündigung",
-	"actual.start"			: "Beginn",
-	"actual.carbs"			: "CHO",
-	"actual.duration"		: "Dauer",
-	"announcement.start"	: "Beginn",
-	"announcement.carbs"	: "CHO",
-	"announcement.time"		: "Zeitpunkt",
-	"actual.start_TT"		: "Zeitpunkt, zu dem die Mahlzeit tatsächlich beginnt",
-	"actual.carbs_TT"		: "Masse der tatsächlich aufgenommenen Kohlenhydrate",
-	"actual.duration_TT"	: "Tatsächliche Dauer der Mahlzeit",
-	"announcement.start_TT"	: "Zeitpunkt, für den der Beginn der Mahlzeit angekündigt war",
-	"announcement.carbs_TT"	: "Masse der angekündigten Kohlenhydrate",
-	"announcement.time_TT"	: "Zeitpunkt der Ankündigung. Liegt er nach dem tatsächlichen Beginn, handelt es sich um eine unangekündigte Mahlzeit.",
 }
 </i18n>

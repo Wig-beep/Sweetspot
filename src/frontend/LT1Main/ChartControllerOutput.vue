@@ -86,11 +86,3 @@ p {
     "debug":    "Debugging output",
 }
 </i18n>
-<i18n locale="de">
-{
-	"title": 	"Algorithmus-Ausgaben und -Logs",
-	"time":		"Zeitpunkt",
-    "reason":   "Begründung",
-    "debug":    "Debug-Ausgabe",
-}
-</i18n>

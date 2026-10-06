@@ -65,8 +65,3 @@ export default defineComponent({
 	"name": "PID controller + bolus",
 }
 </i18n>
-<i18n locale="de">
-{
-	"name": "PID-Regler + Bolus",
-}
-</i18n>

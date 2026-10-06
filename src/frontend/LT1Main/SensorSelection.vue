@@ -87,9 +87,3 @@ export default defineComponent({
 	"sensorsettings"		: "Sensor",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"sensorsettings"		: "Sensor",
-}
-</i18n>

@@ -208,13 +208,3 @@ export default defineComponent({
 	"online_info_tooltip"	: "follow this link to learn more about the model.",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"selectmodel"			: "Modell auswählen",
-	"selectdevice"			: "Vorkonfiguriertes Gerät laden",
-    "restoreDefaultValues"  : "Standardwerte wiederherstellen",
-	"online_info"			: "Online-Info",
-	"online_info_tooltip"	: "Unter diesem Link finden Sie Details zum Modell.",
-}
-</i18n>

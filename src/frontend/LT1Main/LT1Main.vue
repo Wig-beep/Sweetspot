@@ -562,13 +562,3 @@ export default defineComponent({
     "shortcut":     "or press Ctrl+Enter",
 }
 </i18n>
-<i18n locale="de">
-{
-	"settings": 	"Einstellungen",
-	"run": 			"Simulation starten",
-	"results":		"Ergebnisse",
-	"whatif":		"Was-wäre-wenn",
-	"simulated":	"Simulierte Glukose",
-    "shortcut":     "oder Strg+Eingabe drücken"
-}
-</i18n>

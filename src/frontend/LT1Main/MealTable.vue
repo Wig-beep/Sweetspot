@@ -128,12 +128,3 @@ ul.meallist {
 	"expertMode"		: "expert mode",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"meal.title"		: "Mahlzeiten",
-	"addrow"			: "Mahlzeit hinzufügen",
-	"basicMode"			: "Basismodus",
-	"expertMode"		: "Expertenmodus",
-}
-</i18n>

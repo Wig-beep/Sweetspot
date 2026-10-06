@@ -86,9 +86,3 @@ export default defineComponent({
 	"actuatorsettings"		: "Insulin pump",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"actuatorsettings"		: "Insulinpumpe",
-}
-</i18n>

@@ -146,8 +146,3 @@ export default defineComponent({
 	"explanations":	"Try to choose these settings such that blood glucose spends as much time in range as possible!"
 }
 </i18n>
-<i18n locale="de">
-{
-	"explanations":	"Versuche, die Einstellungen so zu wählen, dass Du möglichst viel Zeit im Zielbereich verbringst."
-}
-</i18n>

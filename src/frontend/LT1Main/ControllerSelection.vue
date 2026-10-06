@@ -155,10 +155,3 @@ export default defineComponent({
 	"selectalgo": "Select algorithm / device / treatment",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"controllersettings": "Algorithmus",
-	"selectalgo": "Algorithmus / Gerät wählen",
-}
-</i18n>

@@ -77,10 +77,3 @@ export default defineComponent({
     "useMealBolus": "Administer meal bolus",
 }
 </i18n>
-
-<i18n locale="de">
-{
-	"name": "Nur Mahlzeitenbolus",
-    "useMealBolus": "Bolus zur Mahlzeit",
-}
-</i18n>
