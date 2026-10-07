@@ -52,8 +52,8 @@ npm run serve
 
   The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.
   Cells may be quoted, and files separated by semicolons or tabs are accepted too.
-  Files covering several days (for example sensor exports) are looked at one day at a time; many glucose readings
-  are hidden in the timeline at first.
+  Files covering several days (for example sensor exports) are looked at one day at a time. Glucose readings
+  are hidden in the timeline at first, so that the doses, food and exercise stand out.
   The simulation runs from the first event until 6 hours after the last one.
 
   To try a what-if, edit the patient timeline (e.g. move a bolus earlier or change a dose) and apply the changes:

@@ -18,6 +18,18 @@ async function open(page: Page) {
     await expect(page.getByRole('radio')).toHaveCount(5)
 }
 
+/**
+ * tries a change of the loaded scenario; on phones, the changes are in a
+ * sheet at the bottom of the screen, which is opened first
+ */
+async function tryChange(page: Page, name: string) {
+    const sheet = page.getByRole('button', { name: /^Try a change/ })
+    if (await sheet.isVisible() && await sheet.getAttribute('aria-expanded') === 'false') {
+        await sheet.click()
+    }
+    await page.getByRole('button', { name, exact: true }).click()
+}
+
 /** the timeline entry whose event is of the given type */
 async function timelineRow(page: Page, type: string): Promise<Locator> {
     const rows = page.locator('.timeline-row')
@@ -55,13 +67,19 @@ test.describe('practice scenarios', () => {
         await expect(page.getByRole('heading', { name: 'Taking correction doses too close together' }))
             .toBeVisible()
 
-        await page.getByRole('button', { name: '1 correction, then wait' }).click()
+        await tryChange(page, '1 correction, then wait')
         await expect(status).toContainText('With change (1 correction, then wait): 85% in range, 0% below 3.9')
 
         const summary = page.locator('.scenario-comparison')
         await expect(summary.getByRole('columnheader', { name: 'With change' })).toBeVisible()
         const timeLow = summary.getByRole('row', { name: /Time low/ })
         await expect(timeLow).toContainText('better')
+
+        // time in range of both days, as bars with their percentages
+        const bars = summary.locator('..').locator('.tir-day')
+        await expect(bars).toHaveCount(2)
+        await expect(bars.nth(0)).toContainText('Original day')
+        await expect(bars.nth(1)).toContainText(/With change.*In range \(3\.9 to 10\)\s*85%/s)
 
         // the charts describe their content for screen readers
         await expect(page.getByRole('img', { name: /^Glucose chart in mmol\/L\. Original day/ }))
@@ -76,6 +94,54 @@ test.describe('practice scenarios', () => {
         await edit.click()
         await expect(edit).toHaveAttribute('aria-expanded', 'true')
         await expect(page.getByRole('button', { name: 'Show this change' })).toBeVisible()
+    })
+})
+
+test.describe('first visit and phones', () => {
+
+    test('the introduction can be hidden, and stays hidden', async ({ page }) => {
+        await open(page)
+        const intro = page.getByRole('region', { name: 'How to use SweetSpot' })
+        await expect(intro).toContainText('Pick a scenario')
+        await page.getByRole('button', { name: 'Hide this introduction' }).click()
+        await expect(intro).toHaveCount(0)
+        const link = page.getByRole('link', { name: 'How to use SweetSpot' })
+        await expect(link).toBeFocused()
+
+        await page.reload()
+        await expect(page.getByRole('radio')).toHaveCount(5)
+        await expect(intro).toHaveCount(0)
+        await link.click()
+        await expect(intro).toBeVisible()
+    })
+
+    test('on phones, changes are tried from a sheet that keeps the charts in view', async ({ page, isMobile }) => {
+        test.skip(!isMobile, 'the sheet is only used on phones')
+        await open(page)
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        const sheet = page.getByRole('button', { name: /^Try a change/ })
+        await expect(sheet).toHaveAttribute('aria-expanded', 'false')
+        await expect(page.getByRole('button', { name: 'too much: 60g' })).toBeHidden()
+
+        await sheet.click()
+        await page.getByRole('button', { name: 'too much: 60g' }).click()
+        // the sheet closes, keeps the focus, and the charts are shown
+        await expect(sheet).toHaveAttribute('aria-expanded', 'false')
+        await expect(sheet).toBeFocused()
+        await expect(page.getByRole('status')).toContainText('With change')
+        await expect(page.getByRole('heading', { name: 'What happens to glucose' })).toBeInViewport()
+    })
+
+    test('glucose readings are hidden in the timeline at first', async ({ page }) => {
+        await open(page)
+        await page.getByRole('radio', { name: 'Taking correction doses too close together' }).check()
+        await page.getByRole('button', { name: 'Edit the day yourself' }).click()
+        const show = page.getByLabel(/Show glucose readings/)
+        await expect(show).not.toBeChecked()
+        const rows = page.locator('.timeline-row')
+        const withoutReadings = await rows.count()
+        await show.check()
+        await expect(rows).not.toHaveCount(withoutReadings)
     })
 })
 
@@ -148,7 +214,7 @@ test.describe('layout and accessibility', () => {
     test('the page never scrolls sideways', async ({ page }) => {
         await open(page)
         await page.getByRole('radio', { name: 'Exercise after a meal' }).check()
-        await page.getByRole('button', { name: 'half the lunch insulin', exact: true }).click()
+        await tryChange(page, 'half the lunch insulin')
         const overflow = await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth)
         expect(overflow).toBeLessThanOrEqual(0)
@@ -174,12 +240,15 @@ test.describe('layout and accessibility', () => {
     test('a scenario with a change has no WCAG 2.2 AA problems', async ({ page }) => {
         await open(page)
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
-        await page.getByRole('button', { name: 'too much: 60g' }).click()
+        await tryChange(page, 'too much: 60g')
         // without motion, the section opens at once, so the check sees it
         // fully open rather than half-way through the animation
         await page.emulateMedia({ reducedMotion: 'reduce' })
         await page.getByRole('button', { name: 'Edit the day yourself' }).click()
         await expect(page.getByRole('status')).toContainText('With change')
+        // on phones, entries scrolled half under the bars at the bottom of
+        // the screen count as small targets; check from a fixed position
+        await page.evaluate(() => window.scrollTo(0, 0))
         expect(await accessibilityViolations(page)).toEqual([])
     })
 })

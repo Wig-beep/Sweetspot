@@ -55,6 +55,10 @@ export default defineComponent({
 
 div.accordioncontent {
     overflow: hidden;
+    /* clips as well, but lets content (e.g. buttons) stick to the screen;
+       unlike with hidden, the row only collapses with min-height 0 */
+    overflow: clip;
+    min-height: 0;
     padding: 0 0.75rem;
 }
 

@@ -268,6 +268,37 @@ input[type=button]:focus-visible {
     box-shadow: 0 4px 0 var(--ss-text);
 }
 
+/*
+ * Phones and narrow windows: the timeline buttons stick to the bottom of
+ * the screen, above the sheet of changes to try (see TeachingScenarioPanel).
+ * The page leaves room for the sheet, and elements that get focus are
+ * scrolled clear of it.
+ */
+@media screen and (max-width: 879px) {
+    .timeline-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background-color: var(--ss-card);
+        border-top: 1px solid var(--ss-border);
+        padding: 0.25rem 0;
+        margin: 0.5rem -0.75rem 0 -0.75rem;
+        padding-left: 0.75rem;
+    }
+
+    html:has(body.has-whatif-sheet) {
+        scroll-padding-bottom: 5rem;
+    }
+
+    body.has-whatif-sheet {
+        padding-bottom: 4.5rem;
+    }
+
+    body.has-whatif-sheet .timeline-actions {
+        bottom: 4rem;
+    }
+}
+
 /* hints and notes */
 .ss-hint {
     color: var(--ss-text-secondary);

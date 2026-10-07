@@ -24,10 +24,31 @@ export default defineComponent({
 
     emits: ["load", "whatIf"],
 
+    data() {
+        return {
+            /** whether the changes to try are open (phones only, see below) */
+            sheetOpen: false,
+        }
+    },
+
     computed: {
         active(): TeachingScenario | undefined {
             return this.scenarios.find((s) => s.id === this.activeId)
         },
+    },
+
+    watch: {
+        /** makes room at the bottom of the page for the sheet on phones */
+        active: {
+            immediate: true,
+            handler(active: TeachingScenario | undefined) {
+                document.body.classList.toggle("has-whatif-sheet", !!active)
+            },
+        },
+    },
+
+    unmounted() {
+        document.body.classList.remove("has-whatif-sheet")
     },
 
     methods: {
@@ -36,6 +57,18 @@ export default defineComponent({
         },
         tryWhatIf(whatIf: WhatIf) {
             this.$emit("whatIf", whatIf)
+            // on phones, the sheet closes so that the charts can be seen;
+            // focus stays on the sheet rather than on the hidden button
+            if (this.sheetOpen) {
+                this.sheetOpen = false
+                this.$nextTick(() => (<HTMLElement>this.$refs.sheetToggle)?.focus())
+            }
+        },
+        closeSheet() {
+            if (this.sheetOpen) {
+                this.sheetOpen = false;
+                (<HTMLElement>this.$refs.sheetToggle)?.focus()
+            }
         },
     },
 })
@@ -67,13 +100,26 @@ export default defineComponent({
             <p><strong>What you will learn:</strong> {{ active.goal }}</p>
             <p>{{ active.story }}</p>
 
-            <h4>Try a change</h4>
-            <ul class="scenario-whatifs">
-                <li v-for="whatIf in active.whatIfs" :key="whatIf.label">
-                    <button @click="tryWhatIf(whatIf)">{{ whatIf.label }}</button>
-                    <span>{{ whatIf.description }}</span>
-                </li>
-            </ul>
+            <!-- on phones, a sheet at the bottom of the screen, so that the
+                 changes can be tried while looking at the charts -->
+            <div class="whatif-sheet" :class="{ open: sheetOpen }"
+                @keydown.esc="closeSheet">
+                <h4>
+                    <span class="whatif-title">Try a change</span>
+                    <button type="button" class="whatif-toggle" ref="sheetToggle"
+                        :aria-expanded="sheetOpen" aria-controls="whatifList"
+                        @click="sheetOpen = !sheetOpen">
+                        Try a change
+                        <span class="whatif-count">({{ active.whatIfs.length }})</span>
+                    </button>
+                </h4>
+                <ul class="scenario-whatifs" id="whatifList">
+                    <li v-for="whatIf in active.whatIfs" :key="whatIf.label">
+                        <button @click="tryWhatIf(whatIf)">{{ whatIf.label }}</button>
+                        <span>{{ whatIf.description }}</span>
+                    </li>
+                </ul>
+            </div>
 
             <details>
                 <summary>Things to remember</summary>
@@ -151,6 +197,72 @@ export default defineComponent({
 .scenario-whatifs span {
     flex: 1 1 12rem;
     color: var(--ss-text-secondary);
+}
+
+/* the toggle is only needed for the sheet on phones */
+.whatif-toggle {
+    display: none;
+}
+
+@media screen and (max-width: 879px) {
+    .whatif-sheet {
+        position: fixed;
+        z-index: 10;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--ss-card);
+        border-top: 4px solid var(--ss-primary);
+        box-shadow: 0 -2px 8px rgba(33, 43, 50, 0.25);
+        padding: 0 1rem;
+    }
+
+    .whatif-sheet h4 {
+        margin: 0;
+    }
+
+    .whatif-title {
+        display: none;
+    }
+
+    /* the whole bar is the button */
+    .lt1-container .whatif-toggle {
+        display: flex;
+        width: 100%;
+        margin: 0.5rem 0;
+        align-items: center;
+        gap: 0.4rem;
+        background-color: var(--ss-primary);
+        color: #ffffff;
+    }
+
+    .whatif-toggle::after {
+        content: "";
+        margin-left: auto;
+        border: 0.4rem solid transparent;
+        border-bottom-color: currentColor;
+        border-top-width: 0;
+    }
+
+    .open .whatif-toggle::after {
+        border-bottom-width: 0;
+        border-top: 0.4rem solid currentColor;
+    }
+
+    .whatif-count {
+        font-weight: normal;
+    }
+
+    .whatif-sheet .scenario-whatifs {
+        display: none;
+        max-height: 50vh;
+        overflow-y: auto;
+        margin-bottom: 0.5rem;
+    }
+
+    .whatif-sheet.open .scenario-whatifs {
+        display: block;
+    }
 }
 
 .scenario-card details {

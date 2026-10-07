@@ -84,12 +84,16 @@
             </li>
         </ul>
 
-        <button class="ss-primary" @click="applyChanges">
-            Show this change
-        </button>
-        <button @click="addRow">
-            Add an entry
-        </button>
+        <!-- on phones, the buttons stay at the bottom of the screen while
+             the timeline is scrolled -->
+        <div class="timeline-actions">
+            <button class="ss-primary" @click="applyChanges">
+                Show this change
+            </button>
+            <button @click="addRow">
+                Add an entry
+            </button>
+        </div>
     </div>
 </template>
 
@@ -131,9 +135,6 @@ const insulinLabels: Record<LongActingInsulin, string> = {
 
 let nextRowId = 0
 
-/** more glucose readings than this are hidden in the timeline at first */
-const MAX_SHOWN_READINGS = 12
-
 export default defineComponent({
     name: "PatientTimeline",
 
@@ -150,12 +151,12 @@ export default defineComponent({
         return {
             rows: [] as TimelineRow[],
             /**
-             * whether glucose readings are listed; many readings (e.g. from
-             * a sensor) are hidden at first. The timeline is created anew
-             * for other data, so this is only decided when data is loaded.
+             * whether glucose readings are listed; they are hidden at first,
+             * so that the doses, food and exercise to change stand out
              */
-            showGlucose: this.events.filter((e) => e.type === "glucose")
-                .length <= MAX_SHOWN_READINGS,
+            showGlucose: false,
+            /** rows added by the learner, which are always listed */
+            addedIds: [] as number[],
             /** problems found when showing a change, by row id */
             errors: {} as Record<number, string>,
             eventTypes: PATIENT_EVENT_TYPES,
@@ -177,7 +178,7 @@ export default defineComponent({
         visibleRows(): TimelineRow[] {
             return this.showGlucose ? this.rows
                 : this.rows.filter((row) => row.type !== "glucose"
-                    || this.errors[row.id])
+                    || this.errors[row.id] || this.addedIds.includes(row.id))
         },
         /** rows with a problem, in the order shown */
         errorRows(): TimelineRow[] {
@@ -223,8 +224,10 @@ export default defineComponent({
 
         addRow() {
             const last = this.rows.at(-1)
+            const id = nextRowId++
+            this.addedIds.push(id)
             this.rows.push({
-                id: nextRowId++,
+                id,
                 timeString: last?.timeString
                     ?? this.toDateTimeLocal(new Date()),
                 type: "bolus",

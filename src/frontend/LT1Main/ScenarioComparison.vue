@@ -9,6 +9,8 @@
 import { defineComponent, PropType } from 'vue'
 import { GlucoseMetrics } from '../../common/GlucoseMetrics.js'
 import AccordionBox from './AccordionBox.vue'
+import { DescribedDay } from '../../common/ChartDescriptions.js'
+import TimeInRangeBars from './TimeInRangeBars.vue'
 
 type Row = {
     key: keyof GlucoseMetrics
@@ -32,7 +34,7 @@ const rows: Row[] = [
 ]
 
 export default defineComponent({
-    components: { AccordionBox },
+    components: { AccordionBox, TimeInRangeBars },
 
     props: {
         /** metrics of the simulated (what-if) day */
@@ -54,6 +56,25 @@ export default defineComponent({
 
     data() {
         return { rows }
+    },
+
+    computed: {
+        /** days shown as time-in-range bars, as the columns of the table */
+        days(): DescribedDay[] {
+            if (!this.metrics) {
+                return []
+            }
+            if (this.baseline) {
+                return [
+                    { name: this.$t("logged"), metrics: this.baseline },
+                    { name: this.$t("whatif"), metrics: this.metrics },
+                ]
+            }
+            return [{
+                name: this.isLoggedDay ? this.$t("logged") : this.$t("simulated"),
+                metrics: this.metrics,
+            }]
+        },
     },
 
     methods: {
@@ -86,6 +107,9 @@ export default defineComponent({
 
 <template>
     <AccordionBox :title="$t('title')" :initial="true" v-if="metrics">
+        <h4>{{ $t("timeInRangeHeading") }}</h4>
+        <TimeInRangeBars :days="days" />
+        <h4>{{ $t("detailsHeading") }}</h4>
         <table class="scenario-comparison">
             <thead>
                 <tr>
@@ -174,6 +198,8 @@ export default defineComponent({
 <i18n locale="en">
 {
     "title": "Day summary",
+    "timeInRangeHeading": "Time in range (glucose in mmol/L)",
+    "detailsHeading": "Details",
     "logged": "Original day",
     "whatif": "With change",
     "simulated": "Simulated day",

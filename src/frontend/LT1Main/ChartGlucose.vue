@@ -493,6 +493,13 @@ export default defineComponent({
             <input type="checkbox" v-model="preserveOldCurves">
             <label for="preserveOldCurves">{{ $t("preserveOldCurves") }}</label>
         </div>
+        <!-- what the colours of the curves mean; the summary and the text
+             alternative of the chart give the same information in words -->
+        <ul class="glucose-key" :aria-label="$t('key')">
+            <li><span class="key-line key-high" aria-hidden="true"></span>{{ $t("keyHigh") }}</li>
+            <li><span class="key-line key-in-range" aria-hidden="true"></span>{{ $t("keyInRange") }}</li>
+            <li><span class="key-line key-low" aria-hidden="true"></span>{{ $t("keyLow") }}</li>
+        </ul>
         <div class="canvas-chart">
             <canvas :id="canvasid" role="img" :aria-label="description"></canvas>
         </div>
@@ -500,10 +507,53 @@ export default defineComponent({
 </template>
 
 
+<style scoped>
+.glucose-key {
+    list-style: none;
+    padding: 0;
+    margin: 0.25rem 0 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    font-size: 0.9rem;
+    color: var(--ss-text-secondary);
+}
+
+.glucose-key li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.key-line {
+    display: inline-block;
+    width: 1.5rem;
+    height: 0;
+    border-top: 4px solid;
+}
+
+.key-high {
+    border-color: rgb(90, 150, 250);
+}
+
+.key-in-range {
+    border-color: rgb(120, 176, 89);
+}
+
+.key-low {
+    border-color: rgb(194, 1, 18);
+}
+</style>
+
+
 
 <i18n locale="en">
 {
 	"title": "Glucose levels",
+	"key": "Colours of the glucose curves",
+	"keyHigh": "high (above 10)",
+	"keyInRange": "in range (3.9 to 10)",
+	"keyLow": "low (below 3.9)",
 	"actual": "actual concentration",
 	"prediction": "prediction by algorithm",
 	"measured": "glucose readings",

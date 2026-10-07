@@ -50,6 +50,21 @@ import {
 // prepare simulator
 const sim = new Simulator()
 
+/** media query of the layout with the results below the settings */
+const PHONE_LAYOUT = "(max-width: 879px)"
+
+/** key in local storage remembering that the introduction was hidden */
+const INTRO_SEEN_KEY = "sweetspot-intro-seen"
+
+/** whether the introduction was hidden on an earlier visit */
+function introSeen(): boolean {
+    try {
+        return localStorage.getItem(INTRO_SEEN_KEY) === "1"
+    } catch {
+        return false
+    }
+}
+
 export default defineComponent({
 
     beforeMount() {
@@ -135,6 +150,8 @@ export default defineComponent({
             whatIfName: '' as string,
             /** metrics of the logged day, if the timeline has been edited */
             baselineMetrics: null as GlucoseMetrics | null,
+            /** whether the introduction is shown (on the first visit) */
+            showIntro: !introSeen(),
         }
     },
 
@@ -323,6 +340,27 @@ export default defineComponent({
         applyWhatIf(whatIf: WhatIf): void {
             this.patientEvents = structuredClone(toRaw(whatIf.events))
             this.run()
+            // on phones, the results are below the scenario: show them
+            if (window.matchMedia(PHONE_LAYOUT).matches) {
+                const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                document.getElementById("results-heading")?.scrollIntoView(
+                    { behavior: reduce ? "auto" : "smooth", block: "start" })
+            }
+        },
+        /** hides the introduction, also on later visits */
+        hideIntro(): void {
+            this.showIntro = false
+            try {
+                localStorage.setItem(INTRO_SEEN_KEY, "1")
+            } catch {
+                // without storage, it is shown again next time
+            }
+            this.$nextTick(() => (<HTMLElement>this.$refs.introLink)?.focus())
+        },
+        /** shows the introduction again */
+        openIntro(): void {
+            this.showIntro = true
+            this.$nextTick(() => (<HTMLElement>this.$refs.intro)?.focus())
         },
         /**
          * Returns the name of the scenario what-if with the given events
@@ -509,6 +547,30 @@ export default defineComponent({
     <div class="lt1-container">
         <section class="box lt1-controls" aria-labelledby="day-heading">
             <h2 id="day-heading">Choose a day</h2>
+
+            <div v-if="showIntro" class="ss-intro" ref="intro" tabindex="-1"
+                role="region" aria-labelledby="intro-heading">
+                <h3 id="intro-heading">How to use SweetSpot</h3>
+                <ol>
+                    <li>
+                        <strong>Pick a scenario</strong> below, or upload a
+                        day of your own.
+                    </li>
+                    <li>
+                        <strong>Try a change</strong>, such as taking insulin
+                        earlier. On a phone, the changes are at the bottom of
+                        the screen.
+                    </li>
+                    <li>
+                        <strong>Read the summary</strong> under the charts to
+                        see how much of the day glucose was in range.
+                    </li>
+                </ol>
+                <button type="button" @click="hideIntro">Hide this introduction</button>
+            </div>
+            <p v-else class="ss-intro-link">
+                <a href="#" ref="introLink" @click.prevent="openIntro">How to use SweetSpot</a>
+            </p>
             <div style="display: none;">    
                 <ControllerSelection @controllerChanged="controllerChanged" 
                     :patientProfile="patientProfile" ref="controller" />
@@ -594,6 +656,27 @@ export default defineComponent({
 
 
 <style lang="css">
+/* introduction on the first visit */
+.ss-intro {
+    border-left: 8px solid var(--ss-primary);
+    background-color: var(--ss-primary-light);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.ss-intro ol {
+    padding-left: 1.5rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.ss-intro li {
+    margin-bottom: 0.5rem;
+}
+
+.ss-intro-link {
+    font-size: 0.95rem;
+}
+
 /* error message: red bar on the left, as in the NHS design system */
 .csv-error {
     color: var(--ss-error);
