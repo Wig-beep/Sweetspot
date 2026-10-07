@@ -44,12 +44,15 @@ HtmlPlugins.push(new HtmlWebpackPlugin({
         entrypoints: "<ul>" + 
             entryNames.map(entryName => {
                 const entry = entryName.replace(/\.[^.]*$/, '')
-                return `<li><a href="${htmlName(entry)}">${entry}</a></li>`
+                return `<li><a href="${htmlName(entry)}">${htmlName(entry).replace(/\.html$/, '')}</a></li>`
             }).join("\n")
             + "</ul>"
     },
     favicon: './src/frontend/assets/images/Favicon.png',
     filename: 'index.html',
+    // only links: loading the apps here would run all of them on one page,
+    // and their live updates in development would clash
+    chunks: [],
 }))
 
 export {entryConfig, HtmlPlugins}
