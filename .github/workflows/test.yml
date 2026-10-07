@@ -20,6 +20,13 @@ jobs:
       # end-to-end tests of the production build (desktop and phone)
       - run: npx playwright install --with-deps chromium webkit
       - run: npx playwright test
+      # the build for clearly educational use, without the learner's own data
+      - run: npm run build
+        env:
+          SWEETSPOT_PERSONAL_DATA: 'off'
+      - run: npx playwright test
+        env:
+          SWEETSPOT_PERSONAL_DATA: 'off'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

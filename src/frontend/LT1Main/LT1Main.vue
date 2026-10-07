@@ -35,6 +35,7 @@ import { getExercisesFromEvents, sortByTime } from '../../common/PatientEvents.j
 import { readPatientData } from '../../common/DeviceExports.js'
 import { decodeScenarioLink, isScenarioFile, scenarioFromFile } from '../../common/ScenarioFiles.js'
 import EducatorPanel from './EducatorPanel.vue'
+import { buildInfo } from '../util/BuildInfo.js'
 import { eventsForDay, getDays } from '../../common/PatientDays.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
@@ -189,6 +190,11 @@ export default defineComponent({
             whatIfName: '' as string,
             /** metrics of the logged day, if the timeline has been edited */
             baselineMetrics: null as GlucoseMetrics | null,
+            /**
+             * whether the learner's own data can be opened; builds for
+             * clearly educational use open scenario files only
+             */
+            personalData: buildInfo.personalData,
             /** problem opening a shared scenario, if any */
             scenarioError: '',
             /** whether results take a while to calculate */
@@ -214,6 +220,13 @@ export default defineComponent({
         //this.run()
     },
     computed: {
+        /** what results of the learner's own data show, and what they do not */
+        ownDataNotice(): string {
+            return "These results show how a made-up person would respond to "
+                + "the insulin, food and exercise in your file. They are not a "
+                + "prediction for you, and they cannot tell you what dose to "
+                + "take. Talk to your diabetes team before changing your doses."
+        },
         /** the scenario shown, if any */
         activeScenario(): TeachingScenario | null {
             return this.scenarios.find((s) => s.id === this.activeScenarioId) ?? null
@@ -293,6 +306,13 @@ export default defineComponent({
                     if (scenario !== undefined) {
                         return
                     }
+                }
+
+                if (!this.personalData) {
+                    this.csvError = `${files[0].name} is not a scenario file. This version `
+                        + `of SweetSpot opens practice scenarios from your educator only, `
+                        + `not your own data.`
+                    return
                 }
 
                 const events: PatientEvent[] = []
@@ -761,8 +781,8 @@ export default defineComponent({
                 <h3 id="intro-heading">How to use SweetSpot</h3>
                 <ol>
                     <li>
-                        <strong>Pick a scenario</strong> below, or upload a
-                        day of your own.
+                        <strong>Pick a scenario</strong> below<template v-if="personalData">,
+                        or upload a day of your own</template>.
                     </li>
                     <li>
                         <strong>Try a change</strong>, such as taking insulin
@@ -795,14 +815,15 @@ export default defineComponent({
                 @load="loadScenario" @whatIf="applyWhatIf"
                 @showOriginal="showOriginalDay" />
 
-            <div class="lt1-csv-input">
+            <div v-if="personalData" class="lt1-csv-input">
                 <h3>Or use your own day</h3>
                 <p class="ss-hint" id="uploadHint">
                     Upload a file with your insulin, food and glucose
                     readings: a SweetSpot CSV file, or an export from
                     LibreView, Dexcom Clarity or Nightscout (you can choose
                     the entries and treatments files together). It stays on
-                    this device.
+                    this device. You can also open a scenario file from
+                    your educator.
                 </p>
                 <label for="csvUpload">Upload a file</label>
                 <input type="file" id="csvUpload" accept=".csv,.txt,.json" multiple
@@ -813,7 +834,10 @@ export default defineComponent({
                         <li v-for="note in fileNotes" :key="note">{{ note }}</li>
                     </ul>
                 </div>
-                <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
+                <div v-if="fileEvents && !csvError" class="ss-inset own-data-notice">
+                    {{ ownDataNotice }}
+                </div>
+                <p v-if="csvError && personalData" class="csv-error" role="alert">{{ csvError }}</p>
                 <div v-if="fileDays.length > 1" class="day-picker">
                     <label for="daySelect">Day to look at</label>
                     <p class="ss-hint" id="dayHint">
@@ -828,6 +852,18 @@ export default defineComponent({
                         </option>
                     </select>
                 </div>
+            </div>
+
+            <div v-if="!personalData" class="lt1-csv-input">
+                <h3>Or open a scenario from your educator</h3>
+                <p class="ss-hint" id="uploadHint">
+                    Open a scenario file your educator has shared with you.
+                    This version of SweetSpot does not open your own data.
+                </p>
+                <label for="csvUpload">Open a scenario file</label>
+                <input type="file" id="csvUpload" accept=".json"
+                    aria-describedby="uploadHint" @change="onCsvFileSelected" />
+                <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
             </div>
 
             <p v-if="simulationSpan" class="ss-hint">
@@ -871,6 +907,7 @@ export default defineComponent({
             <p v-if="!metrics" class="ss-hint">
                 Choose a practice scenario or upload a day to see the results here.
             </p>
+            <div v-if="fileEvents" class="ss-inset own-data-notice">{{ ownDataNotice }}</div>
             <p class="visually-hidden" role="status">{{ statusMessage }}</p>
             <p v-if="calculating" class="ss-hint calculating">Working out the results…</p>
             <p v-if="simulationError" class="csv-error" role="alert">{{ simulationError }}</p>

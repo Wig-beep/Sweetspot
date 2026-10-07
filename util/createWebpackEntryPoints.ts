@@ -8,6 +8,7 @@
 
 import { findFiles } from './FindLocalModules.js'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
+import { buildInfo } from './BuildInfo.js'
 
 // find all files in the /entries folder
 const entryNames = await findFiles('./src/frontend/entries/')
@@ -28,7 +29,9 @@ const HtmlPlugins = entryNames.map( function(entry: string) {
         templateParameters: {
             // the id of the div element in the template is renamed
             // so that app.mount can find it
-            appid: entry
+            appid: entry,
+            // version and where to report problems, shown in the footer
+            build: buildInfo,
         },
         favicon: './src/frontend/assets/images/Favicon.png',
         filename: htmlName(entry),

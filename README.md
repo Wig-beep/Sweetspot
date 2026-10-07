@@ -13,6 +13,30 @@
 
 This software is intended for closed-loop simulation of automatic insulin delivery systems for type 1 diabetic persons.
 
+**SweetSpot** (`SweetSpot.html`) is an educational tool built on it: it helps adults with type 1 diabetes taking part
+in structured education, such as DAFNE, learn general principles of insulin and food management, by showing how the
+glucose of a made-up person responds to insulin, food and exercise. It is used alongside the course and the advice of
+the learner's diabetes team. It does not calculate, recommend or check any dose, and does not predict anyone's
+glucose. See the [intended purpose](docs/clinical-safety/01-intended-purpose.md).
+
+## Clinical safety and regulation
+
+If SweetSpot is offered through the NHS, it needs a clinical safety case (DCB0129, and DCB0160 for each deploying
+organisation), and the MHRA should confirm that it is not a medical device. Draft documents for a Clinical Safety
+Officer to review and own are in [docs/clinical-safety](docs/clinical-safety/README.md): intended purpose, clinical
+risk management plan, hazard log, safety case report, MHRA qualification pack, and deployment and DTAC notes.
+
+SweetSpot is configured when it is built:
+
+* `SWEETSPOT_PERSONAL_DATA=off` builds the educational-only version, which does not open the learner's own data
+  (practice scenarios and educators' scenario files only). It is recommended for NHS deployments until the MHRA has
+  given its view on the standard version.
+* `SWEETSPOT_FEEDBACK_URL` (an `https:` or `mailto:` address) is shown in the footer for reporting a problem or a
+  safety concern.
+
+The version (`sweetspotVersion` in `package.json`) and the commit are shown in the footer of every page. CI tests
+both the standard and the educational-only version.
+
 # Demo and further information
 For a live demo, visit the project website [https://LT1.org](https://lt1.org/simulator).
 

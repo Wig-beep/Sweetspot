@@ -308,7 +308,7 @@ const builders: ScenarioBuilder[] = [
             keyPoints: [
                 "Exercise makes your body use more glucose and makes insulin work harder, during exercise and for hours afterwards.",
                 "If you plan to exercise after a meal, you may need less insulin for that meal.",
-                "Extra carbs before or during exercise can also help. For longer exercise, you may need to do both.",
+                "Extra carbs before or during exercise can also help. For longer exercise, you may need to do both. Ask your diabetes team how to plan your insulin and carbs for exercise.",
             ],
             modelNote: "This scenario uses a different virtual person who responds to exercise (the Deichmann 2021 model).",
         }

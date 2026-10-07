@@ -97,6 +97,25 @@ test.describe('practice scenarios', () => {
     })
 })
 
+test.describe('safety information', () => {
+
+    test('the footer states the purpose, the version and how to report a problem', async ({ page }) => {
+        await open(page)
+        const footer = page.locator('footer')
+        await expect(footer).toContainText('learning tool for people on structured diabetes education')
+        await expect(footer).toContainText('it cannot tell you what dose to take')
+        await expect(footer).toContainText(/SweetSpot version \d+\.\d+\.\d+/)
+        await expect(footer).toContainText('To report a problem or a safety concern')
+    })
+
+    test('scenarios do not show the notice for own data', async ({ page }) => {
+        await open(page)
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        await expect(page.getByRole('status')).toContainText('Original day:')
+        await expect(page.locator('.own-data-notice')).toHaveCount(0)
+    })
+})
+
 test.describe('quizzes', () => {
 
     test('a quiz gives feedback and shows the answer on the charts', async ({ page }) => {
@@ -292,6 +311,9 @@ test.describe('uploaded days', () => {
         await open(page)
         await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
         await expect(page.getByText('Using SampleDayMDI.csv (SweetSpot CSV file)')).toBeVisible()
+        // results of the learner's own data are not a prediction for them
+        await expect(page.locator('.lt1-results .own-data-notice'))
+            .toContainText('They are not a prediction for you')
         const status = page.getByRole('status')
         await expect(status).toContainText('Original day:')
         const before = await status.textContent()

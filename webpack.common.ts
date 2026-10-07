@@ -5,6 +5,7 @@ import { VueLoaderPlugin } from 'vue-loader'
 import webpack from 'webpack'
 import FindLocalModules, { findLocalJson } from './util/FindLocalModules.js'
 import {entryConfig, HtmlPlugins} from './util/createWebpackEntryPoints.js'
+import { buildInfo } from './util/BuildInfo.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -67,6 +68,8 @@ export default <webpack.Configuration>{
   },
   plugins: [
     new webpack.DefinePlugin({
+        // version, and whether the learner's own data can be opened
+        __SWEETSPOT_BUILD__: JSON.stringify(buildInfo),
         __LT1_LOCAL_MODELS__: JSON.stringify(
             await FindLocalModules('./src/core/models')
         ),

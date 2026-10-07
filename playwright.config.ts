@@ -5,8 +5,15 @@ import { defineConfig, devices } from '@playwright/test'
  * desktop and a phone screen, in Chromium (Chrome, Edge, Android) and WebKit
  * (Safari, iPhone). Run with `npm run test:e2e` (builds first).
  */
+/**
+ * A build with SWEETSPOT_PERSONAL_DATA=off (no own data, for clearly
+ * educational use) is tested with e2e/education-only.spec.ts only.
+ */
+const educationOnly = process.env.SWEETSPOT_PERSONAL_DATA === 'off'
+
 export default defineConfig({
     testDir: './e2e',
+    testMatch: educationOnly ? 'education-only.spec.ts' : 'sweetspot.spec.ts',
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,

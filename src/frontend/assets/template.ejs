@@ -34,9 +34,10 @@
         </main>
 		<footer class="ss-footer">
 			<div class="ss-footer-inner">
-				<p>SweetSpot is a learning tool. It uses a made-up person, so it cannot tell you what dose to take. Always follow the advice of your diabetes team.</p>
+				<p>SweetSpot is a learning tool for people on structured diabetes education, such as DAFNE, to use alongside their course. It shows a made-up person, so it cannot tell you what dose to take. Always follow the advice of your diabetes team.</p>
 				<p>Your data stays on this device. Nothing you enter or upload is sent anywhere.</p>
-				<p>Built on <a href="https://lt1.org/" target="_blank" rel="noopener">LoopInsighT1</a>, open source under the MIT licence.</p>
+				<p class="ss-report">To report a problem or a safety concern, <% if (build.feedbackUrl) { %><a href="<%- build.feedbackUrl %>">contact the SweetSpot team</a><% } else { %>tell your diabetes educator<% } %>. Please say which version you used.</p>
+				<p>SweetSpot version <%- build.version %>. Built on <a href="https://lt1.org/" target="_blank" rel="noopener">LoopInsighT1</a>, open source under the MIT licence.</p>
 			</div>
 		</footer>
 	</body>
