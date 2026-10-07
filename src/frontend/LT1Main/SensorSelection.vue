@@ -10,6 +10,7 @@ import { defineComponent} from 'vue'
 import { ModuleImportList, ModuleProfileList } from '../../types/ModuleProfile.js'
 import { ParameterFileContents, ParameterFileList } from '../../types/ParameterFileContents.js'
 import ModuleConfig from './ModuleConfig.vue'
+import { ModuleSpec } from '../../common/SimulationRequest.js'
 import AccordionBox from './AccordionBox.vue'
 import Sensor from '../../types/Sensor.js'
 import DeviceSelection from './DeviceSelection.vue'
@@ -52,6 +53,12 @@ export default defineComponent({
 
     
     methods: {
+        /** returns the model id and parameters, e.g. for a background thread */
+        getModuleSpec(): ModuleSpec {
+            return (<InstanceType<typeof ModuleConfig>>this.$refs.moduleConfig)
+                .getModuleSpec()
+        },
+
         getModule(): Sensor {
             const moduleConfig = <InstanceType<typeof ModuleConfig>>
                 this.$refs.moduleConfig

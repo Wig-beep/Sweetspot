@@ -22,7 +22,7 @@ const MAX_GLUCOSE_MMOL = 35
 export const DEFAULT_EXERCISE_DURATION = 30
 
 /** brand names accepted for long-acting insulins */
-const LONG_ACTING_BRANDS: Record<string, LongActingInsulin> = {
+export const LONG_ACTING_BRANDS: Record<string, LongActingInsulin> = {
     lantus: "glargine",
     abasaglar: "glargine",
     semglee: "glargine",

@@ -12,6 +12,7 @@ import { ParameterFileContents } from '../../types/ParameterFileContents.js'
 import ParameterConfig from './ParameterConfig.vue'
 import DeviceSelection from './DeviceSelection.vue'
 import ParametricModule, { ParameterValues } from '../../types/ParametricModule.js'
+import { ModuleSpec, moduleSpec } from '../../common/SimulationRequest.js'
 
 export default defineComponent({
     emits: ["valueChanged"],
@@ -124,6 +125,11 @@ export default defineComponent({
 
             console.log("Loaded new " + moduleContents.profile.type + " " + id)
             this.$emit("valueChanged", this.getModule())
+        },
+
+        /** returns the model id and parameters, e.g. for a background thread */
+        getModuleSpec(): ModuleSpec {
+            return moduleSpec(this.selectedModel, this.module)
         },
 
         /** returns description of module including parameters */

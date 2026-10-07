@@ -158,6 +158,7 @@ const builders: ScenarioBuilder[] = [
             keyPoints: [
                 "A correction dose keeps working for several hours, so your glucose comes down slowly.",
                 "If you correct again while earlier insulin is still working, the doses add up (this is called stacking) and can cause a hypo later.",
+                "The insulin on board line in the insulin and food chart shows how much quick-acting insulin is still working. See how it builds up with each correction.",
                 "Before you correct, think about how much insulin is still working. Follow the correction rules from your course.",
             ],
         }

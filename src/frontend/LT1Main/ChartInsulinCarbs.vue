@@ -40,13 +40,16 @@ const LONG_ACTING_DATASET = 7
  */
 const BASE_DATASETS = 8
 
+/** colour of insulin on board, apart from the green of background insulin */
+const IOB_COLOR = "rgb(179, 89, 0)"
+
 /** colour of filled markers in a comparison: hollow */
 const HOLLOW = "rgba(0,0,0,0)"
 
 /** dataset of a what-if run, tagged with the run and its role */
 type RunDataset = ChartDataset & {
     runKey: string
-    runRole: "basal" | "bolus" | "meal" | "longacting"
+    runRole: "basal" | "bolus" | "meal" | "longacting" | "iob"
 }
 
 export default defineComponent({
@@ -103,14 +106,14 @@ export default defineComponent({
                         rotation: 180
                     },
                     <ChartDatasetCustomTypesPerDataset>{
-                        type: "scatter",
+                        type: "line",
                         data: [],
                         yAxisID: 'y',
                         label: this.$t("iob"),
-                        borderColor: colors['THUGreen'],
-                        backgroundColor: colors['THUGreen'],
-                        radius: 2,
-                        pointStyle: "circle"
+                        borderColor: IOB_COLOR,
+                        backgroundColor: IOB_COLOR,
+                        borderWidth: 2,
+                        pointRadius: 0,
                     },
                     <ChartDatasetCustomTypesPerDataset>{
                         type: "scatter",
@@ -260,6 +263,11 @@ export default defineComponent({
                                             <number[]>dataset.borderDash ?? [],
                                             2, colors['THURed'])
                                     }
+                                    else if (item.datasetIndex === IOB_DATASET) {
+                                        item.pointStyle = lineSwatch(
+                                            <number[]>dataset.borderDash ?? [],
+                                            2, IOB_COLOR)
+                                    }
                                 }
                                 return items
                             },
@@ -346,6 +354,8 @@ export default defineComponent({
             const datasets = <ChartDataset<"line">[]>this.chart.data.datasets
             datasets[0].label = this.$t(active ? "loggedIir" : "iir")
             datasets[0].borderDash = active ? LOGGED_DAY_DASH : []
+            datasets[IOB_DATASET].label = this.$t(active ? "loggedIob" : "iob")
+            datasets[IOB_DATASET].borderDash = active ? LOGGED_DAY_DASH : []
             const markers: [number, string, string, string][] = [
                 [1, "ibolus", "loggedIbolus", colors['THURed']],
                 [3, "totalmeal", "loggedMeal", colors['THUDarkBlue']],
@@ -414,6 +424,17 @@ export default defineComponent({
                     borderColor: colors['THUAnthrazit'],
                     radius: 10, pointStyle: "rectRot",
                 },
+                {
+                    ...tag, runRole: "iob",
+                    type: "line", yAxisID: 'y',
+                    label: `${label}: insulin on board`,
+                    data: results.filter((r) => typeof r.log?.IOB !== "undefined")
+                        .map((r) => point(r.t, r.log!.IOB!)),
+                    borderColor: IOB_COLOR,
+                    backgroundColor: IOB_COLOR,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                },
             ]
             this.chart.data.datasets.push(...runDatasets)
             this.updateLongActingScale()
@@ -448,7 +469,7 @@ export default defineComponent({
                 const run = <RunDataset & ChartDataset<"line">>dataset
                 if (!run.runKey) return
                 this.chart.setDatasetVisibility(i, visibility[run.runKey] ?? true)
-                if (run.runRole === "basal") {
+                if (run.runRole === "basal" || run.runRole === "iob") {
                     run.borderDash = run.runKey === latestKey
                         ? [] : runDash(keys.indexOf(run.runKey))
                 }
@@ -514,7 +535,8 @@ export default defineComponent({
 	"loggedLongacting":	"original background injection (units)",
 	"ibolus":		"quick-acting insulin (units)",
     "pumpoutput":   "insulin pump output (units an hour)",
-	"iob":			"insulin on board (units)",
+	"iob":			"quick-acting insulin on board (units)",
+	"loggedIob":	"original quick-acting insulin on board (units)",
 	"totalmeal":	"meal (grams of carbs)",
 	"carbspermin":	"carbs being absorbed (grams a minute)",
 	"exIntensity":	"exercise effort (%)",

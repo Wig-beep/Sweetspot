@@ -12,6 +12,7 @@ import { ModuleImportList, ModuleProfileList } from '../../types/ModuleProfile.j
 import { ParameterFileContents } from '../../types/ParameterFileContents.js'
 import AccordionBox from './AccordionBox.vue'
 import ModuleConfig from './ModuleConfig.vue'
+import { ModuleSpec } from '../../common/SimulationRequest.js'
 
 /** list of physiological models, provided by bundler */
 declare var __LT1_LOCAL_MODELS__: ModuleProfileList
@@ -46,6 +47,12 @@ export default defineComponent({
     },
 
     methods: {
+        /** returns the model id and parameters, e.g. for a background thread */
+        getModuleSpec(): ModuleSpec {
+            return (<InstanceType<typeof ModuleConfig>>this.$refs.moduleConfig)
+                .getModuleSpec()
+        },
+
 
         getPatient(): Patient {
             const moduleConfig = <InstanceType<typeof ModuleConfig>>

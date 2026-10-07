@@ -5,6 +5,7 @@
  * See https://lt1.org for further information.
  */
 
+import { insulinOnBoard } from '../../common/InsulinOnBoard.js'
 import {
     assumedPriorInjections,
     DEFAULT_LONG_ACTING_INSULIN,
@@ -38,6 +39,9 @@ export const profile: ModuleProfile = {
  * basal rate; the injections of the first day are assumed to have been taken
  * on the preceding days as well, so that the simulation starts with
  * long-acting insulin on board.
+ *
+ * The insulin on board of the quick-acting doses given so far is reported
+ * in the internals (IOB), as a bolus advisor would estimate it.
  */
 export default class LoggedDoses
     extends AbstractController<typeof LoggedDosesParameters>
@@ -53,6 +57,8 @@ export default class LoggedDoses
     protected activeInjections: PatientEvent[] = []
     /** time of previous update; boluses up to this time have been given */
     protected tLast: Date = new Date(0)
+    /** start of the simulation; boluses logged before it are not given */
+    protected tStart: Date = new Date(0)
 
     getParameterDescription() {
         return LoggedDosesParameters
@@ -95,6 +101,7 @@ export default class LoggedDoses
         super.reset(t)
         // boluses logged before the start of the simulation are not given
         this.tLast = new Date(t.valueOf() - 1)
+        this.tStart = t
     }
 
     update(t: Date, _s: TracedMeasurement, _a: AnnouncementList = {}) {
@@ -130,7 +137,11 @@ export default class LoggedDoses
         }
         this.tLast = t
 
-        this.internals = reason.length ? { reason } : {}
+        this.internals = {
+            IOB: insulinOnBoard(this.boluses.filter(
+                (event) => event.time >= this.tStart && event.time <= t), t),
+            ...(reason.length ? { reason } : {}),
+        }
         this.output = { iir, ibolus }
     }
 

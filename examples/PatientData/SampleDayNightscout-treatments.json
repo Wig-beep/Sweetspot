@@ -1,0 +1,37 @@
+[
+ {
+  "eventType": "Note",
+  "created_at": "2026-10-05T21:00:00.000Z",
+  "insulin": 16,
+  "insulinInjections": "[{\"insulin\": \"Lantus\", \"units\": 16}]",
+  "enteredBy": "xDrip+"
+ },
+ {
+  "eventType": "Exercise",
+  "created_at": "2026-10-05T15:00:00.000Z",
+  "duration": 45,
+  "notes": "Walk",
+  "enteredBy": "careportal"
+ },
+ {
+  "eventType": "Meal Bolus",
+  "created_at": "2026-10-05T17:30:00.000Z",
+  "insulin": 6,
+  "carbs": 60,
+  "enteredBy": "xDrip+"
+ },
+ {
+  "eventType": "Meal Bolus",
+  "created_at": "2026-10-05T11:30:00.000Z",
+  "insulin": 5,
+  "carbs": 50,
+  "enteredBy": "xDrip+"
+ },
+ {
+  "eventType": "Meal Bolus",
+  "created_at": "2026-10-05T06:30:00.000Z",
+  "insulin": 5,
+  "carbs": 45,
+  "enteredBy": "xDrip+"
+ }
+]

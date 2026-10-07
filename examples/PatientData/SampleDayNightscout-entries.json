@@ -1,0 +1,770 @@
+[
+ {
+  "type": "sgv",
+  "sgv": 101,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791240300000,
+  "dateString": "2026-10-05T22:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 99,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791239400000,
+  "dateString": "2026-10-05T22:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 103,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791238500000,
+  "dateString": "2026-10-05T22:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791237600000,
+  "dateString": "2026-10-05T22:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 106,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791236700000,
+  "dateString": "2026-10-05T21:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 108,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791235800000,
+  "dateString": "2026-10-05T21:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791234900000,
+  "dateString": "2026-10-05T21:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 117,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791234000000,
+  "dateString": "2026-10-05T21:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 121,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791233100000,
+  "dateString": "2026-10-05T20:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 126,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791232200000,
+  "dateString": "2026-10-05T20:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 133,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791231300000,
+  "dateString": "2026-10-05T20:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 139,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791230400000,
+  "dateString": "2026-10-05T20:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 146,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791229500000,
+  "dateString": "2026-10-05T19:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 155,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791228600000,
+  "dateString": "2026-10-05T19:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 162,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791227700000,
+  "dateString": "2026-10-05T19:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 169,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791226800000,
+  "dateString": "2026-10-05T19:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 177,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791225900000,
+  "dateString": "2026-10-05T18:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 178,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791225000000,
+  "dateString": "2026-10-05T18:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 177,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791224100000,
+  "dateString": "2026-10-05T18:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 166,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791223200000,
+  "dateString": "2026-10-05T18:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 142,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791222300000,
+  "dateString": "2026-10-05T17:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 101,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791221400000,
+  "dateString": "2026-10-05T17:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 101,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791220500000,
+  "dateString": "2026-10-05T17:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 101,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791219600000,
+  "dateString": "2026-10-05T17:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 99,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791218700000,
+  "dateString": "2026-10-05T16:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 99,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791217800000,
+  "dateString": "2026-10-05T16:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 103,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791216900000,
+  "dateString": "2026-10-05T16:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791216000000,
+  "dateString": "2026-10-05T16:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 108,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791215100000,
+  "dateString": "2026-10-05T15:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 110,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791214200000,
+  "dateString": "2026-10-05T15:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791213300000,
+  "dateString": "2026-10-05T15:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 117,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791212400000,
+  "dateString": "2026-10-05T15:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 123,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791211500000,
+  "dateString": "2026-10-05T14:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 126,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791210600000,
+  "dateString": "2026-10-05T14:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 133,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791209700000,
+  "dateString": "2026-10-05T14:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 139,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791208800000,
+  "dateString": "2026-10-05T14:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 146,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791207900000,
+  "dateString": "2026-10-05T13:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 153,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791207000000,
+  "dateString": "2026-10-05T13:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 159,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791206100000,
+  "dateString": "2026-10-05T13:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 166,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791205200000,
+  "dateString": "2026-10-05T13:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 171,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791204300000,
+  "dateString": "2026-10-05T12:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 173,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791203400000,
+  "dateString": "2026-10-05T12:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 171,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791202500000,
+  "dateString": "2026-10-05T12:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 162,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791201600000,
+  "dateString": "2026-10-05T12:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 142,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791200700000,
+  "dateString": "2026-10-05T11:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 108,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791199800000,
+  "dateString": "2026-10-05T11:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 110,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791198900000,
+  "dateString": "2026-10-05T11:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791198000000,
+  "dateString": "2026-10-05T11:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 115,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791197100000,
+  "dateString": "2026-10-05T10:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 117,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791196200000,
+  "dateString": "2026-10-05T10:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 121,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791195300000,
+  "dateString": "2026-10-05T10:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 124,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791194400000,
+  "dateString": "2026-10-05T10:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 128,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791193500000,
+  "dateString": "2026-10-05T09:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 132,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791192600000,
+  "dateString": "2026-10-05T09:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 137,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791191700000,
+  "dateString": "2026-10-05T09:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 142,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791190800000,
+  "dateString": "2026-10-05T09:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 148,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791189900000,
+  "dateString": "2026-10-05T08:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 153,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791189000000,
+  "dateString": "2026-10-05T08:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 160,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791188100000,
+  "dateString": "2026-10-05T08:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 166,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791187200000,
+  "dateString": "2026-10-05T08:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 169,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791186300000,
+  "dateString": "2026-10-05T07:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 173,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791185400000,
+  "dateString": "2026-10-05T07:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 171,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791184500000,
+  "dateString": "2026-10-05T07:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 164,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791183600000,
+  "dateString": "2026-10-05T07:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 146,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791182700000,
+  "dateString": "2026-10-05T06:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 115,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791181800000,
+  "dateString": "2026-10-05T06:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 115,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791180900000,
+  "dateString": "2026-10-05T06:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791180000000,
+  "dateString": "2026-10-05T06:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791179100000,
+  "dateString": "2026-10-05T05:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791178200000,
+  "dateString": "2026-10-05T05:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791177300000,
+  "dateString": "2026-10-05T05:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791176400000,
+  "dateString": "2026-10-05T05:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 114,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791175500000,
+  "dateString": "2026-10-05T04:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791174600000,
+  "dateString": "2026-10-05T04:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791173700000,
+  "dateString": "2026-10-05T04:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791172800000,
+  "dateString": "2026-10-05T04:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791171900000,
+  "dateString": "2026-10-05T03:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 112,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791171000000,
+  "dateString": "2026-10-05T03:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 110,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791170100000,
+  "dateString": "2026-10-05T03:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 110,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791169200000,
+  "dateString": "2026-10-05T03:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 110,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791168300000,
+  "dateString": "2026-10-05T02:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 110,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791167400000,
+  "dateString": "2026-10-05T02:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 108,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791166500000,
+  "dateString": "2026-10-05T02:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 108,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791165600000,
+  "dateString": "2026-10-05T02:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 108,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791164700000,
+  "dateString": "2026-10-05T01:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 106,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791163800000,
+  "dateString": "2026-10-05T01:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 106,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791162900000,
+  "dateString": "2026-10-05T01:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 106,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791162000000,
+  "dateString": "2026-10-05T01:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 106,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791161100000,
+  "dateString": "2026-10-05T00:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791160200000,
+  "dateString": "2026-10-05T00:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791159300000,
+  "dateString": "2026-10-05T00:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791158400000,
+  "dateString": "2026-10-05T00:00:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791157500000,
+  "dateString": "2026-10-04T23:45:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 105,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791156600000,
+  "dateString": "2026-10-04T23:30:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 103,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791155700000,
+  "dateString": "2026-10-04T23:15:00.000Z"
+ },
+ {
+  "type": "sgv",
+  "sgv": 103,
+  "direction": "Flat",
+  "device": "xDrip-LibreReceiver",
+  "date": 1791154800000,
+  "dateString": "2026-10-04T23:00:00.000Z"
+ }
+]

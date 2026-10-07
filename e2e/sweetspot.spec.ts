@@ -34,7 +34,7 @@ async function tryChange(page: Page, name: string) {
 async function timelineRow(page: Page, type: string): Promise<Locator> {
     const rows = page.locator('.timeline-row')
     for (let i = 0; i < await rows.count(); i++) {
-        if (await rows.nth(i).getByLabel('Event').inputValue() === type) {
+        if (await rows.nth(i).getByLabel(/: event$/).inputValue() === type) {
             return rows.nth(i)
         }
     }
@@ -43,7 +43,7 @@ async function timelineRow(page: Page, type: string): Promise<Locator> {
 
 /** uploads a CSV file given as text */
 async function upload(page: Page, name: string, text: string) {
-    await page.getByLabel('Upload a CSV file').setInputFiles(
+    await page.getByLabel('Upload a file').setInputFiles(
         { name, mimeType: 'text/csv', buffer: Buffer.from(text) })
 }
 
@@ -149,15 +149,15 @@ test.describe('uploaded days', () => {
 
     test('a CSV file is loaded, and timeline errors are shown before simulating', async ({ page }) => {
         await open(page)
-        await page.getByLabel('Upload a CSV file').setInputFiles(sampleMDI)
-        await expect(page.getByText('Using SampleDayMDI.csv')).toBeVisible()
+        await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
+        await expect(page.getByText('Using SampleDayMDI.csv (SweetSpot CSV file)')).toBeVisible()
         const status = page.getByRole('status')
         await expect(status).toContainText('Original day:')
         const before = await status.textContent()
 
         // an impossible amount is reported, and nothing is simulated
         const bolus = await timelineRow(page, 'bolus')
-        await bolus.getByLabel('Value').fill('-3')
+        await bolus.getByLabel(/: amount$/).fill('-3')
         await page.getByRole('button', { name: 'Show this change' }).click()
         const problems = page.getByRole('alert').filter({ hasText: 'There is a problem' })
         await expect(problems).toContainText('The amount must be 0 or more')
@@ -165,10 +165,24 @@ test.describe('uploaded days', () => {
         await expect(status).toHaveText(before!)
 
         // once fixed, the change is compared with the original day
-        await bolus.getByLabel('Value').fill('4')
+        await bolus.getByLabel(/: amount$/).fill('4')
         await page.getByRole('button', { name: 'Show this change' }).click()
         await expect(status).toContainText('With change')
         await expect(page.getByRole('button', { name: 'Undo all changes' })).toBeVisible()
+    })
+
+    test('timeline fields are named after their entry, for screen readers', async ({ page }) => {
+        await open(page)
+        await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
+        await expect(page.locator('.timeline-row').first()).toBeAttached()
+        const bolus = await timelineRow(page, 'bolus')
+        await expect(bolus.getByRole('spinbutton').first())
+            .toHaveAccessibleName(/^\d\d:\d\d quick-acting insulin: amount$/)
+        await expect(bolus.getByRole('button')).toHaveAccessibleName(
+            /^Remove \d\d:\d\d quick-acting insulin$/)
+        const names = await page.locator('.timeline-row .cell-value').evaluateAll(
+            (inputs) => inputs.map((input) => input.getAttribute('aria-label')))
+        expect(new Set(names).size).toBe(names.length)
     })
 
     test('a file that cannot be read gives a clear message', async ({ page }) => {
@@ -176,6 +190,46 @@ test.describe('uploaded days', () => {
         await upload(page, 'bad.csv', 'time,type,value\n2026-10-05 08:00,nph,10\n')
         await expect(page.getByRole('alert')).toContainText(
             'We could not read bad.csv. Line 2: unknown event type "nph"')
+    })
+
+    test('a Dexcom Clarity export is read, saying what was not used', async ({ page }) => {
+        await open(page)
+        await upload(page, 'clarity.csv', [
+            'Index,Timestamp (YYYY-MM-DDThh:mm:ss),Event Type,Event Subtype,Patient Info,'
+                + 'Device Info,Source Device ID,Glucose Value (mmol/L),Insulin Value (u),'
+                + 'Carb Value (grams),Duration (hh:mm:ss)',
+            '1,,FirstName,,A,,,,,,',
+            '2,2026-10-05T07:00:00,EGV,,,,,6.2,,,',
+            '3,2026-10-05T07:30:00,Insulin,Fast-Acting,,,,,5,,',
+            '4,2026-10-05T07:30:00,Carbs,,,,,,,45,',
+            '5,2026-10-05T09:00:00,Alert,High,,,,,,,',
+        ].join('\n'))
+        await expect(page.getByText('Using clarity.csv (Dexcom Clarity export).')).toBeVisible()
+        await expect(page.getByText('1 other entries (such as alert) were not used.')).toBeVisible()
+        await expect(page.getByRole('status')).toContainText('Original day:')
+    })
+
+    test('the LibreView sample file is read', async ({ page }) => {
+        await open(page)
+        await page.getByLabel('Upload a file').setInputFiles(fileURLToPath(
+            new URL('../examples/PatientData/SampleDayLibreView.csv', import.meta.url)))
+        await expect(page.getByText('Using SampleDayLibreView.csv (LibreView export).')).toBeVisible()
+        await expect(page.getByText(/taken as glargine/)).toBeVisible()
+        await expect(page.getByRole('status')).toContainText('Original day:')
+    })
+
+    test('Nightscout entries and treatments are read together', async ({ page }) => {
+        await open(page)
+        const at = (h: number) => new Date(2026, 9, 5, h).toISOString()
+        await page.getByLabel('Upload a file').setInputFiles([
+            { name: 'entries.json', mimeType: 'application/json', buffer: Buffer.from(
+                JSON.stringify([{ type: 'sgv', sgv: 110, dateString: at(7) }])) },
+            { name: 'treatments.json', mimeType: 'application/json', buffer: Buffer.from(
+                JSON.stringify([{ eventType: 'Meal Bolus', created_at: at(8), insulin: 5, carbs: 45 }])) },
+        ])
+        await expect(page.getByText('Using entries.json, treatments.json (Nightscout download).'))
+            .toBeVisible()
+        await expect(page.getByRole('status')).toContainText('Original day:')
     })
 
     test('UK dates and quoted cells are read correctly', async ({ page }) => {

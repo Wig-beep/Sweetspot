@@ -25,11 +25,14 @@ import Actuator from '../../types/Actuator.js'
 import Exercise from '../../types/Exercise.js'
 import Meal from '../../types/Meal.js'
 import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
-import { hasExercise, simulateEvents } from '../../common/SimulateEvents.js'
+import { EventSimulation, hasExercise } from '../../common/SimulateEvents.js'
+import { requestKey, SimulationRequest } from '../../common/SimulationRequest.js'
+import { SimulationClient } from '../util/SimulationClient.js'
 import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
-import { getExercisesFromEvents, parsePatientEventsCSV } from '../../common/PatientEvents.js'
+import { getExercisesFromEvents, sortByTime } from '../../common/PatientEvents.js'
+import { readPatientData } from '../../common/DeviceExports.js'
 import { eventsForDay, getDays } from '../../common/PatientDays.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
@@ -49,6 +52,22 @@ import {
 
 // prepare simulator
 const sim = new Simulator()
+
+/** simulates days of logged events in a background thread */
+const simulations = new SimulationClient()
+
+/**
+ * The simulation of the original day, kept while only the changes differ:
+ * it is simulated again only if the day, its period, the virtual person or
+ * the sensor change (all part of the key).
+ */
+let originalDayCache: { key: string, simulation: Promise<EventSimulation> } | null = null
+
+/** number of the latest run; results of earlier runs are not shown */
+let latestRun = 0
+
+/** results are calculating for longer than this (ms) before saying so */
+const CALCULATING_DELAY = 300
 
 /** media query of the layout with the results below the settings */
 const PHONE_LAYOUT = "(max-width: 879px)"
@@ -136,6 +155,10 @@ export default defineComponent({
             selectedDay: 0,
             /** changes whenever other data is loaded (resets the timeline) */
             dataKey: 0,
+            /** format of the uploaded files, e.g. "Dexcom Clarity export" */
+            fileSource: '' as string,
+            /** what was not used or assumed when reading the files */
+            fileNotes: [] as string[],
             /** problem with the last CSV file, shown next to the upload */
             csvError: '' as string,
             /** teaching scenarios (on the current day) */
@@ -150,6 +173,10 @@ export default defineComponent({
             whatIfName: '' as string,
             /** metrics of the logged day, if the timeline has been edited */
             baselineMetrics: null as GlucoseMetrics | null,
+            /** whether results take a while to calculate */
+            calculating: false,
+            /** problem simulating the day, if any */
+            simulationError: '',
             /** whether the introduction is shown (on the first visit) */
             showIntro: !introSeen(),
         }
@@ -220,29 +247,44 @@ export default defineComponent({
         },
     },
     methods: {
+            /**
+             * reads the chosen files (SweetSpot CSV, or exports of
+             * LibreView, Dexcom Clarity or Nightscout); the events of
+             * several files, e.g. Nightscout entries and treatments, are
+             * combined
+             */
             async onCsvFileSelected(event: Event): Promise<void> {
                 const input = event.target as HTMLInputElement
-                const file = input.files?.[0]
-                if (!file) {
+                const files = Array.from(input.files ?? [])
+                if (files.length === 0) {
                     return
                 }
-                const csvText = await file.text()
+                const texts = await Promise.all(files.map((file) => file.text()))
                 // allows the same file to be selected again later
                 input.value = ''
 
-                let parsed: PatientEvent[]
-                try {
-                    parsed = parsePatientEventsCSV(csvText)
-                } catch (err) {
-                    this.csvError = `We could not read ${file.name}. `
-                        + `${(err as Error).message}. Check the file and try again.`
-                    return
+                const events: PatientEvent[] = []
+                const sources = new Set<string>()
+                const notes: string[] = []
+                for (const [i, file] of files.entries()) {
+                    try {
+                        const data = readPatientData(texts[i])
+                        events.push(...data.events)
+                        sources.add(data.source)
+                        notes.push(...data.notes)
+                    } catch (err) {
+                        this.csvError = `We could not read ${file.name}. `
+                            + `${(err as Error).message}. Check the file and try again.`
+                        return
+                    }
                 }
                 this.csvError = ''
-                this.csvFileName = file.name
+                this.csvFileName = files.map((file) => file.name).join(", ")
+                this.fileSource = [...sources].join(" and ")
+                this.fileNotes = notes
                 this.activeScenarioId = null
-                this.fileEvents = parsed
-                this.fileDays = getDays(parsed)
+                this.fileEvents = sortByTime(events)
+                this.fileDays = getDays(this.fileEvents)
                 // files with several days are looked at one day at a time
                 this.loadDay(0)
             },
@@ -263,21 +305,77 @@ export default defineComponent({
             this.chartInsulinCarbs().clearRuns()
             this.run()
         },
-        run(): void {
-            this.resetCharts()
-
+        /**
+         * Simulates the day (and the change, if the timeline was edited) and
+         * shows the results. Days of logged events are simulated in a
+         * background thread; if another run starts meanwhile, only the
+         * latest one is shown.
+         */
+        async run(): Promise<void> {
+            const runId = ++latestRun
             const events = toRaw(this.patientEvents)
             const original = toRaw(this.originalPatientEvents)
-            this.usedExerciseModel = false
+
+            if (!events || !original) {
+                // without patient data: the selected controller and meals
+                this.usedExerciseModel = false
+                this.showResults(this.simulate(), null, false, events)
+                return
+            }
+
+            // the original day and the change are simulated alike, so that
+            // they stay comparable: if either has exercise, both use the
+            // exercise model
+            const isWhatIf = this.isEdited
+            const withExercise = hasExercise(events) || hasExercise(original)
+            const originalRequest = this.simulationRequest(original, withExercise)
+            const whatIfRequest = isWhatIf
+                ? this.simulationRequest(events, withExercise) : null
+
+            const timer = setTimeout(() => { this.calculating = true }, CALCULATING_DELAY)
+            let loggedDay: EventSimulation, whatIf: EventSimulation | null
+            try {
+                [loggedDay, whatIf] = await Promise.all([
+                    this.simulateOriginalDay(originalRequest),
+                    whatIfRequest ? simulations.simulate(whatIfRequest) : null,
+                ])
+            }
+            catch (error) {
+                console.error(error)
+                if (runId === latestRun) {
+                    this.simulationError = "Sorry, the results could not be "
+                        + "worked out. Try again, or reload the page."
+                }
+                return
+            }
+            finally {
+                clearTimeout(timer)
+                if (runId === latestRun) {
+                    this.calculating = false
+                }
+            }
+            if (runId !== latestRun) {
+                return
+            }
+            this.simulationError = ''
+            this.usedExerciseModel = loggedDay.usedExerciseModel
+                || (whatIf?.usedExerciseModel ?? false)
+            this.showResults(whatIf?.results ?? loggedDay.results,
+                loggedDay.results, isWhatIf, events)
+        },
+        /**
+         * Shows simulation results in the charts and the summary.
+         * @param results - results of the latest simulation
+         * @param loggedDay - results of the original day, if patient data is used
+         * @param isWhatIf - whether the results are a change of the original day
+         * @param events - events of the latest simulation
+         */
+        showResults(results: SimulationResult[], loggedDay: SimulationResult[] | null,
+            isWhatIf: boolean, events: PatientEvent[] | null): void {
+            this.resetCharts()
+            const original = toRaw(this.originalPatientEvents)
             const chartGlucose = this.chartGlucose()
             const chartInsulinCarbs = this.chartInsulinCarbs()
-
-            // with patient data, the logged day is always shown; an edited
-            // timeline is simulated as a what-if on top of it
-            const loggedDay = original ? this.simulate(original) : null
-            const isWhatIf = loggedDay !== null && this.isEdited
-            const results = (loggedDay && !isWhatIf)
-                ? loggedDay : this.simulate(events)
 
             // propagate results to charts; with patient data, the charts'
             // main simulation is the logged day and what-ifs are added to it
@@ -322,9 +420,40 @@ export default defineComponent({
             this.baselineMetrics = (isWhatIf && loggedDay)
                 ? computeGlucoseMetrics(loggedDay) : null
         },
+        /**
+         * Describes the simulation of logged events over the period shown,
+         * with the current virtual person and sensor.
+         */
+        simulationRequest(events: PatientEvent[], withExercise: boolean): SimulationRequest {
+            const patient = <InstanceType<typeof VirtualPatientSelection>>this.$refs.patientSelection
+            const sensor = <InstanceType<typeof SensorSelection>>this.$refs.sensorSelection
+            return {
+                events,
+                patient: patient.getModuleSpec(),
+                sensor: sensor.getModuleSpec(),
+                options: { ...this.getOptions(), ...this.simulationSpan },
+                withExercise,
+            }
+        },
+        /** simulates the original day, unless it is unchanged since the last run */
+        simulateOriginalDay(request: SimulationRequest): Promise<EventSimulation> {
+            const key = requestKey(request)
+            if (originalDayCache?.key !== key) {
+                const simulation = simulations.simulate(request)
+                originalDayCache = { key, simulation }
+                // a failed simulation is tried again next time
+                simulation.catch(() => {
+                    if (originalDayCache?.simulation === simulation) {
+                        originalDayCache = null
+                    }
+                })
+            }
+            return originalDayCache!.simulation
+        },
         /** loads a teaching scenario as the logged day */
         loadScenario(scenario: TeachingScenario): void {
             this.csvFileName = ''
+            this.fileNotes = []
             this.csvError = ''
             this.fileEvents = null
             this.fileDays = []
@@ -402,27 +531,11 @@ export default defineComponent({
             this.syncInsulinRuns()
         },
         /**
-         * Runs a simulation.
-         * @param {PatientEvent[] | null} events - logged events to replay, or
-         *      null to use the selected controller and meals
+         * Runs a simulation with the selected controller and meals (used
+         * without patient data).
          * @returns {SimulationResult[]} results
          */
-        simulate(events: PatientEvent[] | null): SimulationResult[] {
-            if (events) {
-                // replay logged doses, meals and exercise over the period
-                // covered by the patient data
-                // the logged day and the what-if are simulated alike, so that
-                // they stay comparable: if either has exercise, both use the
-                // exercise model
-                const withExercise = hasExercise(toRaw(this.patientEvents) ?? [])
-                    || hasExercise(toRaw(this.originalPatientEvents) ?? [])
-                const { results, usedExerciseModel } = simulateEvents(events,
-                    this.getPatient(), this.getSensor(),
-                    { ...this.getOptions(), ...this.simulationSpan }, sim,
-                    withExercise)
-                this.usedExerciseModel ||= usedExerciseModel
-                return results
-            }
+        simulate(): SimulationResult[] {
             sim.setPatient(this.getPatient())
             sim.setController(this.getController())
             sim.setMeals(this.getMeals())
@@ -574,7 +687,7 @@ export default defineComponent({
             <div style="display: none;">    
                 <ControllerSelection @controllerChanged="controllerChanged" 
                     :patientProfile="patientProfile" ref="controller" />
-                <SensorSelection @valueChanged="sensorChanged" />
+                <SensorSelection @valueChanged="sensorChanged" ref="sensorSelection" />
                 <ActuatorSelection @valueChanged="actuatorChanged" />
                 <MealTable v-if='options.t0' :t0="options.t0" @mealsChanged="mealsChanged" ref="meals" />
                 <ExerciseTable v-if='options.t0' :t0="options.t0" @exercisesChanged="exercisesChanged" />
@@ -587,13 +700,22 @@ export default defineComponent({
 
             <div class="lt1-csv-input">
                 <h3>Or use your own day</h3>
-                <p class="ss-hint">
-                    Upload a CSV file with the insulin, food and glucose
-                    readings of a day. It stays on this device.
+                <p class="ss-hint" id="uploadHint">
+                    Upload a file with your insulin, food and glucose
+                    readings: a SweetSpot CSV file, or an export from
+                    LibreView, Dexcom Clarity or Nightscout (you can choose
+                    the entries and treatments files together). It stays on
+                    this device.
                 </p>
-                <label for="csvUpload">Upload a CSV file</label>
-                <input type="file" id="csvUpload" accept=".csv" @change="onCsvFileSelected" />
-                <p v-if="csvFileName && !csvError" class="ss-hint">Using {{ csvFileName }}</p>
+                <label for="csvUpload">Upload a file</label>
+                <input type="file" id="csvUpload" accept=".csv,.txt,.json" multiple
+                    aria-describedby="uploadHint" @change="onCsvFileSelected" />
+                <div v-if="csvFileName && !csvError" class="ss-hint">
+                    <p>Using {{ csvFileName }} ({{ fileSource }}).</p>
+                    <ul v-if="fileNotes.length" class="file-notes">
+                        <li v-for="note in fileNotes" :key="note">{{ note }}</li>
+                    </ul>
+                </div>
                 <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
                 <div v-if="fileDays.length > 1" class="day-picker">
                     <label for="daySelect">Day to look at</label>
@@ -633,7 +755,7 @@ export default defineComponent({
                 />
             </AccordionBox>
 
-            <VirtualPatientSelection @patientChanged="patientChanged" />
+            <VirtualPatientSelection @patientChanged="patientChanged" ref="patientSelection" />
         </section>
         <section class="box lt1-results" aria-labelledby="results-heading">
             <h2 id="results-heading">What happens to glucose</h2>
@@ -641,6 +763,8 @@ export default defineComponent({
                 Choose a practice scenario or upload a day to see the results here.
             </p>
             <p class="visually-hidden" role="status">{{ statusMessage }}</p>
+            <p v-if="calculating" class="ss-hint calculating">Working out the results…</p>
+            <p v-if="simulationError" class="csv-error" role="alert">{{ simulationError }}</p>
             <ChartGlucose ref="chartGlucose" :description="glucoseDescription"
                 @runVisibilityChanged="syncInsulinRuns"
                 @hoverTime="hoverTimeChanged" />
@@ -690,6 +814,11 @@ export default defineComponent({
     margin: 1.5rem 0 1rem 0;
     padding-top: 1rem;
     border-top: 1px solid var(--ss-border);
+}
+
+.file-notes {
+    padding-left: 1.25rem;
+    margin-bottom: 0.75rem;
 }
 
 .day-picker {

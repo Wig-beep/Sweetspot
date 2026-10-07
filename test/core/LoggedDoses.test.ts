@@ -61,6 +61,20 @@ describe("LoggedDoses", () => {
             expect(controller.getNextUpdateTime(at(8, 0))).to.deep.equal(at(12, 0))
             expect(controller.getNextUpdateTime(at(13, 0))).to.be.undefined
         })
+
+        it("should report insulin on board of the boluses given", () => {
+            controller.reset(at(7, 0))
+            controller.update(at(7, 30), {})
+            // the bolus at 6:00 was before the start and is not given
+            expect(controller.getInternals().IOB).to.equal(0)
+            controller.update(at(8, 0), {})
+            expect(controller.getInternals().IOB).to.be.closeTo(4, 1e-9)
+            controller.update(at(10, 0), {})
+            const later = controller.getInternals().IOB!
+            expect(later).to.be.above(0).and.below(4)
+            controller.update(at(13, 0), {})
+            expect(controller.getInternals().IOB).to.equal(0)
+        })
     })
 
     describe("#update with long-acting insulin", () => {

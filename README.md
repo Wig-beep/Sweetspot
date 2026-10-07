@@ -52,6 +52,24 @@ npm run serve
 
   The older layout `time,basal,bolus,carbs` (one row sets the basal rate and may contain a bolus and a meal) is still accepted.
   Cells may be quoted, and files separated by semicolons or tabs are accepted too.
+* Exports of diabetes apps are read directly (see [src/common/DeviceExports.ts](src/common/DeviceExports.ts)):
+  * LibreView CSV (FreeStyle Libre): sensor, scanned and finger-prick glucose, quick-acting and long-acting insulin
+    and carbs in grams. Dates are read day first (UK), or month first if they have AM or PM (US).
+  * Dexcom Clarity CSV: sensor glucose and calibrations, quick-acting and long-acting insulin, carbs and exercise
+    (light, medium and heavy are read as 30, 50 and 70 % effort).
+  * Nightscout JSON downloaded from its API (`/api/v1/entries.json` and `/api/v1/treatments.json`, which can be
+    chosen together): glucose, boluses, carbs, exercise and xDrip+ injections. Pump basal changes are not used,
+    since the pump's basal profile is not in the download.
+
+  Sample files of the same made-up day are in [examples/PatientData](examples/PatientData):
+  [SampleDayLibreView.csv](examples/PatientData/SampleDayLibreView.csv),
+  [SampleDayDexcomClarity.csv](examples/PatientData/SampleDayDexcomClarity.csv), and
+  [SampleDayNightscout-entries.json](examples/PatientData/SampleDayNightscout-entries.json) with
+  [SampleDayNightscout-treatments.json](examples/PatientData/SampleDayNightscout-treatments.json).
+  They follow the layout of each export, but contain no real data.
+
+  The page says which format was read and what was not used or assumed (for example, background insulin without
+  a name is taken as glargine).
   Files covering several days (for example sensor exports) are looked at one day at a time. Glucose readings
   are hidden in the timeline at first, so that the doses, food and exercise stand out.
   The simulation runs from the first event until 6 hours after the last one.
@@ -60,6 +78,10 @@ npm run serve
   the glucose chart then shows the logged day (dashed) next to the what-if day, and the day summary compares
   time in range, hypos, mean glucose, insulin and carbs. Every what-if is kept as a curve (the latest one bold);
   click on a curve in the legend to show or hide it.
+  The insulin chart shows quick-acting insulin on board, estimated as bolus advisors do (exponential action curve,
+  peak at 75 minutes, 5 hours duration), which makes stacked corrections visible.
+  Days are simulated in a background thread (a Web Worker), so the page keeps responding; the original day is only
+  simulated again when the day or the virtual person settings change.
 
   Long-acting insulin is released over many hours using simplified profiles (see
   [src/common/LongActingInsulin.ts](src/common/LongActingInsulin.ts)); these are educational approximations, not

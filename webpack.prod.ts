@@ -11,5 +11,7 @@ export default merge(common, <webpack.Configuration>{
         // cached files of an older build with files of a newer one
         filename: '[name].[contenthash:8].bundle.js',
         chunkFilename: '[name].[contenthash:8].bundle.js',
+        // remove files of earlier builds, which would otherwise pile up
+        clean: true,
     },
 });

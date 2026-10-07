@@ -34,11 +34,11 @@
                     :id="'row-' + row.id"
                     :aria-invalid="!!errors[row.id]"
                     :aria-describedby="errors[row.id] ? 'row-error-' + row.id : undefined"
-                    aria-label="Time"
+                    :aria-label="fieldLabel(row, 'time')"
                     v-model="row.timeString"
                 />
 
-                <select class="cell-type" v-model="row.type" aria-label="Event">
+                <select class="cell-type" v-model="row.type" :aria-label="fieldLabel(row, 'event')">
                     <option v-for="type in eventTypes" :key="type" :value="type">
                         {{ typeLabels[type] }}
                     </option>
@@ -49,7 +49,7 @@
                     type="number"
                     min="0"
                     :step="row.type === 'carbs' ? 1 : 0.1"
-                    aria-label="Value"
+                    :aria-label="fieldLabel(row, 'amount')"
                     v-model.number="row.value"
                 />
 
@@ -61,14 +61,14 @@
                         step="1"
                         placeholder="minutes"
                         :title="durationLabel(row.type)"
-                        :aria-label="durationLabel(row.type)"
+                        :aria-label="fieldLabel(row, durationLabel(row.type))"
                         v-model.number="row.duration"
                     />
                     <select
                         v-else-if="row.type === 'longacting'"
                         v-model="row.insulin"
                         title="Long-acting insulin"
-                        aria-label="Long-acting insulin"
+                        :aria-label="fieldLabel(row, 'which insulin')"
                     >
                         <option v-for="insulin in insulins" :key="insulin" :value="insulin">
                             {{ insulinLabels[insulin] }}
@@ -77,7 +77,7 @@
                 </div>
 
                 <button class="cell-remove" @click="removeRow(row.id)"
-                    title="Remove this entry" aria-label="Remove this entry">✕</button>
+                    title="Remove this entry" :aria-label="'Remove ' + rowName(row)">✕</button>
                 <p v-if="errors[row.id]" class="cell-error" :id="'row-error-' + row.id">
                     <span class="visually-hidden">Error:</span> {{ errors[row.id] }}
                 </p>
@@ -282,6 +282,15 @@ export default defineComponent({
         rowName(row: TimelineRow): string {
             const time = row.timeString ? row.timeString.slice(11, 16) : "Entry"
             return `${time} ${typeLabels[row.type].replace(/ \(.*\)$/, "").toLowerCase()}`
+        },
+
+        /**
+         * label of a field of a row that names the row, e.g. "07:30
+         * quick-acting insulin: amount", so that screen reader users can
+         * tell the rows apart
+         */
+        fieldLabel(row: TimelineRow, field: string): string {
+            return `${this.rowName(row)}: ${field.charAt(0).toLowerCase() + field.slice(1)}`
         },
 
         focusRow(id: number) {
