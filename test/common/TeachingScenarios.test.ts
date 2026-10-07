@@ -120,4 +120,31 @@ describe("TeachingScenarios", function () {
             .to.be.greaterThan(repeated.maxGlucose + 1.5)
         expect(whatIf(s, "right lunch dose").minGlucose).to.be.greaterThan(4)
     })
+
+    describe("quizzes", () => {
+        it("should have one right answer, and changes that exist", () => {
+            for (const s of scenarios) {
+                expect(s.quiz, s.id).to.not.be.undefined
+                const answers = s.quiz!.answers
+                expect(answers.filter((a) => a.correct).length, s.id).to.equal(1)
+                for (const answer of answers) {
+                    if (answer.whatIf) {
+                        expect(s.whatIfs.map((w) => w.label), s.id).to.include(answer.whatIf)
+                    }
+                    expect(answer.feedback, s.id).to.match(answer.correct ? /^Right\./ : /^Not quite\./)
+                }
+            }
+        })
+
+        it("should have as right answer the choice with the most time in range", () => {
+            for (const s of scenarios) {
+                const tir = s.quiz!.answers.map((answer) => (answer.whatIf
+                    ? whatIf(s, answer.whatIf)
+                    : simulate(s, s.events).metrics).timeInRange)
+                const best = tir.indexOf(Math.max(...tir))
+                expect(s.quiz!.answers[best].correct, `${s.id}: ${tir.map((t) => t.toFixed(0))}`)
+                    .to.be.true
+            }
+        })
+    })
 })

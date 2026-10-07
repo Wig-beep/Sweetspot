@@ -95,7 +95,8 @@ export default <webpack.Configuration>{
     new CopyWebpackPlugin({
       'patterns': [
         { from: './src/frontend/assets/images', to: 'images' },
-        { from: './src/frontend/assets/styles', to: 'styles' }
+        { from: './src/frontend/assets/styles', to: 'styles' },
+        { from: './src/frontend/assets/manifest.webmanifest', to: 'manifest.webmanifest' }
       ]
     }),
   ],

@@ -8,8 +8,11 @@
 
 import { defineComponent, PropType } from 'vue'
 import { TeachingScenario, WhatIf } from '../../common/TeachingScenarios.js'
+import ScenarioQuiz from './ScenarioQuiz.vue'
 
 export default defineComponent({
+    components: { ScenarioQuiz },
+
     props: {
         scenarios: {
             type: Array as PropType<TeachingScenario[]>,
@@ -22,7 +25,7 @@ export default defineComponent({
         },
     },
 
-    emits: ["load", "whatIf"],
+    emits: ["load", "whatIf", "showOriginal"],
 
     data() {
         return {
@@ -64,6 +67,16 @@ export default defineComponent({
                 this.$nextTick(() => (<HTMLElement>this.$refs.sheetToggle)?.focus())
             }
         },
+        /** shows a quiz answer: a what-if, or the original day */
+        showAnswer(label: string | undefined) {
+            const whatIf = this.active?.whatIfs.find((w) => w.label === label)
+            if (whatIf) {
+                this.tryWhatIf(whatIf)
+            }
+            else {
+                this.$emit("showOriginal")
+            }
+        },
         closeSheet() {
             if (this.sheetOpen) {
                 this.sheetOpen = false;
@@ -91,7 +104,10 @@ export default defineComponent({
                     :id="'scenario-' + scenario.id" :value="scenario.id"
                     :checked="scenario.id === activeId"
                     @change="choose(scenario)" />
-                <label :for="'scenario-' + scenario.id">{{ scenario.title }}</label>
+                <label :for="'scenario-' + scenario.id">
+                    {{ scenario.title }}
+                    <span v-if="scenario.shared" class="scenario-shared">(shared scenario)</span>
+                </label>
             </div>
         </fieldset>
 
@@ -120,6 +136,8 @@ export default defineComponent({
                     </li>
                 </ul>
             </div>
+
+            <ScenarioQuiz v-if="active.quiz" :quiz="active.quiz" @show="showAnswer" />
 
             <details>
                 <summary>Things to remember</summary>
@@ -178,6 +196,10 @@ export default defineComponent({
 
 .scenario-card {
     margin-top: 1rem;
+}
+
+.scenario-shared {
+    color: var(--ss-text-secondary);
 }
 
 .scenario-whatifs {

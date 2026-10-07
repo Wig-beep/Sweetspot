@@ -33,6 +33,8 @@ import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
 import { getExercisesFromEvents, sortByTime } from '../../common/PatientEvents.js'
 import { readPatientData } from '../../common/DeviceExports.js'
+import { decodeScenarioLink, isScenarioFile, scenarioFromFile } from '../../common/ScenarioFiles.js'
+import EducatorPanel from './EducatorPanel.vue'
 import { eventsForDay, getDays } from '../../common/PatientDays.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
@@ -124,9 +126,23 @@ export default defineComponent({
         ScenarioComparison,
         TeachingScenarioPanel,
         AccordionBox,
+        EducatorPanel,
     },
 
     created() {
+        // printed summaries show the things to remember, which are folded away
+        window.addEventListener('beforeprint', () => {
+            document.querySelectorAll('.scenario-card details:not([open])').forEach((d) => {
+                d.setAttribute('open', '')
+                d.setAttribute('data-print-opened', '')
+            })
+        })
+        window.addEventListener('afterprint', () => {
+            document.querySelectorAll('details[data-print-opened]').forEach((d) => {
+                d.removeAttribute('open')
+                d.removeAttribute('data-print-opened')
+            })
+        })
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key == 'Enter') {
                 this.run()
@@ -173,6 +189,8 @@ export default defineComponent({
             whatIfName: '' as string,
             /** metrics of the logged day, if the timeline has been edited */
             baselineMetrics: null as GlucoseMetrics | null,
+            /** problem opening a shared scenario, if any */
+            scenarioError: '',
             /** whether results take a while to calculate */
             calculating: false,
             /** problem simulating the day, if any */
@@ -189,11 +207,17 @@ export default defineComponent({
             isEmpty(this.getSensor()) || isEmpty(this.getActuator())) {
             await new Promise(r => setTimeout(r, 10))
         }
-        // run simulation to populate graphs
+        // open a scenario shared as a link, now and when the link changes
+        this.openScenarioLink()
+        window.addEventListener('hashchange', () => this.openScenarioLink())
         console.log("PROGRAM READY")
         //this.run()
     },
     computed: {
+        /** the scenario shown, if any */
+        activeScenario(): TeachingScenario | null {
+            return this.scenarios.find((s) => s.id === this.activeScenarioId) ?? null
+        },
         /** time span covered by the logged and the edited patient data */
         simulationSpan(): { t0: Date, tmax: Date } | undefined {
             if (!this.patientEvents) {
@@ -263,6 +287,14 @@ export default defineComponent({
                 // allows the same file to be selected again later
                 input.value = ''
 
+                // a scenario file shared by an educator
+                if (files.length === 1) {
+                    const scenario = this.readScenarioFile(texts[0], files[0].name)
+                    if (scenario !== undefined) {
+                        return
+                    }
+                }
+
                 const events: PatientEvent[] = []
                 const sources = new Set<string>()
                 const notes: string[] = []
@@ -288,6 +320,32 @@ export default defineComponent({
                 // files with several days are looked at one day at a time
                 this.loadDay(0)
             },
+        /**
+         * Opens the text as a scenario file, if it is one.
+         * @returns true if it is a scenario file (opened, or with an error
+         *      shown), undefined if it is another file
+         */
+        readScenarioFile(text: string, name: string): true | undefined {
+            let data: unknown
+            try {
+                data = JSON.parse(text)
+            } catch {
+                return undefined
+            }
+            if (!isScenarioFile(data)) {
+                return undefined
+            }
+            try {
+                const id = 'shared-' + name
+                this.useScenario({ ...scenarioFromFile(data, new Date(), id), shared: true })
+                this.csvError = ''
+                this.csvFileName = ''
+            } catch (err) {
+                this.csvError = `We could not open the scenario in ${name}. `
+                    + `${(err as Error).message}.`
+            }
+            return true
+        },
         /** loads one day of the uploaded file as the logged day */
         loadDay(index: number): void {
             const all = toRaw(this.fileEvents) ?? []
@@ -469,7 +527,44 @@ export default defineComponent({
         applyWhatIf(whatIf: WhatIf): void {
             this.patientEvents = structuredClone(toRaw(whatIf.events))
             this.run()
-            // on phones, the results are below the scenario: show them
+            this.scrollToResultsOnPhones()
+        },
+        /** adds a scenario written by an educator (or replaces it) and shows it */
+        useScenario(scenario: TeachingScenario): void {
+            const index = this.scenarios.findIndex((s) => s.id === scenario.id)
+            if (index >= 0) {
+                this.scenarios.splice(index, 1, scenario)
+            }
+            else {
+                this.scenarios.push(scenario)
+            }
+            this.scenarioError = ''
+            this.loadScenario(scenario)
+        },
+        /** opens the scenario in the link of the page, if there is one */
+        openScenarioLink(): void {
+            try {
+                const data = decodeScenarioLink(location.hash)
+                if (data !== undefined) {
+                    this.useScenario({
+                        ...scenarioFromFile(data, new Date(), 'shared-link'), shared: true })
+                }
+            } catch (err) {
+                this.scenarioError = `We could not open the scenario in this link. `
+                    + `${(err as Error).message}.`
+            }
+        },
+        /** prints a summary of the day for group sessions */
+        printSummary(): void {
+            window.print()
+        },
+        /** shows the original day of the scenario (e.g. from a quiz answer) */
+        showOriginalDay(): void {
+            this.resetToLoggedDay()
+            this.scrollToResultsOnPhones()
+        },
+        /** on phones, the results are below the scenario: show them */
+        scrollToResultsOnPhones(): void {
             if (window.matchMedia(PHONE_LAYOUT).matches) {
                 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches
                 document.getElementById("results-heading")?.scrollIntoView(
@@ -694,9 +789,11 @@ export default defineComponent({
                 <SimulationOptionsConfig @valueChanged="optionsChanged" ref="options" />
             </div>
 
+            <p v-if="scenarioError" class="csv-error" role="alert">{{ scenarioError }}</p>
             <TeachingScenarioPanel :scenarios="scenarios"
                 :activeId="activeScenarioId"
-                @load="loadScenario" @whatIf="applyWhatIf" />
+                @load="loadScenario" @whatIf="applyWhatIf"
+                @showOriginal="showOriginalDay" />
 
             <div class="lt1-csv-input">
                 <h3>Or use your own day</h3>
@@ -755,6 +852,18 @@ export default defineComponent({
                 />
             </AccordionBox>
 
+            <!-- kept while other days are loaded, so that a scenario being
+                 written is not lost when it is tried out -->
+            <AccordionBox v-if="patientEvents && originalPatientEvents"
+                title="For educators: make and share a scenario" class="no-print">
+                <EducatorPanel
+                    :scenario="activeScenario"
+                    :originalEvents="originalPatientEvents"
+                    :currentEvents="isEdited ? patientEvents : null"
+                    @use="useScenario"
+                />
+            </AccordionBox>
+
             <VirtualPatientSelection @patientChanged="patientChanged" ref="patientSelection" />
         </section>
         <section class="box lt1-results" aria-labelledby="results-heading">
@@ -774,6 +883,9 @@ export default defineComponent({
                 @hoverTime="hoverTimeChanged" />
             <ScenarioComparison :metrics="metrics" :baseline="baselineMetrics"
                 :isLoggedDay="patientEvents !== null" />
+            <button v-if="metrics" type="button" class="no-print" @click="printSummary">
+                Print a summary
+            </button>
         </section>
     </div>
 </template>

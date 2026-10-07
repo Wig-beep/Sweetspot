@@ -16,6 +16,7 @@ const types = {
     '.png': 'image/png',
     '.svg': 'image/svg+xml',
     '.json': 'application/json',
+    '.webmanifest': 'application/manifest+json',
     '.txt': 'text/plain; charset=utf-8',
 }
 

@@ -97,6 +97,113 @@ test.describe('practice scenarios', () => {
     })
 })
 
+test.describe('quizzes', () => {
+
+    test('a quiz gives feedback and shows the answer on the charts', async ({ page }) => {
+        await open(page)
+        await page.getByRole('radio', { name: 'Taking correction doses too close together' }).check()
+        const quiz = page.locator('.scenario-quiz')
+        const check = quiz.getByRole('button', { name: 'Check my answer' })
+
+        await check.click()
+        await expect(quiz).toContainText('Error: Choose an answer')
+
+        await quiz.getByLabel('Correct twice, at 12pm and 1pm').check()
+        await check.click()
+        await expect(quiz.locator('.quiz-feedback')).toContainText(/^Not quite\./)
+        await expect(quiz.locator('.quiz-feedback')).toBeFocused()
+
+        await quiz.getByLabel('Correct once and give it time to work').check()
+        await check.click()
+        await expect(quiz.locator('.quiz-feedback')).toContainText(/^Right\./)
+        await quiz.getByRole('button', { name: 'Show this change on the charts' }).click()
+        await expect(page.getByRole('status')).toContainText('With change (1 correction, then wait)')
+    })
+})
+
+test.describe('educators', () => {
+
+    /** writes a scenario from the hypo scenario, with a new title */
+    async function writeScenario(page: Page) {
+        await open(page)
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        await page.getByRole('button', { name: 'For educators: make and share a scenario' }).click()
+        await page.getByRole('button', { name: 'Start from this day' }).click()
+        await page.getByLabel('Title').fill('Hypo after a long walk')
+    }
+
+    test('a scenario is tried out and shared as a link', async ({ page, browser }) => {
+        await writeScenario(page)
+        await page.getByRole('button', { name: 'Try it out' }).click()
+        const shared = page.getByRole('radio', { name: /Hypo after a long walk \(shared scenario\)/ })
+        await expect(shared).toBeChecked()
+        const choices = page.getByRole('group', { name: 'Practice scenario' }).getByRole('radio')
+        await expect(choices).toHaveCount(6)
+        // trying it out again replaces it rather than adding another
+        await page.getByRole('button', { name: 'Try it out' }).click()
+        await expect(choices).toHaveCount(6)
+
+        await page.getByRole('button', { name: 'Copy a link' }).click()
+        const link = await page.getByLabel('Link to the scenario').inputValue()
+        expect(link).toMatch(/SweetSpot\.html#scenario=[A-Za-z0-9_-]+$/)
+        expect(link).not.toMatch(/2026|\d{4}-\d{2}-\d{2}/)
+
+        // someone else opens the link
+        const other = await browser.newPage()
+        await other.goto(link)
+        await expect(other.getByRole('radio', { name: /Hypo after a long walk/ })).toBeChecked()
+        await expect(other.getByRole('status')).toContainText('Original day:')
+        await expect(other.locator('.scenario-quiz')).toContainText('What should you do next?')
+        await other.close()
+    })
+
+    test('a scenario is saved as a file and opened again', async ({ page, browserName }, testInfo) => {
+        await writeScenario(page)
+        const download = page.waitForEvent('download')
+        await page.getByRole('button', { name: 'Save as a file' }).click()
+        const file = await download
+        expect(file.suggestedFilename()).toBe('sweetspot-scenario-hypo-after-a-long-walk.json')
+        const path = testInfo.outputPath(file.suggestedFilename())
+        await file.saveAs(path)
+
+        await page.reload()
+        await expect(page.getByRole('radio')).toHaveCount(5)
+        await page.getByLabel('Upload a file').setInputFiles(path)
+        await expect(page.getByRole('radio', { name: /Hypo after a long walk/ })).toBeChecked()
+        await expect(page.getByRole('status')).toContainText('Original day:')
+    })
+
+    test('a damaged link gives a clear message', async ({ page }) => {
+        await page.goto('/SweetSpot.html#scenario=bm90IGpzb24')
+        await expect(page.getByRole('alert')).toContainText(
+            'We could not open the scenario in this link. The link to this scenario is damaged')
+    })
+
+    test('the educator panel has no WCAG 2.2 AA problems', async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: 'reduce' })
+        await writeScenario(page)
+        await page.evaluate(() => window.scrollTo(0, 0))
+        expect(await accessibilityViolations(page)).toEqual([])
+    })
+
+    test('the printed summary shows the scenario and results, not the controls', async ({ page }) => {
+        await open(page)
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        await tryChange(page, 'too much: 60g')
+        await expect(page.getByRole('status')).toContainText('With change')
+        await page.emulateMedia({ media: 'print' })
+        await expect(page.getByRole('heading', { name: 'Treating a hypo' })).toBeVisible()
+        await expect(page.locator('.scenario-whatifs')).toBeVisible()
+        await expect(page.locator('.tir-days')).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Glucose levels' })).toBeVisible()
+        for (const hidden of ['.scenario-choice', '.lt1-csv-input', '.scenario-quiz',
+            '.whatif-toggle', '.ss-intro']) {
+            await expect(page.locator(hidden)).toBeHidden()
+        }
+        await expect(page.getByRole('button', { name: 'Print a summary' })).toBeHidden()
+    })
+})
+
 test.describe('first visit and phones', () => {
 
     test('the introduction can be hidden, and stays hidden', async ({ page }) => {
@@ -142,6 +249,40 @@ test.describe('first visit and phones', () => {
         const withoutReadings = await rows.count()
         await show.check()
         await expect(rows).not.toHaveCount(withoutReadings)
+    })
+})
+
+test.describe('offline app', () => {
+
+    test('the app can be installed', async ({ page }) => {
+        await open(page)
+        const href = await page.locator('link[rel=manifest]').getAttribute('href')
+        const manifest = await (await page.request.get(href!)).json()
+        expect(manifest).toMatchObject({ short_name: 'SweetSpot', display: 'standalone',
+            start_url: './SweetSpot.html' })
+        for (const icon of manifest.icons) {
+            expect((await page.request.get(icon.src)).ok()).toBe(true)
+        }
+    })
+
+    test('once opened, it works without a connection', async ({ page, context, browserName }) => {
+        test.skip(browserName !== 'chromium', 'offline emulation with service workers needs Chromium')
+        await open(page)
+        // wait until the app is kept on the device and controls the page
+        await page.evaluate(async () => {
+            await navigator.serviceWorker.ready
+            if (!navigator.serviceWorker.controller) {
+                await new Promise((resolve) => navigator.serviceWorker
+                    .addEventListener('controllerchange', resolve, { once: true }))
+            }
+        })
+        await context.setOffline(true)
+        await page.reload()
+        await expect(page.getByRole('radio')).toHaveCount(5)
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        await tryChange(page, 'too much: 60g')
+        await expect(page.getByRole('status')).toContainText('With change')
+        await context.setOffline(false)
     })
 })
 

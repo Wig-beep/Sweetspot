@@ -299,6 +299,87 @@ input[type=button]:focus-visible {
     }
 }
 
+/*
+ * Printed summary for group sessions: the scenario (story, changes, things
+ * to remember), the charts and the day summary, without the controls.
+ */
+@media print {
+    body {
+        background: #ffffff;
+        padding: 0 !important;
+        font-size: 11pt;
+    }
+
+    .no-print,
+    .ss-intro,
+    .ss-intro-link,
+    .scenario-choice,
+    .lt1-csv-input,
+    .lt1-controls > .accordionbox,
+    .lt1-controls > button,
+    .lt1-results > .ss-hint,
+    .whatif-toggle,
+    .scenario-quiz,
+    .ss-footer p:last-child {
+        display: none !important;
+    }
+
+    .lt1-container {
+        display: block;
+        max-width: none;
+    }
+
+    .lt1-controls,
+    .lt1-results {
+        width: 100% !important;
+        max-width: none;
+        position: static !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .box {
+        border: none;
+        margin: 0;
+        padding: 0 0 0.5rem 0;
+    }
+
+    /* the changes to try as a list (on phones they are a sheet) */
+    .whatif-sheet {
+        position: static !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    .whatif-sheet .scenario-whatifs {
+        display: block !important;
+        max-height: none !important;
+    }
+
+    .whatif-title {
+        display: inline !important;
+    }
+
+    .scenario-whatifs button {
+        border: none;
+        padding: 0;
+        min-height: 0;
+        background: none;
+        box-shadow: none;
+    }
+
+    .canvas-chart,
+    .scenario-comparison,
+    .tir-days {
+        break-inside: avoid;
+    }
+
+    .canvas-chart canvas {
+        max-width: 100%;
+    }
+}
+
 /* hints and notes */
 .ss-hint {
     color: var(--ss-text-secondary);

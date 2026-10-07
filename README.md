@@ -36,6 +36,16 @@ npm run serve
   each loads a simulated day of a virtual person on multiple daily injections, with what-ifs to try and key points.
   The scenarios are illustrations for learning, calibrated to the virtual patients, and should be reviewed by diabetes
   educators before use with learners (see [src/common/TeachingScenarios.ts](src/common/TeachingScenarios.ts)).
+  Each scenario ends with a short question ("Which change avoids the hypo?") with feedback on the answer chosen and
+  a button to see that answer on the charts. A unit test checks that the right answer is always the choice with the
+  most time in range, so the feedback stays true if doses are changed.
+* Educators can make their own scenarios under "For educators: make and share a scenario": start from the day
+  shown, write the title, story and things to remember, add changes made in the timeline as changes to try, and
+  optionally a question. Scenarios are tried out on the page, saved as a file (opened by learners with
+  "Upload a file") or shared as a link. They hold only the texts and the entries as times of day, with no dates
+  (see [src/common/ScenarioFiles.ts](src/common/ScenarioFiles.ts)); a link holds the scenario after the `#`, which
+  browsers do not send to the server. Files and links are checked strictly when opened.
+  "Print a summary" prints the scenario, the charts and the day summary for group sessions.
 * Or load a patient data CSV (see [examples/PatientData/SampleDay.csv](examples/PatientData/SampleDay.csv) for a pump day
   and [examples/PatientData/SampleDayMDI.csv](examples/PatientData/SampleDayMDI.csv) for an MDI day).
   Each row is one event: `time,type,value,duration,insulin` with time as `YYYY-MM-DD HH:MM` or `DD/MM/YYYY HH:MM`
@@ -82,6 +92,13 @@ npm run serve
   peak at 75 minutes, 5 hours duration), which makes stacked corrections visible.
   Days are simulated in a background thread (a Web Worker), so the page keeps responding; the original day is only
   simulated again when the day or the virtual person settings change.
+
+  The production build can be installed as an app and works offline once opened (a progressive web app): a
+  service worker keeps the files SweetSpot needs on the device (see
+  [src/frontend/assets/service-worker.js](src/frontend/assets/service-worker.js) and
+  [util/ServiceWorkerPlugin.ts](util/ServiceWorkerPlugin.ts)). Pages are fetched from the network when online, so
+  updates arrive; a new version takes over once all SweetSpot pages are closed. Service workers need HTTPS (or
+  localhost), so the page must be served over HTTPS to be installed. The development server does not use one.
 
   Long-acting insulin is released over many hours using simplified profiles (see
   [src/common/LongActingInsulin.ts](src/common/LongActingInsulin.ts)); these are educational approximations, not

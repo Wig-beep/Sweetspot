@@ -29,6 +29,23 @@ export declare type WhatIf = {
     events: PatientEvent[]
 }
 
+/** an answer to a quiz question */
+export declare type QuizAnswer = {
+    text: string
+    /** whether this is the right answer (one per question) */
+    correct: boolean
+    /** why the answer is right or not, as the simulation shows */
+    feedback: string
+    /** label of the what-if showing this answer, or none for the original day */
+    whatIf?: string
+}
+
+/** a question to check what was learned in a scenario */
+export declare type Quiz = {
+    question: string
+    answers: QuizAnswer[]
+}
+
 export declare type TeachingScenario = {
     id: string
     title: string
@@ -44,6 +61,10 @@ export declare type TeachingScenario = {
     keyPoints: string[]
     /** limitations of the simulation for this scenario */
     modelNote?: string
+    /** question to check what was learned */
+    quiz?: Quiz
+    /** whether the scenario was written by an educator (opened from a file or link) */
+    shared?: boolean
 }
 
 /** creates the events of a scenario on the given day */
@@ -106,6 +127,17 @@ const builders: ScenarioBuilder[] = [
                     events: replace(logged, isBolusAt(at(8)), bolus(at(9), 6)),
                 },
             ],
+            quiz: {
+                question: "Which timing keeps your glucose lowest after breakfast?",
+                answers: [
+                    { text: "Taking your insulin 20 minutes before eating", correct: true, whatIf: "20 minutes before eating",
+                        feedback: "Right. The insulin has started to work when the carbs arrive, so your glucose peaks lower, at about 9mmol/L, and stays in range all morning." },
+                    { text: "Taking your insulin as you start eating", correct: false,
+                        feedback: "Not quite. This keeps you in range, but your glucose peaks higher, close to 10mmol/L, because the insulin starts to work after the carbs." },
+                    { text: "Taking your insulin 30 minutes after eating", correct: false, whatIf: "30 minutes after eating",
+                        feedback: "Not quite. The carbs arrive well before the insulin works, so your glucose goes above 10mmol/L after breakfast." },
+                ],
+            },
             keyPoints: [
                 "Quick-acting insulin takes time to start working, but carbs start to raise your glucose within minutes.",
                 "Taking your insulin before you eat keeps the rise after the meal lower. Taking it late makes the rise higher.",
@@ -155,6 +187,17 @@ const builders: ScenarioBuilder[] = [
                     ]),
                 },
             ],
+            quiz: {
+                question: "At 12pm your glucose is 11.5mmol/L. Which plan avoids a hypo later in the afternoon?",
+                answers: [
+                    { text: "Correct at 12pm, 1pm and 2pm until your glucose comes down", correct: false,
+                        feedback: "Not quite. The three corrections add up while the earlier ones are still working, and your glucose falls below 3mmol/L in the afternoon." },
+                    { text: "Correct twice, at 12pm and 1pm", correct: false, whatIf: "2 corrections",
+                        feedback: "Not quite. This avoids the hypo, but only just: your glucose falls to about 4mmol/L, because the second correction stacks on the first." },
+                    { text: "Correct once and give it time to work", correct: true, whatIf: "1 correction, then wait",
+                        feedback: "Right. One correction brings your glucose down slowly over the afternoon and it stays above 4mmol/L, with more time in range than the other plans." },
+                ],
+            },
             keyPoints: [
                 "A correction dose keeps working for several hours, so your glucose comes down slowly.",
                 "If you correct again while earlier insulin is still working, the doses add up (this is called stacking) and can cause a hypo later.",
@@ -197,6 +240,17 @@ const builders: ScenarioBuilder[] = [
                     events: replace(logged, isBolusAt(at(19)), bolus(at(19), 11)),
                 },
             ],
+            quiz: {
+                question: "Which way of taking your insulin for the pizza keeps your glucose in range, without a hypo?",
+                answers: [
+                    { text: "8 units at the start of the meal", correct: false,
+                        feedback: "Not quite. The fat makes the carbs arrive later, so your glucose rises to about 13mmol/L late in the evening." },
+                    { text: "6 units at the start and 5 units 90 minutes later", correct: true, whatIf: "split dose: 6 + 5 units",
+                        feedback: "Right. Splitting the dose matches the insulin to the slow meal, so your glucose stays in range most of the night." },
+                    { text: "11 units all at the start of the meal", correct: false, whatIf: "11 units all at once",
+                        feedback: "Not quite. The extra insulin works before the carbs arrive, so you have a hypo soon after the meal, below 3mmol/L." },
+                ],
+            },
             keyPoints: [
                 "Fat slows down digestion. Carbs from a high-fat meal arrive later, so your glucose can keep rising for hours.",
                 "Taking all your insulin at the start can be too early for a slow meal. Taking a bigger dose all at once can cause a hypo soon after eating.",
@@ -240,6 +294,17 @@ const builders: ScenarioBuilder[] = [
                     ]),
                 },
             ],
+            quiz: {
+                question: "Which change avoids a hypo during and after the jog?",
+                answers: [
+                    { text: "Half your usual lunch insulin", correct: false, whatIf: "half the lunch insulin",
+                        feedback: "Not quite. This helps, but your glucose still goes below 4mmol/L after the jog." },
+                    { text: "20g of carbs just before the jog", correct: false, whatIf: "20g of carbs before the jog",
+                        feedback: "Not quite. This helps too, but your glucose still goes below 4mmol/L after the jog." },
+                    { text: "Half your lunch insulin and 20g of carbs before the jog", correct: true, whatIf: "half the insulin and 20g of carbs",
+                        feedback: "Right. Doing both keeps your glucose above 4mmol/L during and after the jog." },
+                ],
+            },
             keyPoints: [
                 "Exercise makes your body use more glucose and makes insulin work harder, during exercise and for hours afterwards.",
                 "If you plan to exercise after a meal, you may need less insulin for that meal.",
@@ -283,6 +348,17 @@ const builders: ScenarioBuilder[] = [
                         isTreatment),
                 },
             ],
+            quiz: {
+                question: "At 4:45pm your glucose is 3.7mmol/L and you have had 15g of fast-acting carbs. What should you do next?",
+                answers: [
+                    { text: "Nothing more: 15g is enough", correct: false,
+                        feedback: "Not quite. Insulin from lunch is still working, so your glucose stays below 4mmol/L for longer." },
+                    { text: "Check again after 10 to 15 minutes, and have another 15g if it is still below 4mmol/L", correct: true, whatIf: "15g, check again, 15g more",
+                        feedback: "Right. The second 15g brings your glucose back above 4mmol/L quickly, without making it high later." },
+                    { text: "Have 60g of carbs straight away, to be safe", correct: false, whatIf: "too much: 60g",
+                        feedback: "Not quite. Your glucose comes up, but later goes above 10mmol/L. Having much more than you need makes your glucose high." },
+                ],
+            },
             keyPoints: [
                 "Treat a hypo with 15 to 20g of fast-acting carbs, like glucose tablets or a sugary drink. Check your glucose again after 10 to 15 minutes.",
                 "If your glucose is still below 4mmol/L, treat it again. Insulin that is still working can keep your glucose low.",
