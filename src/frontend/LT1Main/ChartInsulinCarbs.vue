@@ -14,7 +14,7 @@ import PatientEvent from '../../types/PatientEvent.js'
 import { SimulationResult } from '../../types/SimulationResult.js'
 import colors from '../util/Colors.js'
 import { LOGGED_DAY_DASH, lineSwatch, runDash } from '../util/LineStyles.js'
-import { fitLegendToWidth } from '../util/ResponsiveLegend.js'
+import { fitLegendToWidth, shortLegendLabel, SMALL_CHART_WIDTH } from '../util/ResponsiveLegend.js'
 import {
     exercisePlugin,
     fixAxisWidth,
@@ -284,6 +284,11 @@ export default defineComponent({
                                         item.pointStyle = lineSwatch(
                                             <number[]>dataset.borderDash ?? [],
                                             2, IOB_COLOR)
+                                    }
+                                    // shorter names on phones, so that the
+                                    // plot keeps its room (#22)
+                                    if (chart.width < SMALL_CHART_WIDTH) {
+                                        item.text = shortLegendLabel(item.text)
                                     }
                                 }
                                 return items

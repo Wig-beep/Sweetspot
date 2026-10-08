@@ -38,7 +38,8 @@ export function legendLinesPlugin(onChange: (lines: LegendLine[]) => void): Plug
                 .filter((item) => (item.datasetIndex ?? -1) >= 0)
                 .map((item) => ({
                     index: item.datasetIndex!,
-                    text: item.text,
+                    // the full name (the legend may show a short one on phones)
+                    text: chart.data.datasets[item.datasetIndex!].label ?? item.text,
                     shown: chart.isDatasetVisible(item.datasetIndex!),
                 }))
             const json = JSON.stringify(lines)

@@ -46,6 +46,9 @@ export default defineComponent({
     margin-top: 1rem;
     display: grid;
     grid-template-rows: auto 0fr;
+    /* the content may be narrower than a chart canvas's default 300px, so
+       that nothing scrolls sideways on 320px screens (WCAG 1.4.10) */
+    grid-template-columns: minmax(0, 1fr);
     transition: grid-template-rows 0.4s;
 }
 

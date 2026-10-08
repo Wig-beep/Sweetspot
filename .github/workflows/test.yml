@@ -19,6 +19,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run build --if-present
       - run: npm test
+      # unit tests of the Vue components (Vitest)
+      - run: npm run test:components
       # end-to-end tests of the production build (desktop and phone)
       - run: npx playwright install --with-deps chromium webkit
       - run: npx playwright test

@@ -13,7 +13,7 @@ const educationOnly = process.env.SWEETSPOT_PERSONAL_DATA === 'off'
 
 export default defineConfig({
     testDir: './e2e',
-    testMatch: educationOnly ? 'education-only.spec.ts' : 'sweetspot.spec.ts',
+    testMatch: educationOnly ? 'education-only.spec.ts' : ['sweetspot.spec.ts', 'accessibility.spec.ts'],
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,

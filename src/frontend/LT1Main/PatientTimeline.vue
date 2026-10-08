@@ -11,7 +11,8 @@
             <h4>There is a problem</h4>
             <ul>
                 <li v-for="row in errorRows" :key="row.id">
-                    <a :href="'#row-' + row.id" @click.prevent="focusRow(row.id)">
+                    <a :href="'#' + fieldId(row.id, errorFields[row.id])"
+                        @click.prevent="focusRow(row.id)">
                         {{ rowName(row) }}: {{ errors[row.id] }}
                     </a>
                 </li>
@@ -32,9 +33,9 @@
                 <input
                     class="cell-time"
                     type="datetime-local"
-                    :id="'row-' + row.id"
-                    :aria-invalid="!!errors[row.id]"
-                    :aria-describedby="errors[row.id] ? 'row-error-' + row.id : undefined"
+                    :id="fieldId(row.id, 'time')"
+                    :aria-invalid="isInvalid(row.id, 'time')"
+                    :aria-describedby="describedBy(row.id, 'time')"
                     :aria-label="fieldLabel(row, 'time')"
                     v-model="row.timeString"
                 />
@@ -50,6 +51,9 @@
                     type="number"
                     min="0"
                     :step="row.type === 'carbs' ? 1 : 0.1"
+                    :id="fieldId(row.id, 'value')"
+                    :aria-invalid="isInvalid(row.id, 'value')"
+                    :aria-describedby="describedBy(row.id, 'value')"
                     :aria-label="fieldLabel(row, 'amount')"
                     v-model.number="row.value"
                 />
@@ -62,6 +66,9 @@
                         step="1"
                         placeholder="minutes"
                         :title="durationLabel(row.type)"
+                        :id="fieldId(row.id, 'duration')"
+                        :aria-invalid="isInvalid(row.id, 'duration')"
+                        :aria-describedby="describedBy(row.id, 'duration')"
                         :aria-label="fieldLabel(row, durationLabel(row.type))"
                         v-model.number="row.duration"
                     />
@@ -110,6 +117,9 @@ import PatientEvent, {
     PATIENT_EVENT_TYPES,
     PatientEventType
 } from "../../types/PatientEvent.js"
+
+/** fields of a row that a problem can be about */
+type Field = "time" | "value" | "duration"
 
 type TimelineRow = {
     id: number
@@ -162,6 +172,8 @@ export default defineComponent({
             addedIds: [] as number[],
             /** problems found when showing a change, by row id */
             errors: {} as Record<number, string>,
+            /** the field each problem is about, by row id */
+            errorFields: {} as Record<number, Field>,
             /** problem with the entries together (too far apart), if any */
             spanError: "",
             eventTypes: PATIENT_EVENT_TYPES,
@@ -198,6 +210,7 @@ export default defineComponent({
 
             handler() {
                 this.errors = {}
+                this.errorFields = {}
                 this.spanError = ""
                 this.rows = this.events.map(event => ({
                     id: nextRowId++,
@@ -249,6 +262,7 @@ export default defineComponent({
         applyChanges() {
             const events: PatientEvent[] = []
             const errors: Record<number, string> = {}
+            const errorFields: Record<number, Field> = {}
             const isEmpty = (value: unknown) =>
                 value === "" || value === null || typeof value === "undefined"
 
@@ -270,12 +284,15 @@ export default defineComponent({
                     : isEmpty(row.value) ? "enter an amount" : checkEvent(event)
                 if (problem) {
                     errors[row.id] = problem.charAt(0).toUpperCase() + problem.slice(1)
+                    errorFields[row.id] = isNaN(event.time.valueOf()) ? "time"
+                        : /duration/.test(problem) ? "duration" : "value"
                     continue
                 }
                 events.push(event)
             }
 
             this.errors = errors
+            this.errorFields = errorFields
             // the entries together: a mistyped year makes a very long day
             const span = Object.keys(errors).length === 0 ? checkTimeSpan(events) : undefined
             this.spanError = span ? span.charAt(0).toUpperCase() + span.slice(1) + "." : ""
@@ -302,8 +319,21 @@ export default defineComponent({
             return `${this.rowName(row)}: ${field.charAt(0).toLowerCase() + field.slice(1)}`
         },
 
+        /** id of a field of a row */
+        fieldId(id: number, field: Field = "time"): string {
+            return field === "time" ? `row-${id}` : `row-${field}-${id}`
+        },
+        /** whether the problem of a row is about this field */
+        isInvalid(id: number, field: Field): boolean {
+            return this.errorFields[id] === field
+        },
+        /** the error message describes the field it is about */
+        describedBy(id: number, field: Field): string | undefined {
+            return this.isInvalid(id, field) ? "row-error-" + id : undefined
+        },
+        /** moves to the field with the problem (from the error summary) */
         focusRow(id: number) {
-            document.getElementById("row-" + id)?.focus()
+            document.getElementById(this.fieldId(id, this.errorFields[id]))?.focus()
         },
     }
 })

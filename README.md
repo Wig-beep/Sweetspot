@@ -142,8 +142,10 @@ npm run serve
   preceding days too, so that the simulation starts with long-acting insulin on board.
 * Now edit the source files, save your changes, and simply reload website.
 
-To run the tests: `npm test` runs the unit tests, and `npm run test:e2e` builds the app and runs the end-to-end
-tests in [e2e](e2e): the main learner journeys and accessibility checks, on a desktop and a phone screen, in Chromium
+To run the tests: `npm test` runs the unit tests (mocha), `npm run test:components` the unit tests of the Vue
+components (Vitest, in [test/components](test/components)), and `npm run test:e2e` builds the app and runs the
+end-to-end tests in [e2e](e2e): the main learner journeys and accessibility checks (including keyboard only, visible
+focus, reflow at 320px, text spacing, high contrast and reduced motion), on a desktop and a phone screen, in Chromium
 and in WebKit (the engine of Safari). The first time, install the browsers with
 `npx playwright install chromium webkit`.
 

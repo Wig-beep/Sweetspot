@@ -30,6 +30,31 @@ Ideally, include people who use assistive technology in the usability session (#
 | Reduced motion | Turn on reduced motion in the operating system | Sections open without animation |
 | Touch | A phone, with and without zoom | Targets easy to hit; the "Try a change" sheet and "Show this change" bar do not hide what you are working on |
 
+## Automated in CI
+
+These checks of the list above run in a real browser for every change (`e2e/accessibility.spec.ts`; component
+checks in `test/components`):
+
+| Check | Test |
+|---|---|
+| Keyboard only | A scenario and a change chosen with Tab, arrows and Enter; every stop to the end of the page has a visible focus; the focus never gets stuck (Chromium) |
+| Reflow | Nothing scrolls sideways at 320px wide, with a change, the timeline and the tools for educators open |
+| Text spacing | With the spacing of WCAG 1.4.12, no text is cut off and nothing scrolls sideways |
+| High contrast | No axe problems in forced colours; time in range bars keep their colours (Chromium) |
+| Reduced motion | Sections open without animation |
+| Structure | One h1, the headings in order, banner, main and footer landmarks, chart descriptions |
+| Errors | The field with a problem is marked invalid and described by the message; the error summary moves to it |
+
+## Results
+
+| Date | Version | What | Findings |
+|---|---|---|---|
+| 8 October 2026 | 0.1.0 and later (dev) | Automated checks above, in Chrome, Safari, Pixel 7 and iPhone 15 sizes | Fixed: the page scrolled sideways by 1px at 320px wide (chart sections took the canvas's default 300px); "Show tools for educators" had no visible focus; problems with an amount or a duration marked the time field as invalid, and the error summary moved to the time field |
+
+Still to do, by people: screen readers (NVDA, VoiceOver on Mac and iPhone, TalkBack), browser zoom and Windows high
+contrast on real devices, a colour blindness simulator, touch on real phones, and testing with people who use
+assistive technology (#40, #23).
+
 ## Known issues
 
 See the [accessibility statement](../src/frontend/assets/pages/accessibility.html). The legend drawn on each chart

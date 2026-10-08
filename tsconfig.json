@@ -7,6 +7,8 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
     "strict": true,
+    // type files of packages are not checked (some have errors of their own)
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "allowJs": true,

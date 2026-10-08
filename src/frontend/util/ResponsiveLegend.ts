@@ -8,7 +8,20 @@
 import { Chart } from 'chart.js'
 
 /** charts narrower than this get a compact legend (in px) */
-const SMALL_CHART_WIDTH = 480
+export const SMALL_CHART_WIDTH = 480
+
+/**
+ * A shorter name for a legend entry on small charts: the unit in brackets is
+ * left out (the axis titles give it), and long names are shortened, e.g.
+ * "Original quick-acting insulin on board (units)" becomes "Original
+ * insulin on board". Names of changes are kept.
+ */
+export function shortLegendLabel(text: string): string {
+    return text
+        .replace(/ \((units|grams)[^)]*\)$/, "")
+        .replace(/quick-acting insulin on board/i, (m) => m[0] === "Q" ? "Insulin on board" : "insulin on board")
+        .replace(/background insulin injection/i, (m) => m[0] === "B" ? "Background injection" : "background injection")
+}
 
 /**
  * Makes the legend of a chart compact on small screens: smaller text and

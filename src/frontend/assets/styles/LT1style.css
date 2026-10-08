@@ -504,6 +504,14 @@ input[type=button]:focus-visible {
     text-decoration-thickness: 3px;
 }
 
+/* the yellow focus of links, which the rules above would remove */
+.lt1-container button.ss-link-button:focus-visible {
+    background-color: var(--ss-focus);
+    box-shadow: 0 -2px var(--ss-focus), 0 4px var(--ss-text);
+    color: var(--ss-text);
+    text-decoration: none;
+}
+
 .educator-toggle {
     margin-top: 1rem;
 }
