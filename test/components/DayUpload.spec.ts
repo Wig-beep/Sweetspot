@@ -51,9 +51,12 @@ describe("DayUpload", () => {
         const wrapper = mount(DayUpload)
         await choose(wrapper, [sample("SampleDayNightscout-entries.json"),
             sample("SampleDayNightscout-treatments.json")])
-        const [events] = wrapper.emitted<[PatientEvent[]]>("day")![0]
-        expect(events.some((e) => e.type === "glucose")).toBe(true)
-        expect(events.some((e) => e.type === "bolus")).toBe(true)
+        // the files together (times are in UTC, so in some time zones they
+        // cover two days, which are looked at one at a time)
+        const events = (wrapper.vm as unknown as { fileEvents: PatientEvent[] }).fileEvents
+        expect(events.filter((e) => e.type === "glucose")).toHaveLength(96)
+        expect(events.filter((e) => e.type === "bolus")).toHaveLength(3)
+        expect(wrapper.emitted("day")).toHaveLength(1)
         expect(wrapper.text()).toContain("(Nightscout download)")
     })
 
