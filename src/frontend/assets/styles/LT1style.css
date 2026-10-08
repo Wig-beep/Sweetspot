@@ -508,6 +508,29 @@ input[type=button]:focus-visible {
     margin-top: 1rem;
 }
 
+/* checkboxes with the whole label as a target */
+.ss-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.25rem;
+}
+
+.lt1-container .ss-checkbox input[type=checkbox] {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 0;
+    accent-color: var(--ss-primary);
+    cursor: pointer;
+}
+
+.lt1-container .ss-checkbox label {
+    font-weight: normal;
+    padding: 0.25rem 0;
+    cursor: pointer;
+}
+
 /* hints and notes */
 .ss-hint {
     color: var(--ss-text-secondary);

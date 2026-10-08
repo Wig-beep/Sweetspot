@@ -573,6 +573,41 @@ test.describe('layout and accessibility', () => {
         await expect(page.getByRole('radio')).toHaveCount(5)
     })
 
+    test('lines can be shown and hidden with a keyboard, in both charts', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'keyboard test on computers')
+        await open(page)
+        await page.getByRole('radio', { name: 'Taking correction doses too close together' }).check()
+        await tryChange(page, '1 correction, then wait')
+        await expect(page.getByRole('status')).toContainText('With change (1 correction')
+        await tryChange(page, '2 corrections')
+        await expect(page.getByRole('status')).toContainText('With change (2 corrections)')
+
+        const glucose = page.locator('.line-toggles').first()
+        const insulin = page.locator('.line-toggles').nth(1)
+        const earlier = (list: typeof glucose) => list.getByRole('checkbox', { name: '1 correction, then wait' })
+
+        // keyboard only: open the lists
+        for (const list of [glucose, insulin]) {
+            await list.locator('summary').focus()
+            await page.keyboard.press('Enter')
+        }
+        // the earlier change is hidden in both charts, as in their legends
+        await expect(earlier(glucose)).not.toBeChecked()
+        await expect(earlier(insulin)).not.toBeChecked()
+
+        // move to the change and tick it
+        await earlier(glucose).focus()
+        await page.keyboard.press('Space')
+        await expect(earlier(glucose)).toBeChecked()
+        await expect(earlier(insulin)).toBeChecked()
+
+        // and hidden again
+        await page.keyboard.press('Space')
+        await expect(earlier(glucose)).not.toBeChecked()
+        await expect(earlier(insulin)).not.toBeChecked()
+        await expect(glucose.getByRole('checkbox', { name: 'Original day' })).toBeChecked()
+    })
+
     test('the start page has no WCAG 2.2 AA problems', async ({ page }) => {
         await open(page)
         expect(await accessibilityViolations(page)).toEqual([])
@@ -587,6 +622,10 @@ test.describe('layout and accessibility', () => {
         await page.emulateMedia({ reducedMotion: 'reduce' })
         await page.getByRole('button', { name: 'Edit the day yourself' }).click()
         await expect(page.getByRole('status')).toContainText('With change')
+        // the lines lists, opened
+        for (const summary of await page.locator('.line-toggles summary').all()) {
+            await summary.click()
+        }
         // on phones, entries scrolled half under the bars at the bottom of
         // the screen count as small targets; check from a fixed position
         await page.evaluate(() => window.scrollTo(0, 0))

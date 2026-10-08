@@ -32,6 +32,8 @@ import {
     timeAtPointer,
 } from '../util/ChartSync.js'
 import AccordionBox from './AccordionBox.vue'
+import ChartLineToggles from './ChartLineToggles.vue'
+import { LegendLine, legendLinesPlugin, toggleLegendLine } from '../util/LegendToggles.js'
 import { lowestGlucosePlugin, TIME_AXIS } from '../util/ChartLabels.js'
 
 /** index of the dataset showing the logged day in a what-if comparison */
@@ -118,7 +120,8 @@ function glucoseCurve(label: string, dash: number[],
 
 export default defineComponent({
     components: {
-        AccordionBox
+        AccordionBox,
+        ChartLineToggles
     },
     emits: ["runVisibilityChanged", "hoverTime"],
     props: {
@@ -127,6 +130,8 @@ export default defineComponent({
     },
     data() {
         return {
+            /** lines in the legend, shown as checkboxes too */
+            lines: [] as LegendLine[],
             preserveOldCurves: true,
             /** period shown, shared with the insulin and food chart */
             timeRange: null as { t0: Date, tmax: Date } | null,
@@ -155,7 +160,10 @@ export default defineComponent({
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
             type: "line",
-            plugins: [targetRangeBand, exercisePlugin, hoverLinePlugin,
+            plugins: [
+                // the legend as checkboxes, for keyboards and screen readers
+                legendLinesPlugin((lines) => { this.lines = lines }),
+                targetRangeBand, exercisePlugin, hoverLinePlugin,
                 // the original day and the changes (not predictions or readings)
                 lowestGlucosePlugin((index) => index >= LOGGED_DAY_DATASET, GLUCOSE_RANGE.low)],
             data: {
@@ -311,6 +319,10 @@ export default defineComponent({
         fitLegendToWidth(this.chart)
     },
     methods: {
+        /** shows or hides a line, as its legend entry does */
+        toggleLine(index: number) {
+            toggleLegendLine(this.chart, index)
+        },
         /** removes the prediction of the previous run */
         reset() {
             this.chart.data.datasets[0].data = []
@@ -504,6 +516,7 @@ export default defineComponent({
         <div class="canvas-chart">
             <canvas :id="canvasid" role="img" :aria-label="description"></canvas>
         </div>
+        <ChartLineToggles :lines="lines" @toggle="toggleLine" />
     </AccordionBox>
 </template>
 

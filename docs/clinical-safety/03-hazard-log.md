@@ -215,7 +215,8 @@ Version assessed: SweetSpot 0.1.0. Evidence paths are relative to the repository
 - **Controls:** WCAG 2.2 AA design; skip link and one main heading; line patterns as well as colours; words
   "better"/"worse" and percentages next to colours; the lowest glucose marked with its value when it is low;
   amounts written next to dose and meal markers; text alternatives for charts; automated accessibility checks;
-  an accessibility statement listing known issues (the chart legend cannot be used with a keyboard).
+  the lines of each chart can be shown or hidden with a keyboard ("Show or hide lines"); an accessibility
+  statement listing known issues.
 - **Evidence:** e2e "the start page has no WCAG 2.2 AA problems", "a scenario with a change has no WCAG 2.2 AA
   problems", "the educator panel has no WCAG 2.2 AA problems", "timeline fields are named after their entry,
   for screen readers".

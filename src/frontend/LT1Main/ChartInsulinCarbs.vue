@@ -25,6 +25,8 @@ import {
     timeAtPointer,
 } from '../util/ChartSync.js'
 import AccordionBox from './AccordionBox.vue'
+import ChartLineToggles from './ChartLineToggles.vue'
+import { LegendLine, legendLinesPlugin, toggleLegendLine } from '../util/LegendToggles.js'
 import { amountLabelsPlugin, TIME_AXIS } from '../util/ChartLabels.js'
 
 /** datasets that are kept for other pages but not shown in this app:
@@ -60,10 +62,13 @@ export default defineComponent({
         description: { type: String, default: "Insulin and carbs chart" },
     },
     components: {
-        AccordionBox
+        AccordionBox,
+        ChartLineToggles
     },
     data() {
         return {
+            /** lines in the legend, shown as checkboxes too */
+            lines: [] as LegendLine[],
             controllerOutput: [] as { t: Date, log: ControllerInternals}[],
         }
     },
@@ -83,7 +88,10 @@ export default defineComponent({
         const canvas = document.getElementById(id) as HTMLCanvasElement
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
-            plugins: [exercisePlugin, hoverLinePlugin,
+            plugins: [
+                // the legend as checkboxes, for keyboards and screen readers
+                legendLinesPlugin((lines) => { this.lines = lines }),
+                exercisePlugin, hoverLinePlugin,
                 // amounts of quick-acting insulin, meals and background insulin
                 amountLabelsPlugin((dataset, index, value) => {
                     const role = (<RunDataset>dataset).runRole
@@ -303,6 +311,10 @@ export default defineComponent({
         fitLegendToWidth(this.chart)
     },
     methods: {
+        /** shows or hides a line, as its legend entry does */
+        toggleLine(index: number) {
+            toggleLegendLine(this.chart, index)
+        },
         /** clears the main simulation; what-if runs are kept */
         reset() {
             let datasets = this.chart.data.datasets
@@ -529,6 +541,7 @@ export default defineComponent({
         <div class="canvas-chart">
             <canvas :id="canvasid" role="img" :aria-label="description"></canvas>
         </div>
+        <ChartLineToggles :lines="lines" @toggle="toggleLine" />
     </AccordionBox>
 </template>
 

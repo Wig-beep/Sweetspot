@@ -32,5 +32,6 @@ Ideally, include people who use assistive technology in the usability session (#
 
 ## Known issues
 
-See the [accessibility statement](../src/frontend/assets/pages/accessibility.html): showing and hiding a change in
-the chart legend works only with a mouse or by touch.
+See the [accessibility statement](../src/frontend/assets/pages/accessibility.html). The legend drawn on each chart
+works only with a mouse or by touch; "Show or hide lines" under each chart does the same with a keyboard (check it
+with a screen reader).
