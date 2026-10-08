@@ -108,7 +108,7 @@ const builders: ScenarioBuilder[] = [
             id: "bolus-timing",
             title: "When to take your mealtime insulin",
             goal: "How the timing of your quick-acting insulin changes your glucose after a meal.",
-            story: "You have breakfast with 60g of carbs (6 CP). You take 6 units of quick-acting insulin as you start eating.",
+            story: "You have breakfast with 60g of carbs (6 carb portions, or CP). You take 6 units of quick-acting insulin as you start eating.",
             events: logged,
             whatIfs: [
                 {
@@ -159,7 +159,7 @@ const builders: ScenarioBuilder[] = [
         return {
             id: "stacking",
             title: "Taking correction doses too close together",
-            goal: "Why taking several correction doses close together can cause a hypo hours later.",
+            goal: "Why doses taken close together can add up, and cause a hypo hours later.",
             story: "You had a 40g snack at 10:30am without insulin. At lunchtime your glucose is 11.5mmol/L, so you take 2 units to correct it. An hour later it is still high, so you take another 2 units. An hour after that, you take 2 more.",
             events: logged,
             whatIfs: [
@@ -178,7 +178,7 @@ const builders: ScenarioBuilder[] = [
                     events: replace(logged, isBolusAt(at(14))),
                 },
                 {
-                    label: "insulin for the snack",
+                    label: "Insulin for the snack",
                     description: "You take 4 units for the snack at 10:30am, so you do not need a correction.",
                     events: sortByTime([
                         ...logged.filter((e) => e.type !== "bolus" ||
@@ -220,7 +220,7 @@ const builders: ScenarioBuilder[] = [
             id: "high-fat-meal",
             title: "High-fat meals, like pizza",
             goal: "Why a high-fat meal can raise your glucose late into the night, and how splitting your dose can help.",
-            story: "You have pizza in the evening: 80g of carbs (8 CP) with lots of fat. You take all 8 units of quick-acting insulin at the start of the meal.",
+            story: "You have pizza in the evening: 80g of carbs (8 carb portions, or CP) with lots of fat. You take all 8 units of quick-acting insulin at the start of the meal.",
             events: logged,
             whatIfs: [
                 {
@@ -229,7 +229,7 @@ const builders: ScenarioBuilder[] = [
                     events: sortByTime([...logged, bolus(at(21), 3)]),
                 },
                 {
-                    label: "split dose: 6 + 5 units",
+                    label: "Split dose: 6 + 5 units",
                     description: "You take 6 units at the start of the meal and 5 units 90 minutes later.",
                     events: replace(logged, isBolusAt(at(19)),
                         bolus(at(19), 6), bolus(at(20, 30), 5)),
@@ -245,7 +245,7 @@ const builders: ScenarioBuilder[] = [
                 answers: [
                     { text: "8 units at the start of the meal", correct: false,
                         feedback: "Not quite. The fat makes the carbs arrive later, so your glucose rises to about 13mmol/L late in the evening." },
-                    { text: "6 units at the start and 5 units 90 minutes later", correct: true, whatIf: "split dose: 6 + 5 units",
+                    { text: "6 units at the start and 5 units 90 minutes later", correct: true, whatIf: "Split dose: 6 + 5 units",
                         feedback: "Right. Splitting the dose matches the insulin to the slow meal, so your glucose stays in range most of the night." },
                     { text: "11 units all at the start of the meal", correct: false, whatIf: "11 units all at once",
                         feedback: "Not quite. The extra insulin works before the carbs arrive, so you have a hypo soon after the meal, below 3mmol/L." },
@@ -271,12 +271,12 @@ const builders: ScenarioBuilder[] = [
         return {
             id: "exercise",
             title: "Exercise after a meal",
-            goal: "How exercise lowers your glucose during and after activity, and how changing your insulin or carbs can prevent a hypo.",
+            goal: "Exercise lowers your glucose while you exercise and for hours after. Learn how less insulin or extra carbs can stop a hypo.",
             story: "You go for a 45-minute jog at a moderate pace, 2 hours after lunch. You took your usual 6 units of quick-acting insulin for lunch.",
             events: logged,
             whatIfs: [
                 {
-                    label: "half the lunch insulin",
+                    label: "Half the lunch insulin",
                     description: "You take half your usual lunch insulin: 3 units.",
                     events: replace(logged, isBolusAt(at(12)), bolus(at(12), 3)),
                 },
@@ -286,7 +286,7 @@ const builders: ScenarioBuilder[] = [
                     events: sortByTime([...logged, carbs(at(13, 50), 20, 10)]),
                 },
                 {
-                    label: "half the insulin and 20g of carbs",
+                    label: "Half the insulin and 20g of carbs",
                     description: "You take 3 units for lunch and eat 20g of carbs before the jog.",
                     events: sortByTime([
                         ...replace(logged, isBolusAt(at(12)), bolus(at(12), 3)),
@@ -297,11 +297,11 @@ const builders: ScenarioBuilder[] = [
             quiz: {
                 question: "Which change avoids a hypo during and after the jog?",
                 answers: [
-                    { text: "Half your usual lunch insulin", correct: false, whatIf: "half the lunch insulin",
+                    { text: "Half your usual lunch insulin", correct: false, whatIf: "Half the lunch insulin",
                         feedback: "Not quite. This helps, but your glucose still goes below 4mmol/L after the jog." },
                     { text: "20g of carbs just before the jog", correct: false, whatIf: "20g of carbs before the jog",
                         feedback: "Not quite. This helps too, but your glucose still goes below 4mmol/L after the jog." },
-                    { text: "Half your lunch insulin and 20g of carbs before the jog", correct: true, whatIf: "half the insulin and 20g of carbs",
+                    { text: "Half your lunch insulin and 20g of carbs before the jog", correct: true, whatIf: "Half the insulin and 20g of carbs",
                         feedback: "Right. Doing both keeps your glucose above 4mmol/L during and after the jog." },
                 ],
             },
@@ -326,7 +326,7 @@ const builders: ScenarioBuilder[] = [
         return {
             id: "hypo-treatment",
             title: "Treating a hypo",
-            goal: "How to treat a hypo with 15 to 20g of fast-acting carbs, check again, and treat again if you need to, without taking too much.",
+            goal: "How to treat a hypo with 15 to 20g of fast-acting carbs. Check again, and treat again if you need to. Do not take too much.",
             story: "You took too much insulin for lunch (9 units for 50g of carbs), so you have a hypo in the afternoon. At 4:45pm your glucose is 3.7mmol/L. You have 15g of fast-acting carbs, but you do not check your glucose again.",
             events: logged,
             whatIfs: [
@@ -336,12 +336,12 @@ const builders: ScenarioBuilder[] = [
                     events: sortByTime([...logged, carbs(at(17), 15, 5)]),
                 },
                 {
-                    label: "too much: 60g",
+                    label: "Too much: 60g",
                     description: "You have 60g of carbs at 4:45pm instead of 15g.",
                     events: replace(logged, isTreatment, carbs(at(16, 45), 60, 10)),
                 },
                 {
-                    label: "right lunch dose",
+                    label: "Right lunch dose",
                     description: "You take 5 units for the 50g lunch, so you do not have a hypo.",
                     events: replace(
                         replace(logged, isBolusAt(at(12)), bolus(at(12), 5)),
@@ -355,7 +355,7 @@ const builders: ScenarioBuilder[] = [
                         feedback: "Not quite. Insulin from lunch is still working, so your glucose stays below 4mmol/L for longer." },
                     { text: "Check again after 10 to 15 minutes, and have another 15g if it is still below 4mmol/L", correct: true, whatIf: "15g, check again, 15g more",
                         feedback: "Right. The second 15g brings your glucose back above 4mmol/L quickly, without making it high later." },
-                    { text: "Have 60g of carbs straight away, to be safe", correct: false, whatIf: "too much: 60g",
+                    { text: "Have 60g of carbs straight away, to be safe", correct: false, whatIf: "Too much: 60g",
                         feedback: "Not quite. Your glucose comes up, but later goes above 10mmol/L. Having much more than you need makes your glucose high." },
                 ],
             },

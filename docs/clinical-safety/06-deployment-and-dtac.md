@@ -64,4 +64,7 @@ version and commit are shown in the footer of every page.
 - [ ] Educators trained, including how to explain that SweetSpot shows a made-up person.
 - [ ] Review process for shared scenarios agreed.
 - [ ] DPIA completed.
+- [ ] Accessibility statement (`accessibility.html`) and privacy notice (`privacy.html`) checked, completed with
+      the organisation's details and published; manual accessibility testing done
+      ([accessibility testing](../accessibility-testing.md)).
 - [ ] Hosting over HTTPS with the recommended headers.

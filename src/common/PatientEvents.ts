@@ -232,7 +232,7 @@ export function checkEvent(event: PatientEvent): string | undefined {
         return `glucose ${value} looks like mg/dl, please use mmol/L`
     }
     if (type === "glucose" && value < EVENT_LIMITS.glucoseMin) {
-        return `glucose must be at least ${EVENT_LIMITS.glucoseMin} mmol/L`
+        return `glucose must be at least ${EVENT_LIMITS.glucoseMin}mmol/L`
     }
     const limit = { bolus: EVENT_LIMITS.bolus, longacting: EVENT_LIMITS.longacting,
         basal: EVENT_LIMITS.basal, carbs: EVENT_LIMITS.carbs }[type as string]
@@ -246,7 +246,7 @@ export function checkEvent(event: PatientEvent): string | undefined {
         return "the duration must be at most 24 hours (1440 minutes)"
     }
     if (type === "exercise" && value > 100) {
-        return `exercise intensity ${value} must be at most 100 %`
+        return `exercise intensity ${value} must be at most 100%`
     }
     if (typeof duration !== "undefined" && (!isFinite(duration) || duration <= 0)) {
         return "the duration must be more than 0 minutes"

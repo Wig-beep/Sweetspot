@@ -8,35 +8,23 @@
 
 import { defineComponent, toRaw } from 'vue'
 import { defaults } from 'chart.js'
-import ControllerSelection from './ControllerSelection.vue'
 import VirtualPatientSelection from './VirtualPatientSelection.vue'
-import SensorSelection from './SensorSelection.vue'
-import ActuatorSelection from './ActuatorSelection.vue'
-import MealTable from './MealTable.vue'
-import ExerciseTable from './ExerciseTable.vue'
 import ChartGlucose from './ChartGlucose.vue'
 import ChartInsulinCarbs from './ChartInsulinCarbs.vue'
-import SimulationOptionsConfig from './SimulationOptionsConfig.vue'
 import { SimulationResult } from '../../types/SimulationResult.js'
-import Patient, { PatientProfile } from '../../types/Patient.js'
-import Controller from '../../types/Controller.js'
-import Sensor from '../../types/Sensor.js'
-import Actuator from '../../types/Actuator.js'
-import Exercise from '../../types/Exercise.js'
-import Meal from '../../types/Meal.js'
-import Simulator, { SimulatorOptions } from '../../core/Simulator.js'
+import Patient from '../../types/Patient.js'
 import { EventSimulation, hasExercise } from '../../common/SimulateEvents.js'
-import { requestKey, SimulationRequest } from '../../common/SimulationRequest.js'
+import { ModuleSpec, requestKey, SimulationRequest } from '../../common/SimulationRequest.js'
 import { SimulationClient } from '../util/SimulationClient.js'
 import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
-import { getEventWarnings, getExercisesFromEvents, sortByTime } from '../../common/PatientEvents.js'
-import { readPatientData } from '../../common/DeviceExports.js'
-import { decodeScenarioLink, isScenarioFile, scenarioFromFile } from '../../common/ScenarioFiles.js'
+import { getEventWarnings, getExercisesFromEvents } from '../../common/PatientEvents.js'
+import { decodeScenarioLink, scenarioFromFile } from '../../common/ScenarioFiles.js'
+import DayUpload from './DayUpload.vue'
+import { OWN_DATA_NOTICE } from '../util/SafetyTexts.js'
 import EducatorPanel from './EducatorPanel.vue'
 import { buildInfo } from '../util/BuildInfo.js'
-import { eventsForDay, getDays } from '../../common/PatientDays.js'
 import PatientTimeline from './PatientTimeline.vue'
 import ScenarioComparison from './ScenarioComparison.vue'
 import TeachingScenarioPanel from './TeachingScenarioPanel.vue'
@@ -53,8 +41,18 @@ import {
     describeInsulin
 } from '../../common/ChartDescriptions.js'
 
-// prepare simulator
-const sim = new Simulator()
+/**
+ * the CGM of the virtual person (Breton 2008, default settings); it does not
+ * change the glucose of the person, which the results are based on
+ */
+export const SENSOR: ModuleSpec = { model: "Breton2008", parameters: {} }
+
+/** simulation settings: steps of at most 5 minutes, and a fixed random seed */
+export const SIMULATION_OPTIONS = { dt: 5, seed: 1 }
+
+/** resolved once the virtual person has been loaded (see patientChanged) */
+let patientLoaded: () => void
+const patientReady = new Promise<void>((resolve) => { patientLoaded = resolve })
 
 /** simulates days of logged events in a background thread */
 const simulations = new SimulationClient()
@@ -77,6 +75,21 @@ const PHONE_LAYOUT = "(max-width: 879px)"
 
 /** key in local storage remembering that the introduction was hidden */
 const INTRO_SEEN_KEY = "sweetspot-intro-seen"
+
+/** key in local storage remembering that the tools for educators are shown */
+const EDUCATOR_TOOLS_KEY = "sweetspot-educator-tools"
+
+/** whether the tools for educators are shown: ?educator in the link, or remembered */
+function educatorToolsWanted(): boolean {
+    if (new URLSearchParams(location.search).has("educator")) {
+        return true
+    }
+    try {
+        return localStorage.getItem(EDUCATOR_TOOLS_KEY) === "1"
+    } catch {
+        return false
+    }
+}
 
 /** whether the introduction was hidden on an earlier visit */
 function introSeen(): boolean {
@@ -114,13 +127,7 @@ export default defineComponent({
     },
 
     components: {
-        ControllerSelection,
         VirtualPatientSelection,
-        SensorSelection,
-        ActuatorSelection,
-        MealTable,
-        ExerciseTable,
-        SimulationOptionsConfig,
         ChartGlucose,
         ChartInsulinCarbs,
         PatientTimeline,
@@ -128,56 +135,18 @@ export default defineComponent({
         TeachingScenarioPanel,
         AccordionBox,
         EducatorPanel,
-    },
-
-    created() {
-        // printed summaries show the things to remember, which are folded away
-        window.addEventListener('beforeprint', () => {
-            document.querySelectorAll('.scenario-card details:not([open])').forEach((d) => {
-                d.setAttribute('open', '')
-                d.setAttribute('data-print-opened', '')
-            })
-        })
-        window.addEventListener('afterprint', () => {
-            document.querySelectorAll('details[data-print-opened]').forEach((d) => {
-                d.removeAttribute('open')
-                d.removeAttribute('data-print-opened')
-            })
-        })
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key == 'Enter') {
-                this.run()
-            }
-        })
+        DayUpload,
     },
 
     data() {
         return {
-            patient: {} as Patient,
-            patientProfile: {} as PatientProfile,
-            controller: {} as Controller,
-            sensor: {} as Sensor,
-            actuator: {} as Actuator,
-            meals: [] as Meal[],
-            exerciseUnits: [] as Exercise[],
-            options: {} as SimulatorOptions,
             originalPatientEvents: null as PatientEvent[] | null,  // never mutated — baseline for comparison
             patientEvents: null as PatientEvent[] | null,          // working copy the timeline will edit
-            csvFileName: '' as string,
-            /** all events of the uploaded file */
-            fileEvents: null as PatientEvent[] | null,
-            /** days covered by the uploaded file */
-            fileDays: [] as Date[],
-            /** index of the day of the file that is looked at */
-            selectedDay: 0,
+            /** whether the day shown is the learner's own data */
+            ownData: false,
+            ownDataNotice: OWN_DATA_NOTICE,
             /** changes whenever other data is loaded (resets the timeline) */
             dataKey: 0,
-            /** format of the uploaded files, e.g. "Dexcom Clarity export" */
-            fileSource: '' as string,
-            /** what was not used or assumed when reading the files */
-            fileNotes: [] as string[],
-            /** problem with the last CSV file, shown next to the upload */
-            csvError: '' as string,
             /** teaching scenarios (on the current day) */
             scenarios: getTeachingScenarios(new Date()),
             /** id of the loaded teaching scenario, if any */
@@ -205,32 +174,36 @@ export default defineComponent({
             calculating: false,
             /** problem simulating the day, if any */
             simulationError: '',
+            /**
+             * whether the tools for educators are shown (making scenarios,
+             * settings of the virtual person); hidden for learners
+             */
+            educatorTools: educatorToolsWanted(),
+            /** whether a new version of SweetSpot is ready to use */
+            updateReady: false,
             /** whether the introduction is shown (on the first visit) */
             showIntro: !introSeen(),
         }
     },
 
     async mounted() {
-        // wait until all elements of simulation have been initialized
-        const isEmpty = (o: any) => (typeof o.update !== "function")
-        while (isEmpty(this.getPatient()) || isEmpty(this.getController()) ||
-            isEmpty(this.getSensor()) || isEmpty(this.getActuator())) {
-            await new Promise(r => setTimeout(r, 10))
-        }
-        // open a scenario shared as a link, now and when the link changes
+        window.addEventListener('beforeprint', this.openDetailsForPrint)
+        window.addEventListener('afterprint', this.closeDetailsAfterPrint)
+        window.addEventListener('hashchange', this.openScenarioLink)
+        window.addEventListener('sweetspot-update-ready', this.showUpdateReady)
+        // open a scenario shared as a link, once the virtual person is ready
+        await patientReady
         this.openScenarioLink()
-        window.addEventListener('hashchange', () => this.openScenarioLink())
-        console.log("PROGRAM READY")
-        //this.run()
     },
+
+    unmounted() {
+        window.removeEventListener('beforeprint', this.openDetailsForPrint)
+        window.removeEventListener('afterprint', this.closeDetailsAfterPrint)
+        window.removeEventListener('hashchange', this.openScenarioLink)
+        window.removeEventListener('sweetspot-update-ready', this.showUpdateReady)
+    },
+
     computed: {
-        /** what results of the learner's own data show, and what they do not */
-        ownDataNotice(): string {
-            return "These results show how a made-up person would respond to "
-                + "the insulin, food and exercise in your file. They are not a "
-                + "prediction for you, and they cannot tell you what dose to "
-                + "take. Talk to your diabetes team before changing your doses."
-        },
         /** the scenario shown, if any */
         activeScenario(): TeachingScenario | null {
             return this.scenarios.find((s) => s.id === this.activeScenarioId) ?? null
@@ -288,95 +261,15 @@ export default defineComponent({
         },
     },
     methods: {
-            /**
-             * reads the chosen files (SweetSpot CSV, or exports of
-             * LibreView, Dexcom Clarity or Nightscout); the events of
-             * several files, e.g. Nightscout entries and treatments, are
-             * combined
-             */
-            async onCsvFileSelected(event: Event): Promise<void> {
-                const input = event.target as HTMLInputElement
-                const files = Array.from(input.files ?? [])
-                if (files.length === 0) {
-                    return
-                }
-                const texts = await Promise.all(files.map((file) => file.text()))
-                // allows the same file to be selected again later
-                input.value = ''
-
-                // a scenario file shared by an educator
-                if (files.length === 1) {
-                    const scenario = this.readScenarioFile(texts[0], files[0].name)
-                    if (scenario !== undefined) {
-                        return
-                    }
-                }
-
-                if (!this.personalData) {
-                    this.csvError = `${files[0].name} is not a scenario file. This version `
-                        + `of SweetSpot opens practice scenarios from your educator only, `
-                        + `not your own data.`
-                    return
-                }
-
-                const events: PatientEvent[] = []
-                const sources = new Set<string>()
-                const notes: string[] = []
-                for (const [i, file] of files.entries()) {
-                    try {
-                        const data = readPatientData(texts[i])
-                        events.push(...data.events)
-                        sources.add(data.source)
-                        notes.push(...data.notes)
-                    } catch (err) {
-                        this.csvError = `We could not read ${file.name}. `
-                            + `${(err as Error).message}. Check the file and try again.`
-                        return
-                    }
-                }
-                this.csvError = ''
-                this.csvFileName = files.map((file) => file.name).join(", ")
-                this.fileSource = [...sources].join(" and ")
-                this.fileNotes = notes
-                this.activeScenarioId = null
-                this.fileEvents = sortByTime(events)
-                this.fileDays = getDays(this.fileEvents)
-                // files with several days are looked at one day at a time
-                this.loadDay(0)
-            },
-        /**
-         * Opens the text as a scenario file, if it is one.
-         * @returns true if it is a scenario file (opened, or with an error
-         *      shown), undefined if it is another file
-         */
-        readScenarioFile(text: string, name: string): true | undefined {
-            let data: unknown
-            try {
-                data = JSON.parse(text)
-            } catch {
-                return undefined
-            }
-            if (!isScenarioFile(data)) {
-                return undefined
-            }
-            try {
-                const id = 'shared-' + name
-                this.useScenario({ ...scenarioFromFile(data, new Date(), id), shared: true })
-                this.csvError = ''
-                this.csvFileName = ''
-            } catch (err) {
-                this.csvError = `We could not open the scenario in ${name}. `
-                    + `${(err as Error).message}.`
-            }
-            return true
-        },
-        /** loads one day of the uploaded file as the logged day */
-        loadDay(index: number): void {
-            const all = toRaw(this.fileEvents) ?? []
-            const days = toRaw(this.fileDays)
-            const events = days.length > 1 ? eventsForDay(all, days[index]) : all
-            this.selectedDay = index
+        /** shows a day of the learner's own data (from DayUpload) */
+        openOwnDay(events: PatientEvent[]): void {
+            this.activeScenarioId = null
+            this.ownData = true
             this.setLoggedDay(events)
+        },
+        /** shows a scenario file from an educator (from DayUpload) */
+        openSharedScenario(scenario: TeachingScenario): void {
+            this.useScenario({ ...scenario, shared: true })
         },
         /** sets the logged day, removing results of earlier data */
         setLoggedDay(events: PatientEvent[]): void {
@@ -395,13 +288,10 @@ export default defineComponent({
          */
         async run(): Promise<void> {
             const runId = ++latestRun
+            await patientReady
             const events = toRaw(this.patientEvents)
             const original = toRaw(this.originalPatientEvents)
-
-            if (!events || !original) {
-                // without patient data: the selected controller and meals
-                this.usedExerciseModel = false
-                this.showResults(this.simulate(), null, false, events)
+            if (!events || !original || runId !== latestRun) {
                 return
             }
 
@@ -448,20 +338,20 @@ export default defineComponent({
         /**
          * Shows simulation results in the charts and the summary.
          * @param results - results of the latest simulation
-         * @param loggedDay - results of the original day, if patient data is used
+         * @param loggedDay - results of the original day
          * @param isWhatIf - whether the results are a change of the original day
          * @param events - events of the latest simulation
          */
-        showResults(results: SimulationResult[], loggedDay: SimulationResult[] | null,
-            isWhatIf: boolean, events: PatientEvent[] | null): void {
+        showResults(results: SimulationResult[], loggedDay: SimulationResult[],
+            isWhatIf: boolean, events: PatientEvent[]): void {
             this.resetCharts()
             const original = toRaw(this.originalPatientEvents)
             const chartGlucose = this.chartGlucose()
             const chartInsulinCarbs = this.chartInsulinCarbs()
 
-            // propagate results to charts; with patient data, the charts'
-            // main simulation is the logged day and what-ifs are added to it
-            this.propagateSimulationResults(loggedDay ?? results)
+            // the charts' main simulation is the original day; changes are
+            // added to it
+            this.propagateSimulationResults(loggedDay)
             chartGlucose.setLoggedDay(loggedDay)
             if (isWhatIf) {
                 const key = JSON.stringify(events)
@@ -471,15 +361,10 @@ export default defineComponent({
                     chartGlucose.getRunLabel(key))
                 this.whatIfName = chartGlucose.getRunLabel(key)
             }
-            else if (loggedDay) {
+            else {
                 chartGlucose.highlightRun(null)
             }
-            else {
-                // without patient data, every run is kept as a new curve
-                chartGlucose.addRun(results, String(Date.now()),
-                    this.$t("simulated"))
-            }
-            const mainEvents = original ?? events ?? []
+            const mainEvents = original ?? events
             chartGlucose.setMeasuredGlucose(
                 mainEvents.filter((event) => event.type === "glucose"))
             chartInsulinCarbs.setLongActingInjections(
@@ -489,7 +374,7 @@ export default defineComponent({
             // both charts show the same period and the same exercise, so
             // that doses and meals line up with their effect on glucose
             const span = this.simulationSpan ?? null
-            const exercise = getExercisesFromEvents(events ?? []).map((e) => ({
+            const exercise = getExercisesFromEvents(events).map((e) => ({
                 start: e.start,
                 end: new Date(e.start.valueOf() + e.duration * 60e3),
             }))
@@ -504,7 +389,7 @@ export default defineComponent({
             // amounts that look like typing mistakes, and results that are
             // not possible (both kinds of days are looked at)
             this.eventWarnings = [...new Set(getEventWarnings(
-                [...(original ?? []), ...(events ?? [])]))]
+                [...(original ?? []), ...events]))]
             this.modelNote = [this.metrics, this.baselineMetrics]
                 .map((m) => m && modelLimitNote(m)).find((note) => note) ?? ""
         },
@@ -514,12 +399,11 @@ export default defineComponent({
          */
         simulationRequest(events: PatientEvent[], withExercise: boolean): SimulationRequest {
             const patient = <InstanceType<typeof VirtualPatientSelection>>this.$refs.patientSelection
-            const sensor = <InstanceType<typeof SensorSelection>>this.$refs.sensorSelection
             return {
                 events,
                 patient: patient.getModuleSpec(),
-                sensor: sensor.getModuleSpec(),
-                options: { ...this.getOptions(), ...this.simulationSpan },
+                sensor: SENSOR,
+                options: { ...SIMULATION_OPTIONS, ...this.simulationSpan },
                 withExercise,
             }
         },
@@ -540,18 +424,11 @@ export default defineComponent({
         },
         /** loads a teaching scenario as the logged day */
         loadScenario(scenario: TeachingScenario): void {
-            this.csvFileName = ''
-            this.fileNotes = []
-            this.csvError = ''
-            this.fileEvents = null
-            this.fileDays = []
+            const upload = <InstanceType<typeof DayUpload>>this.$refs.upload
+            upload?.clear()
+            this.ownData = false
             this.activeScenarioId = scenario.id
             this.setLoggedDay(scenario.events)
-        },
-        /** name of a day for the day picker, e.g. "Monday 5 October" */
-        dayName(day: Date): string {
-            return day.toLocaleDateString("en-GB",
-                { weekday: "long", day: "numeric", month: "long" })
         },
         /** applies a what-if of the loaded teaching scenario */
         applyWhatIf(whatIf: WhatIf): void {
@@ -583,6 +460,40 @@ export default defineComponent({
                 this.scenarioError = `We could not open the scenario in this link. `
                     + `${(err as Error).message}.`
             }
+        },
+        /** printed summaries show the things to remember, which are folded away */
+        openDetailsForPrint(): void {
+            document.querySelectorAll('.scenario-card details:not([open])').forEach((d) => {
+                d.setAttribute('open', '')
+                d.setAttribute('data-print-opened', '')
+            })
+        },
+        closeDetailsAfterPrint(): void {
+            document.querySelectorAll('details[data-print-opened]').forEach((d) => {
+                d.removeAttribute('open')
+                d.removeAttribute('data-print-opened')
+            })
+        },
+        /** shows or hides the tools for educators, also on later visits */
+        toggleEducatorTools(): void {
+            this.educatorTools = !this.educatorTools
+            try {
+                localStorage.setItem(EDUCATOR_TOOLS_KEY, this.educatorTools ? "1" : "0")
+            } catch {
+                // without storage, they are hidden again next time
+            }
+        },
+        /** a share of the time, e.g. 85% */
+        percent(value: number): string {
+            return `${Math.round(value)}%`
+        },
+        /** a new version has been stored (see entries/LT1Main.ts) */
+        showUpdateReady(): void {
+            this.updateReady = true
+        },
+        /** switches to the new version: the page is loaded again */
+        useUpdate(): void {
+            window.dispatchEvent(new CustomEvent('sweetspot-use-update'))
         },
         /** prints a summary of the day for group sessions */
         printSummary(): void {
@@ -655,58 +566,10 @@ export default defineComponent({
             this.chartGlucose().setRunVisible(key, visible)
             this.syncInsulinRuns()
         },
-        /**
-         * Runs a simulation with the selected controller and meals (used
-         * without patient data).
-         * @returns {SimulationResult[]} results
-         */
-        simulate(): SimulationResult[] {
-            sim.setPatient(this.getPatient())
-            sim.setController(this.getController())
-            sim.setMeals(this.getMeals())
-            sim.setExerciseUnits(this.getExerciseUnits())
-            sim.setOptions(this.getOptions())
-            sim.setSensor(this.getSensor())
-            sim.setActuator(this.getActuator())
-            return sim.runSimulation()
-        },
-        getController(): Controller {
-            return <Controller>toRaw(this.controller)
-        },
-        getPatient(): Patient {
-            return <Patient>toRaw(this.patient)
-        },
-        getSensor(): Sensor {
-            return <Sensor>toRaw(this.sensor)
-        },
-        getActuator(): Actuator {
-            return <Actuator>toRaw(this.actuator)
-        },
-        getMeals(): Meal[] {
-            return toRaw(this.meals)
-        },
-        getExerciseUnits(): Exercise[] {
-            return toRaw(this.exerciseUnits)
-        },
-        getOptions(): Object {
-            const options = <InstanceType<typeof SimulationOptionsConfig>>
-                this.$refs.options
-            return toRaw(options.getParameterValues())
-        },
-        controllerChanged(newController: Controller): void {
-            if (typeof newController !== "undefined") {
-                console.log("Controller changed")
-                console.log(newController)
-                this.controller = newController
-            }
-        },
+        /** the virtual person was loaded, or its settings changed */
         patientChanged(newPatient: Patient): void {
-            if (typeof newPatient !== "undefined") {
-                this.patient = newPatient
-                const profile = newPatient?.getPatientProfile?.()
-                if (typeof profile !== "undefined") {
-                    this.patientProfile = profile
-                }
+            if (typeof newPatient?.getParameterValues === "function") {
+                patientLoaded()
                 // results simulated with the old settings no longer apply:
                 // remove earlier what-ifs and simulate the day again
                 if (this.patientEvents) {
@@ -714,31 +577,6 @@ export default defineComponent({
                     this.chartInsulinCarbs().clearRuns()
                     this.run()
                 }
-            }
-        },
-        sensorChanged(newSensor: Sensor): void {
-            if (typeof newSensor !== "undefined") {
-                console.log("Sensor changed")
-                console.log(newSensor)
-                this.sensor = newSensor
-            }
-        },
-        actuatorChanged(newActuator: Actuator): void {
-            if (typeof newActuator !== "undefined") {
-                console.log("Actuator changed")
-                this.actuator = newActuator
-            }
-        },
-        mealsChanged(newMeals: Meal[]) {
-            this.meals = newMeals
-        },
-        exercisesChanged(newExercises: Exercise[]) {
-            this.exerciseUnits = newExercises
-        },
-        optionsChanged(newOptions: SimulatorOptions) {
-            if (typeof newOptions !== "undefined") {
-                console.log("Options changed")
-                this.options = newOptions
             }
         },
         resetCharts() {
@@ -749,16 +587,6 @@ export default defineComponent({
         propagateSimulationResults(simResults: SimulationResult[]) {
             for (const chart in this.$refs) {
                 (<any>this.$refs[chart]).setSimulationResults?.(simResults) 
-            }
-        },
-        /** callback when mouse hovers over medication chart */
-        controllerDataHover(t0: Date, data: Object): void {
-            if (typeof data === "undefined") {
-                return
-            }
-            for (const chartName in this.$refs) {
-                const chart = <any>this.$refs[chartName]
-                chart.controllerDataHover?.(t0, toRaw(data))
             }
         },
         timelineChanged(events: PatientEvent[]): void {
@@ -782,9 +610,24 @@ export default defineComponent({
 
 
 <template>
+    <div class="ss-page-heading">
+        <h1>Practise insulin and food decisions</h1>
+        <p class="ss-lede">
+            Try different choices with a made-up person, and see what happens
+            to glucose.
+        </p>
+    </div>
     <div class="lt1-container">
         <section class="box lt1-controls" aria-labelledby="day-heading">
             <h2 id="day-heading">Choose a day</h2>
+
+            <!-- the live region is always there, so that the message is read out -->
+            <div aria-live="polite">
+                <div v-if="updateReady" class="ss-inset update-ready">
+                    <p>A new version of SweetSpot is ready.</p>
+                    <button type="button" @click="useUpdate">Use the new version</button>
+                </div>
+            </div>
 
             <div v-if="showIntro" class="ss-intro" ref="intro" tabindex="-1"
                 role="region" aria-labelledby="intro-heading">
@@ -809,72 +652,13 @@ export default defineComponent({
             <p v-else class="ss-intro-link">
                 <a href="#" ref="introLink" @click.prevent="openIntro">How to use SweetSpot</a>
             </p>
-            <div style="display: none;">    
-                <ControllerSelection @controllerChanged="controllerChanged" 
-                    :patientProfile="patientProfile" ref="controller" />
-                <SensorSelection @valueChanged="sensorChanged" ref="sensorSelection" />
-                <ActuatorSelection @valueChanged="actuatorChanged" />
-                <MealTable v-if='options.t0' :t0="options.t0" @mealsChanged="mealsChanged" ref="meals" />
-                <ExerciseTable v-if='options.t0' :t0="options.t0" @exercisesChanged="exercisesChanged" />
-                <SimulationOptionsConfig @valueChanged="optionsChanged" ref="options" />
-            </div>
-
             <p v-if="scenarioError" class="csv-error" role="alert">{{ scenarioError }}</p>
             <TeachingScenarioPanel :scenarios="scenarios"
                 :activeId="activeScenarioId"
                 @load="loadScenario" @whatIf="applyWhatIf"
                 @showOriginal="showOriginalDay" />
 
-            <div v-if="personalData" class="lt1-csv-input">
-                <h3>Or use your own day</h3>
-                <p class="ss-hint" id="uploadHint">
-                    Upload a file with your insulin, food and glucose
-                    readings: a SweetSpot CSV file, or an export from
-                    LibreView, Dexcom Clarity or Nightscout (you can choose
-                    the entries and treatments files together). It stays on
-                    this device. You can also open a scenario file from
-                    your educator.
-                </p>
-                <label for="csvUpload">Upload a file</label>
-                <input type="file" id="csvUpload" accept=".csv,.txt,.json" multiple
-                    aria-describedby="uploadHint" @change="onCsvFileSelected" />
-                <div v-if="csvFileName && !csvError" class="ss-hint">
-                    <p>Using {{ csvFileName }} ({{ fileSource }}).</p>
-                    <ul v-if="fileNotes.length" class="file-notes">
-                        <li v-for="note in fileNotes" :key="note">{{ note }}</li>
-                    </ul>
-                </div>
-                <div v-if="fileEvents && !csvError" class="ss-inset own-data-notice">
-                    {{ ownDataNotice }}
-                </div>
-                <p v-if="csvError && personalData" class="csv-error" role="alert">{{ csvError }}</p>
-                <div v-if="fileDays.length > 1" class="day-picker">
-                    <label for="daySelect">Day to look at</label>
-                    <p class="ss-hint" id="dayHint">
-                        The file covers {{ fileDays.length }} days. Choose one
-                        day to look at.
-                    </p>
-                    <select id="daySelect" aria-describedby="dayHint"
-                        :value="selectedDay"
-                        @change="loadDay(Number(($event.target as HTMLSelectElement).value))">
-                        <option v-for="(day, index) in fileDays" :key="index" :value="index">
-                            {{ dayName(day) }}
-                        </option>
-                    </select>
-                </div>
-            </div>
-
-            <div v-if="!personalData" class="lt1-csv-input">
-                <h3>Or open a scenario from your educator</h3>
-                <p class="ss-hint" id="uploadHint">
-                    Open a scenario file your educator has shared with you.
-                    This version of SweetSpot does not open your own data.
-                </p>
-                <label for="csvUpload">Open a scenario file</label>
-                <input type="file" id="csvUpload" accept=".json"
-                    aria-describedby="uploadHint" @change="onCsvFileSelected" />
-                <p v-if="csvError" class="csv-error" role="alert">{{ csvError }}</p>
-            </div>
+            <DayUpload ref="upload" @day="openOwnDay" @scenario="openSharedScenario" />
 
             <p v-if="simulationSpan" class="ss-hint">
                 Showing {{ friendlySpan }}.
@@ -900,7 +684,7 @@ export default defineComponent({
 
             <!-- kept while other days are loaded, so that a scenario being
                  written is not lost when it is tried out -->
-            <AccordionBox v-if="patientEvents && originalPatientEvents"
+            <AccordionBox v-if="patientEvents && originalPatientEvents" v-show="educatorTools"
                 title="For educators: make and share a scenario" class="no-print">
                 <EducatorPanel
                     :scenario="activeScenario"
@@ -910,14 +694,25 @@ export default defineComponent({
                 />
             </AccordionBox>
 
-            <VirtualPatientSelection @patientChanged="patientChanged" ref="patientSelection" />
+            <!-- always there, as it provides the virtual person; shown with
+                 the tools for educators -->
+            <div v-show="educatorTools" class="no-print">
+                <VirtualPatientSelection @patientChanged="patientChanged" ref="patientSelection" />
+            </div>
+
+            <p class="educator-toggle no-print">
+                <button type="button" class="ss-link-button" @click="toggleEducatorTools"
+                    :aria-expanded="educatorTools">
+                    {{ educatorTools ? "Hide tools for educators" : "Show tools for educators" }}
+                </button>
+            </p>
         </section>
         <section class="box lt1-results" aria-labelledby="results-heading">
             <h2 id="results-heading">What happens to glucose</h2>
             <p v-if="!metrics" class="ss-hint">
                 Choose a practice scenario or upload a day to see the results here.
             </p>
-            <div v-if="fileEvents" class="ss-inset own-data-notice">{{ ownDataNotice }}</div>
+            <div v-if="ownData" class="ss-inset own-data-notice">{{ ownDataNotice }}</div>
             <div v-if="eventWarnings.length" class="ss-inset results-warning">
                 <h3>Check these amounts</h3>
                 <ul>
@@ -925,13 +720,32 @@ export default defineComponent({
                 </ul>
             </div>
             <p v-if="modelNote" class="csv-error" role="alert">{{ modelNote }}</p>
+            <!-- the main result first, before the charts -->
+            <div v-if="metrics && !modelNote" class="results-headline">
+                <template v-if="baselineMetrics">
+                    <p>
+                        Time in range: <strong>{{ percent(baselineMetrics.timeInRange) }}</strong>
+                        on the original day, <strong>{{ percent(metrics.timeInRange) }}</strong>
+                        with the change.
+                    </p>
+                    <p>
+                        Time low: <strong>{{ percent(baselineMetrics.timeBelowRange) }}</strong>
+                        on the original day, <strong>{{ percent(metrics.timeBelowRange) }}</strong>
+                        with the change.
+                    </p>
+                </template>
+                <p v-else>
+                    Time in range: <strong>{{ percent(metrics.timeInRange) }}</strong>.
+                    Time low: <strong>{{ percent(metrics.timeBelowRange) }}</strong>.
+                </p>
+            </div>
             <p class="visually-hidden" role="status">{{ statusMessage }}</p>
             <p v-if="calculating" class="ss-hint calculating">Working out the results…</p>
             <p v-if="simulationError" class="csv-error" role="alert">{{ simulationError }}</p>
             <ChartGlucose ref="chartGlucose" :description="glucoseDescription"
                 @runVisibilityChanged="syncInsulinRuns"
                 @hoverTime="hoverTimeChanged" />
-            <ChartInsulinCarbs ref="chartInsulinCarbs" @selectLog="controllerDataHover"
+            <ChartInsulinCarbs ref="chartInsulinCarbs"
                 :description="insulinDescription"
                 @runVisibilityChanged="insulinRunVisibilityChanged"
                 @hoverTime="hoverTimeChanged" />
@@ -967,6 +781,22 @@ export default defineComponent({
     font-size: 0.95rem;
 }
 
+/* the main result, above the charts */
+.results-headline {
+    font-size: 1.15rem;
+    border-left: 8px solid var(--ss-primary);
+    padding: 0.25rem 0 0.25rem 1rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.results-headline p {
+    margin: 0.25rem 0;
+}
+
+.results-headline strong {
+    font-size: 1.3rem;
+}
+
 /* error message: red bar on the left, as in the NHS design system */
 .csv-error {
     color: var(--ss-error);
@@ -976,45 +806,11 @@ export default defineComponent({
     margin: 0.5rem 0;
 }
 
-.lt1-csv-input {
-    margin: 1.5rem 0 1rem 0;
-    padding-top: 1rem;
-    border-top: 1px solid var(--ss-border);
-}
-
-.file-notes {
-    padding-left: 1.25rem;
-    margin-bottom: 0.75rem;
-}
-
-.day-picker {
-    margin-top: 0.75rem;
-}
-
-.day-picker select {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.lt1-csv-input input[type=file] {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    margin-top: 0.25rem;
-    border: none;
-    padding-left: 0;
-}
 </style>
 
 
 <i18n locale="en">
 {
-	"settings": 	"Settings",
-	"run": 			"Show results",
-	"results":		"What happens to glucose",
-	"whatif":		"your change",
-	"simulated":	"simulated glucose",
-    "shortcut":     "or press Ctrl+Enter",
+	"whatif":		"Your change",
 }
 </i18n>

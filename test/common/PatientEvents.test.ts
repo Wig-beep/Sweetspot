@@ -105,7 +105,7 @@ describe("parsePatientEventsCSV", () => {
         ["missing value", "time,type,value\n2026-10-05 08:00,bolus,",
             /Line 2: invalid bolus/],
         ["exercise above 100 %", "time,type,value\n2026-10-05 08:00,exercise,150",
-            /at most 100 %/],
+            /at most 100%/],
         ["glucose in mg/dl", "time,type,value\n2026-10-05 08:00,glucose,120",
             /mmol\/L/],
     ]
@@ -196,7 +196,7 @@ describe("checkEvent", () => {
         expect(checkEvent({ time, type: "carbs", value: 500 })).to.be.undefined
         expect(checkEvent({ time, type: "carbs", value: 5000 })).to.match(/carbs \(grams\) must be at most 500/)
         expect(checkEvent({ time, type: "carbs", value: 50, duration: 100000 })).to.match(/at most 24 hours/)
-        expect(checkEvent({ time, type: "glucose", value: 0.5 })).to.match(/at least 1 mmol\/L/)
+        expect(checkEvent({ time, type: "glucose", value: 0.5 })).to.match(/at least 1mmol\/L/)
         expect(checkEvent({ time, type: "glucose", value: 1 })).to.be.undefined
     })
 

@@ -101,7 +101,6 @@ export default defineComponent({
 
             // if (this.getParameterValues()[id] !== value) {
             if (JSON.stringify(this.getParameterValues()[id]) !== JSON.stringify(value)) {
-                console.log("setting '" + id + "' to " + value)
                 this.module.setParameterValues({ [id]: value })
                 this.valueChanged()
             }

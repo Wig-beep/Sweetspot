@@ -25,6 +25,7 @@ import {
     timeAtPointer,
 } from '../util/ChartSync.js'
 import AccordionBox from './AccordionBox.vue'
+import { amountLabelsPlugin, TIME_AXIS } from '../util/ChartLabels.js'
 
 /** datasets that are kept for other pages but not shown in this app:
  *  insulin on board (2, only shown if there is any), carbs being absorbed
@@ -82,7 +83,20 @@ export default defineComponent({
         const canvas = document.getElementById(id) as HTMLCanvasElement
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
-            plugins: [exercisePlugin, hoverLinePlugin],
+            plugins: [exercisePlugin, hoverLinePlugin,
+                // amounts of quick-acting insulin, meals and background insulin
+                amountLabelsPlugin((dataset, index, value) => {
+                    const role = (<RunDataset>dataset).runRole
+                    const amount = Number(value.toFixed(1))
+                    if (index === 1 || role === "bolus" || index === LONG_ACTING_DATASET
+                        || role === "longacting") {
+                        return String(amount)
+                    }
+                    if (index === 3 || role === "meal") {
+                        return `${Math.round(value)}g`
+                    }
+                    return undefined
+                })],
             data: {
                 datasets: [
                     <ChartDatasetCustomTypesPerDataset>{
@@ -174,23 +188,18 @@ export default defineComponent({
                     x: {
                         type: "time",   
                         offset: false,
-                        time: {
-                            displayFormats: {
-                                hour: 'HH:mm'
-                            },
-                            // 24-hour time with the date, e.g. 5 Oct 14:30
-                            tooltipFormat: 'd MMM HH:mm',
-                        },
+                        // times as in the text (8am), horizontal
+                        ...TIME_AXIS,
                     },
                     y: {
-                        title: { display: true, text: "insulin (units)" },
+                        title: { display: true, text: "Insulin (units)" },
                         min: 0,
                         ticks: { stepSize: 1 },
                         suggestedMax: 2,
                         afterFit: fixAxisWidth,
                     },
                     yG: {
-                        title: { display: true, text: "carbs (grams)" },
+                        title: { display: true, text: "Carbs (grams)" },
                         position: 'right',
                         min: 0,
                         suggestedMax: 30,
@@ -527,18 +536,18 @@ export default defineComponent({
 <i18n locale="en">
 {
 	"title":		"Insulin and food",
-	"iir":			"background insulin (units an hour)",
-	"longacting":	"background insulin injection (units)",
-	"loggedIir":	"original background insulin (units an hour)",
-	"loggedIbolus":	"original quick-acting insulin (units)",
-	"loggedMeal":	"original meal (grams of carbs)",
-	"loggedLongacting":	"original background injection (units)",
-	"ibolus":		"quick-acting insulin (units)",
-    "pumpoutput":   "insulin pump output (units an hour)",
-	"iob":			"quick-acting insulin on board (units)",
-	"loggedIob":	"original quick-acting insulin on board (units)",
-	"totalmeal":	"meal (grams of carbs)",
-	"carbspermin":	"carbs being absorbed (grams a minute)",
-	"exIntensity":	"exercise effort (%)",
+	"iir":			"Background insulin (units an hour)",
+	"longacting":	"Background insulin injection (units)",
+	"loggedIir":	"Original background insulin (units an hour)",
+	"loggedIbolus":	"Original quick-acting insulin (units)",
+	"loggedMeal":	"Original meal (grams of carbs)",
+	"loggedLongacting":	"Original background injection (units)",
+	"ibolus":		"Quick-acting insulin (units)",
+    "pumpoutput":   "Insulin pump output (units an hour)",
+	"iob":			"Quick-acting insulin on board (units)",
+	"loggedIob":	"Original quick-acting insulin on board (units)",
+	"totalmeal":	"Meal (grams of carbs)",
+	"carbspermin":	"Carbs being absorbed (grams a minute)",
+	"exIntensity":	"Exercise effort (%)",
 }
 </i18n>

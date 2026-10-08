@@ -170,30 +170,6 @@ export default defineComponent({
     margin-bottom: 0.25rem;
 }
 
-/* large radio buttons with the whole label as a target */
-.ss-radio {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.ss-radio input[type=radio] {
-    flex: none;
-    width: 1.75rem;
-    height: 1.75rem;
-    min-height: 0;
-    margin: 0.1rem 0 0 0;
-    accent-color: var(--ss-primary);
-    cursor: pointer;
-}
-
-.ss-radio label {
-    font-weight: normal;
-    padding: 0.25rem 0;
-    cursor: pointer;
-}
-
 .scenario-card {
     margin-top: 1rem;
 }

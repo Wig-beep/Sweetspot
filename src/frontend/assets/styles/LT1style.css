@@ -67,6 +67,89 @@ textarea:focus-visible {
     border: 0;
 }
 
+/* skip link: hidden until it has keyboard focus (NHS service manual) */
+.ss-skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0.5rem;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background-color: var(--ss-focus);
+    color: var(--ss-text);
+    font-weight: bold;
+}
+
+.ss-skip-link:focus {
+    left: 0.5rem;
+}
+
+main:focus {
+    outline: none;
+}
+
+/* page heading of the app */
+.ss-page-heading {
+    max-width: 1200px;
+    margin: 1rem auto 0 auto;
+    padding: 0 calc(8px + 1rem);
+    box-sizing: border-box;
+}
+
+.ss-page-heading h1 {
+    font-size: 2rem;
+    line-height: 1.25;
+    margin: 0 0 0.25rem 0;
+}
+
+.ss-lede {
+    font-size: 1.15rem;
+    margin: 0;
+}
+
+@media screen and (max-width: 480px) {
+    .ss-page-heading h1 {
+        font-size: 1.6rem;
+    }
+
+    .ss-page-heading {
+        padding: 0 calc(8px + 0.75rem);
+    }
+}
+
+/* pages of text (accessibility statement, privacy) */
+.ss-text-page {
+    display: block;
+    max-width: 44rem;
+    margin: 1.5rem auto;
+    padding: 0 1rem;
+}
+
+.ss-text-page h1 {
+    font-size: 2rem;
+    line-height: 1.25;
+}
+
+.ss-text-page h2 {
+    font-size: 1.4rem;
+    margin-top: 2rem;
+}
+
+.ss-text-page a,
+.ss-footer a {
+    color: var(--ss-primary-dark);
+}
+
+.ss-draft-note {
+    border-left: 8px solid var(--ss-focus);
+    background-color: #fff9c4;
+    padding: 0.5rem 1rem;
+}
+
+.ss-header .ss-home-link {
+    color: #ffffff;
+    text-decoration: none;
+}
+
 /* page header and footer */
 .ss-header {
     background-color: var(--ss-primary);
@@ -380,6 +463,51 @@ input[type=button]:focus-visible {
     }
 }
 
+/* large radio buttons with the whole label as a target */
+.ss-radio {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.ss-radio input[type=radio] {
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    min-height: 0;
+    margin: 0.1rem 0 0 0;
+    accent-color: var(--ss-primary);
+    cursor: pointer;
+}
+
+.lt1-container .ss-radio label {
+    font-weight: normal;
+    padding: 0.25rem 0;
+    cursor: pointer;
+}
+
+/* a button that looks like a link, for actions of low importance */
+.lt1-container button.ss-link-button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0.25rem 0;
+    min-height: 2.75rem;
+    color: var(--ss-primary-dark);
+    font-weight: normal;
+    text-decoration: underline;
+}
+
+.lt1-container button.ss-link-button:hover {
+    background: none;
+    text-decoration-thickness: 3px;
+}
+
+.educator-toggle {
+    margin-top: 1rem;
+}
+
 /* hints and notes */
 .ss-hint {
     color: var(--ss-text-secondary);
@@ -463,4 +591,16 @@ text.axis-label {
     margin: 0px;
     font-size: 0.8rem;
     pointer-events: none;
+}
+
+/*
+ * Windows high contrast (forced colours): keep the colours of the time in
+ * range bars and the colour key, which carry meaning next to their words
+ */
+@media (forced-colors: active) {
+    .tir-bar span,
+    .tir-swatch,
+    .key-line {
+        forced-color-adjust: none;
+    }
 }

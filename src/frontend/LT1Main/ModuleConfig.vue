@@ -95,13 +95,10 @@ export default defineComponent({
                 console.warn("wrong file content")
                 return
             }
-            console.log("loading parameter file:")
-            console.log(content)
             this.loadModel(content?.model, content?.parameters)
         },
 
         async loadModel(id: string, parameters: Object = {}) {
-            console.log("load module "+id)
             const moduleImport = this.modelImports?.[id]
             if (typeof moduleImport === "undefined") {
                 console.warn("Model \"" + id + "\" unknown.")
@@ -112,6 +109,8 @@ export default defineComponent({
 
             this.module = <ParametricModule>new moduleContents.default(parameters)
             
+            // shown as HTML (v-html) by the parameter components: descriptions
+            // come only from the bundled module code, never from files
             this.description = moduleContents.i18n_label?.[this.$i18n.locale] ??
                 moduleContents.i18n_label?.en ?? moduleContents.html ?? {}
 
@@ -123,7 +122,6 @@ export default defineComponent({
             paramConfig.setConfig(this.module.getParameterDescription())
             // this.module.restoreDefaultParameterValues()
 
-            console.log("Loaded new " + moduleContents.profile.type + " " + id)
             this.$emit("valueChanged", this.getModule())
         },
 

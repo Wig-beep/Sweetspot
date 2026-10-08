@@ -97,7 +97,7 @@ describe("TeachingScenarios", function () {
         const s = scenario("high-fat-meal")
         const logged = simulate(s, s.events).metrics
         expect(logged.maxGlucose).to.be.greaterThan(12)
-        const split = whatIf(s, "split dose: 6 + 5 units")
+        const split = whatIf(s, "Split dose: 6 + 5 units")
         expect(split.maxGlucose).to.be.lessThan(logged.maxGlucose - 2)
         expect(split.minGlucose).to.be.greaterThan(4)
         expect(whatIf(s, "11 units all at once").minGlucose).to.be.lessThan(3.9)
@@ -108,7 +108,7 @@ describe("TeachingScenarios", function () {
         const logged = simulate(s, s.events)
         expect(logged.usedExerciseModel).to.be.true
         expect(logged.metrics.minGlucose).to.be.lessThan(3.9)
-        expect(whatIf(s, "half the insulin and 20g of carbs").minGlucose).to.be.greaterThan(4)
+        expect(whatIf(s, "Half the insulin and 20g of carbs").minGlucose).to.be.greaterThan(4)
     })
 
     it("hypo: one 15 g treatment is not enough, repeating it helps, 60 g overshoots", () => {
@@ -116,9 +116,9 @@ describe("TeachingScenarios", function () {
         const logged = simulate(s, s.events).metrics
         const repeated = whatIf(s, "15g, check again, 15g more")
         expect(repeated.timeBelowRange).to.be.lessThan(logged.timeBelowRange / 2)
-        expect(whatIf(s, "too much: 60g").maxGlucose)
+        expect(whatIf(s, "Too much: 60g").maxGlucose)
             .to.be.greaterThan(repeated.maxGlucose + 1.5)
-        expect(whatIf(s, "right lunch dose").minGlucose).to.be.greaterThan(4)
+        expect(whatIf(s, "Right lunch dose").minGlucose).to.be.greaterThan(4)
     })
 
     describe("quizzes", () => {
@@ -144,6 +144,40 @@ describe("TeachingScenarios", function () {
                 const best = tir.indexOf(Math.max(...tir))
                 expect(s.quiz!.answers[best].correct, `${s.id}: ${tir.map((t) => t.toFixed(0))}`)
                     .to.be.true
+            }
+        })
+    })
+
+    describe("plain English", () => {
+        /** syllables of a word, estimated */
+        const syllables = (word: string) => {
+            let w = word.toLowerCase().replace(/[^a-z]/g, "")
+            if (w.length <= 3) return 1
+            w = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "").replace(/^y/, "")
+            return Math.max(1, (w.match(/[aeiouy]{1,2}/g) ?? []).length)
+        }
+        const sentences = (text: string) => text.split(/(?<=[.!?])\s+/).filter((s) => s.trim())
+        /** Flesch-Kincaid grade; reading age is about the grade plus 5 */
+        const grade = (text: string) => {
+            const words = text.split(/\s+/).filter(Boolean)
+            return 0.39 * words.length / sentences(text).length
+                + 11.8 * words.reduce((sum, w) => sum + syllables(w), 0) / words.length - 15.59
+        }
+
+        it("should keep scenario texts easy to read (NHS: short sentences, common words)", () => {
+            for (const s of scenarios) {
+                const texts: Record<string, string> = {
+                    goal: s.goal, story: s.story, "key points": s.keyPoints.join(" "),
+                    changes: s.whatIfs.map((w) => w.description).join(" "),
+                    "quiz feedback": s.quiz!.answers.map((a) => a.feedback).join(" "),
+                }
+                for (const [part, text] of Object.entries(texts)) {
+                    expect(grade(text), `${s.id} ${part}: reading grade`).to.be.at.most(8)
+                    for (const sentence of sentences(text)) {
+                        expect(sentence.split(/\s+/).length, `${s.id} ${part}: "${sentence}"`)
+                            .to.be.at.most(25)
+                    }
+                }
             }
         })
     })

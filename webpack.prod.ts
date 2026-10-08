@@ -23,6 +23,8 @@ export default merge(common, <webpack.Configuration>{
             template: './src/frontend/assets/service-worker.js',
             files: [
                 'manifest.webmanifest',
+                'accessibility.html',
+                'privacy.html',
                 'styles/LT1style.css',
                 'Favicon.png',
                 'images/icons/icon-192.png',

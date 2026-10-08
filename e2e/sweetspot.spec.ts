@@ -108,11 +108,56 @@ test.describe('safety information', () => {
         await expect(footer).toContainText('To report a problem or a safety concern')
     })
 
+    test('nothing is sent anywhere: no requests to other sites', async ({ page }) => {
+        const elsewhere: string[] = []
+        page.on('request', (request) => {
+            const url = new URL(request.url())
+            if (!['http:', 'https:'].includes(url.protocol)) return
+            if (url.origin !== 'http://localhost:4173') elsewhere.push(request.url())
+        })
+        await open(page)
+        await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
+        await expect(page.getByRole('status')).toContainText('Original day:')
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        await tryChange(page, 'Too much: 60g')
+        await expect(page.getByRole('status')).toContainText('With change')
+        expect(elsewhere).toEqual([])
+    })
+
     test('scenarios do not show the notice for own data', async ({ page }) => {
         await open(page)
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
         await expect(page.getByRole('status')).toContainText('Original day:')
         await expect(page.locator('.own-data-notice')).toHaveCount(0)
+    })
+})
+
+test.describe('tools for educators', () => {
+
+    test('are hidden for learners, and shown on request or with ?educator', async ({ page }) => {
+        await open(page)
+        await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        const panel = page.getByRole('button', { name: 'For educators: make and share a scenario' })
+        const settings = page.getByRole('button', { name: 'Virtual person settings' })
+        await expect(panel).toBeHidden()
+        await expect(settings).toBeHidden()
+
+        const toggle = page.getByRole('button', { name: 'Show tools for educators' })
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+        await toggle.click()
+        await expect(panel).toBeVisible()
+        await expect(settings).toBeVisible()
+        await expect(page.getByRole('button', { name: 'Hide tools for educators' }))
+            .toHaveAttribute('aria-expanded', 'true')
+
+        // remembered on this device
+        await page.reload()
+        await expect(page.getByRole('button', { name: 'Hide tools for educators' })).toBeVisible()
+
+        const other = await page.context().browser()!.newPage()
+        await other.goto('/SweetSpot.html?educator')
+        await expect(other.getByRole('button', { name: 'Hide tools for educators' })).toBeVisible()
+        await other.close()
     })
 })
 
@@ -146,6 +191,7 @@ test.describe('educators', () => {
     async function writeScenario(page: Page) {
         await open(page)
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
+        await page.getByRole('button', { name: 'Show tools for educators' }).click()
         await page.getByRole('button', { name: 'For educators: make and share a scenario' }).click()
         await page.getByRole('button', { name: 'Start from this day' }).click()
         await page.getByLabel('Title').fill('Hypo after a long walk')
@@ -208,7 +254,7 @@ test.describe('educators', () => {
     test('the printed summary shows the scenario and results, not the controls', async ({ page }) => {
         await open(page)
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
-        await tryChange(page, 'too much: 60g')
+        await tryChange(page, 'Too much: 60g')
         await expect(page.getByRole('status')).toContainText('With change')
         await page.emulateMedia({ media: 'print' })
         await expect(page.getByRole('heading', { name: 'Treating a hypo' })).toBeVisible()
@@ -247,10 +293,10 @@ test.describe('first visit and phones', () => {
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
         const sheet = page.getByRole('button', { name: /^Try a change/ })
         await expect(sheet).toHaveAttribute('aria-expanded', 'false')
-        await expect(page.getByRole('button', { name: 'too much: 60g' })).toBeHidden()
+        await expect(page.getByRole('button', { name: 'Too much: 60g' })).toBeHidden()
 
         await sheet.click()
-        await page.getByRole('button', { name: 'too much: 60g' }).click()
+        await page.getByRole('button', { name: 'Too much: 60g' }).click()
         // the sheet closes, keeps the focus, and the charts are shown
         await expect(sheet).toHaveAttribute('aria-expanded', 'false')
         await expect(sheet).toBeFocused()
@@ -299,7 +345,7 @@ test.describe('offline app', () => {
         await page.reload()
         await expect(page.getByRole('radio')).toHaveCount(5)
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
-        await tryChange(page, 'too much: 60g')
+        await tryChange(page, 'Too much: 60g')
         await expect(page.getByRole('status')).toContainText('With change')
         await context.setOffline(false)
     })
@@ -391,8 +437,9 @@ test.describe('uploaded days', () => {
         const bolus = await timelineRow(page, 'bolus')
         await expect(bolus.getByRole('spinbutton').first())
             .toHaveAccessibleName(/^\d\d:\d\d quick-acting insulin: amount$/)
-        await expect(bolus.getByRole('button')).toHaveAccessibleName(
-            /^Remove \d\d:\d\d quick-acting insulin$/)
+        const remove = bolus.getByRole('button')
+        await expect(remove).toHaveText(/^Remove/)
+        await expect(remove).toHaveAccessibleName(/^Remove \d\d:\d\d quick-acting insulin$/)
         const names = await page.locator('.timeline-row .cell-value').evaluateAll(
             (inputs) => inputs.map((input) => input.getAttribute('aria-label')))
         expect(new Set(names).size).toBe(names.length)
@@ -481,7 +528,7 @@ test.describe('layout and accessibility', () => {
     test('the page never scrolls sideways', async ({ page }) => {
         await open(page)
         await page.getByRole('radio', { name: 'Exercise after a meal' }).check()
-        await tryChange(page, 'half the lunch insulin')
+        await tryChange(page, 'Half the lunch insulin')
         const overflow = await page.evaluate(() =>
             document.documentElement.scrollWidth - document.documentElement.clientWidth)
         expect(overflow).toBeLessThanOrEqual(0)
@@ -499,6 +546,33 @@ test.describe('layout and accessibility', () => {
         expect(duplicates).toEqual([])
     })
 
+    test('the page has one h1, and a skip link as the first stop', async ({ page }) => {
+        await open(page)
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Practise insulin and food decisions')
+        await page.keyboard.press('Tab')
+        const skip = page.getByRole('link', { name: 'Skip to main content' })
+        // WebKit only moves to links with Tab when the system says so
+        test.skip(!(await skip.evaluate((link) => link === document.activeElement)),
+            'Tab does not reach links in this browser')
+        await expect(skip).toBeVisible()
+        await page.keyboard.press('Enter')
+        await expect(page.locator('main')).toBeFocused()
+    })
+
+    test('the accessibility statement and privacy notice have no WCAG 2.2 AA problems', async ({ page }) => {
+        await open(page)
+        await page.getByRole('link', { name: 'Accessibility statement' }).click()
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Accessibility statement for SweetSpot')
+        await expect(page.getByText(/partially compliant/)).toBeVisible()
+        expect(await accessibilityViolations(page)).toEqual([])
+        await page.getByRole('link', { name: 'Privacy' }).click()
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Privacy')
+        await expect(page.getByText(/does not collect, store or send any personal information/)).toBeVisible()
+        expect(await accessibilityViolations(page)).toEqual([])
+        await page.getByRole('link', { name: 'Back to SweetSpot' }).click()
+        await expect(page.getByRole('radio')).toHaveCount(5)
+    })
+
     test('the start page has no WCAG 2.2 AA problems', async ({ page }) => {
         await open(page)
         expect(await accessibilityViolations(page)).toEqual([])
@@ -507,7 +581,7 @@ test.describe('layout and accessibility', () => {
     test('a scenario with a change has no WCAG 2.2 AA problems', async ({ page }) => {
         await open(page)
         await page.getByRole('radio', { name: 'Treating a hypo' }).check()
-        await tryChange(page, 'too much: 60g')
+        await tryChange(page, 'Too much: 60g')
         // without motion, the section opens at once, so the check sees it
         // fully open rather than half-way through the animation
         await page.emulateMedia({ reducedMotion: 'reduce' })

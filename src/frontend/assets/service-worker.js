@@ -11,11 +11,13 @@
  * list of files to keep (see util/ServiceWorkerPlugin.ts).
  *
  * - Pages are fetched from the network when online, so that updates arrive,
- *   and from the device when offline.
+ *   and from the device when offline. Only the page stored with this version
+ *   is used offline, so that it always matches the stored files.
  * - Other files have content hashes in their names, so a stored copy is
  *   always right and is used first.
  * - A new version is stored next to the old one and takes over once all
- *   SweetSpot pages are closed; the old one is then removed.
+ *   SweetSpot pages are closed, or at once when the page asks for it (the
+ *   "Use the new version" button); the old one is then removed.
  */
 
 const VERSION = self.__SWEETSPOT_VERSION
@@ -25,6 +27,13 @@ const START_PAGE = "SweetSpot.html"
 
 self.addEventListener("install", (event) => {
     event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)))
+})
+
+// the page asks the waiting new version to take over
+self.addEventListener("message", (event) => {
+    if (event.data?.type === "SKIP_WAITING") {
+        self.skipWaiting()
+    }
 })
 
 self.addEventListener("activate", (event) => {
@@ -42,20 +51,21 @@ self.addEventListener("fetch", (event) => {
         return
     }
     if (request.mode === "navigate") {
+        // the page from the network is not stored: it may belong to a newer
+        // version whose files are not stored yet
         event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    if (response.ok) {
-                        const copy = response.clone()
-                        caches.open(CACHE).then((cache) => cache.put(request, copy))
-                    }
-                    return response
-                })
-                .catch(async () => (await caches.match(request, { ignoreSearch: true }))
-                    ?? (await caches.match(START_PAGE))
-                    ?? Response.error()))
+            fetch(request).catch(async () => {
+                const cache = await caches.open(CACHE)
+                return (await cache.match(request, { ignoreSearch: true }))
+                    ?? (await cache.match(START_PAGE))
+                    ?? Response.error()
+            }))
         return
     }
+    // files of this version first; the stylesheet's address has its
+    // version in the query (?v=...), so the query is not compared
     event.respondWith(
-        caches.match(request).then((cached) => cached ?? fetch(request)))
+        caches.open(CACHE)
+            .then((cache) => cache.match(request, { ignoreSearch: true }))
+            .then((cached) => cached ?? fetch(request)))
 })

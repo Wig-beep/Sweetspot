@@ -33,6 +33,14 @@ const rows: Row[] = [
     { key: "carbs", unit: "g", decimals: 0 },
 ]
 
+/**
+ * the unit after a number, as in NHS content: no space before symbols (51%,
+ * 5.8mmol/L, 50g), a space before words (6 units)
+ */
+function unitText(row: Row): string {
+    return /^[a-z]{3,}$/.test(row.unit) ? " " + row.unit : row.unit
+}
+
 export default defineComponent({
     components: { AccordionBox, TimeInRangeBars },
 
@@ -79,7 +87,7 @@ export default defineComponent({
 
     methods: {
         format(value: number, row: Row): string {
-            return isFinite(value) ? value.toFixed(row.decimals) + " " + row.unit : "-"
+            return isFinite(value) ? value.toFixed(row.decimals) + unitText(row) : "-"
         },
         difference(row: Row): string {
             const diff = this.metrics![row.key] - this.baseline![row.key]
@@ -88,7 +96,7 @@ export default defineComponent({
                 return "-"
             }
             const sign = rounded > 0 ? "+" : ""
-            return sign + rounded.toFixed(row.decimals) + " " + row.unit
+            return sign + rounded.toFixed(row.decimals) + unitText(row)
         },
         /** CSS class telling whether the change improves glucose control */
         differenceClass(row: Row): string {
@@ -205,10 +213,10 @@ export default defineComponent({
     "simulated": "Simulated day",
     "change": "Difference",
     "hint": "Try a change in a scenario, or change the timeline, to compare it with the original day.",
-    "timeInRange": "Time in range (3.9 to 10 mmol/L)",
-    "timeBelowRange": "Time low (below 3.9 mmol/L)",
-    "timeVeryLow": "Time very low (below 3 mmol/L)",
-    "timeAboveRange": "Time high (above 10 mmol/L)",
+    "timeInRange": "Time in range (3.9 to 10mmol/L)",
+    "timeBelowRange": "Time low (below 3.9mmol/L)",
+    "timeVeryLow": "Time very low (below 3mmol/L)",
+    "timeAboveRange": "Time high (above 10mmol/L)",
     "meanGlucose": "Average glucose",
     "minGlucose": "Lowest glucose",
     "maxGlucose": "Highest glucose",

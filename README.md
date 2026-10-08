@@ -37,6 +37,10 @@ SweetSpot is configured when it is built:
 The version (`sweetspotVersion` in `package.json`) and the commit are shown in the footer of every page. CI tests
 both the standard and the educational-only version.
 
+The build includes an accessibility statement (`accessibility.html`) and a privacy notice (`privacy.html`), both drafts
+for the providing organisation to complete; see [docs/accessibility-testing.md](docs/accessibility-testing.md) for
+the manual accessibility checks.
+
 `npm run build` makes the production build, which contains SweetSpot only (the development pages are in the
 development server, or with `SWEETSPOT_ALL_PAGES=on`). `npm run typecheck` checks the types of the `.ts` and
 `.vue` files, which the build does not report completely; CI runs it. Releases are made as described in
@@ -68,6 +72,9 @@ npm run serve
   Each scenario ends with a short question ("Which change avoids the hypo?") with feedback on the answer chosen and
   a button to see that answer on the charts. A unit test checks that the right answer is always the choice with the
   most time in range, so the feedback stays true if doses are changed.
+* Tools for educators are hidden for learners: select "Show tools for educators" at the bottom of the page (the
+  choice is remembered on the device), or open the page with `?educator` (`SweetSpot.html?educator`). They include
+  the settings of the virtual person.
 * Educators can make their own scenarios under "For educators: make and share a scenario": start from the day
   shown, write the title, story and things to remember, add changes made in the timeline as changes to try, and
   optionally a question. Scenarios are tried out on the page, saved as a file (opened by learners with
@@ -116,7 +123,7 @@ npm run serve
   To try a what-if, edit the patient timeline (e.g. move a bolus earlier or change a dose) and apply the changes:
   the glucose chart then shows the logged day (dashed) next to the what-if day, and the day summary compares
   time in range, hypos, mean glucose, insulin and carbs. Every what-if is kept as a curve (the latest one bold);
-  click on a curve in the legend to show or hide it.
+  select a curve in the legend to show or hide it.
   The insulin chart shows quick-acting insulin on board, estimated as bolus advisors do (exponential action curve,
   peak at 75 minutes, 5 hours duration), which makes stacked corrections visible.
   Days are simulated in a background thread (a Web Worker), so the page keeps responding; the original day is only

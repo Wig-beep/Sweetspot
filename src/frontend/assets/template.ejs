@@ -5,20 +5,20 @@
 		<title>SweetSpot – practise insulin and food decisions</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="description" content="A learning tool to practise insulin and food decisions with a virtual person with type 1 diabetes." />
-        <link rel="stylesheet" href="./styles/LT1style.css" />
+        <link rel="stylesheet" href="<%- build.stylesheet %>" />
         <!-- installable app, see manifest.webmanifest -->
         <link rel="manifest" href="./manifest.webmanifest" />
         <meta name="theme-color" content="#006d7a" />
         <link rel="apple-touch-icon" href="./images/icons/apple-touch-icon.png" />
     </head>
 	<body>
+		<a class="ss-skip-link" href="#<%= appid %>">Skip to main content</a>
 		<header class="ss-header">
 			<div class="ss-header-inner">
 				<p class="ss-name">SweetSpot</p>
-				<p class="ss-purpose">Practise insulin and food decisions with a virtual person, and see what happens to glucose.</p>
 			</div>
 		</header>
-		<main id="<%= appid %>">
+		<main id="<%= appid %>" tabindex="-1">
             <style lang="css">
                 #loading {
                     position: fixed;
@@ -37,7 +37,8 @@
 				<p>SweetSpot is a learning tool for people on structured diabetes education, such as DAFNE, to use alongside their course. It shows a made-up person, so it cannot tell you what dose to take. Always follow the advice of your diabetes team.</p>
 				<p>Your data stays on this device. Nothing you enter or upload is sent anywhere.</p>
 				<p class="ss-report">To report a problem or a safety concern, <% if (build.feedbackUrl) { %><a href="<%- build.feedbackUrl %>">contact the SweetSpot team</a><% } else { %>tell your diabetes educator<% } %>. Please say which version you used.</p>
-				<p>SweetSpot version <%- build.version %>. Built on <a href="https://lt1.org/" target="_blank" rel="noopener">LoopInsighT1</a>, open source under the MIT licence.</p>
+				<p><a href="accessibility.html">Accessibility statement</a> · <a href="privacy.html">Privacy</a></p>
+				<p>SweetSpot version <%- build.version %>. Built on <a href="https://lt1.org/">LoopInsighT1</a>, open source under the MIT licence.</p>
 			</div>
 		</footer>
 	</body>

@@ -306,6 +306,10 @@ type NightscoutItem = {
     date?: number
     dateString?: string
     created_at?: string
+    /** time of treatments uploaded by some apps (ISO text or ms) */
+    timestamp?: string | number
+    /** time in ms, added by Nightscout to treatments */
+    mills?: number
     eventType?: string
     insulin?: number | null
     carbs?: number | null
@@ -339,7 +343,8 @@ function readNightscout(text: string): ImportedData {
     const found = new EventCollector()
     let usedLongActing = false
     for (const item of items) {
-        const t = new Date(item.created_at ?? item.dateString ?? item.date ?? NaN)
+        const t = new Date(item.created_at ?? item.timestamp ?? item.mills
+            ?? item.dateString ?? item.date ?? NaN)
         if (!isFinite(t.valueOf())) {
             found.count("entries without a readable date were not used")
             continue

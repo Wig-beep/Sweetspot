@@ -6,6 +6,7 @@
  */
 
 import { execSync } from 'child_process'
+import { createHash } from 'crypto'
 import { readFileSync } from 'fs'
 
 /**
@@ -42,10 +43,20 @@ function feedbackUrl(): string {
 
 const sha = commit()
 
+/**
+ * version of the stylesheet from its contents, added to its address, so that
+ * browsers never combine a new page with an old copy of the stylesheet
+ */
+const styleVersion = createHash('sha256')
+    .update(readFileSync('./src/frontend/assets/styles/LT1style.css'))
+    .digest('hex').slice(0, 8)
+
 export const buildInfo = {
     /** version of SweetSpot, e.g. 0.1.0 (a1b2c3d) */
     version: pkg.sweetspotVersion + (sha ? ` (${sha})` : ''),
     /** whether the learner's own data can be opened */
     personalData: process.env.SWEETSPOT_PERSONAL_DATA !== 'off',
     feedbackUrl: feedbackUrl(),
+    /** address of the stylesheet, with its version */
+    stylesheet: `./styles/LT1style.css?v=${styleVersion}`,
 }

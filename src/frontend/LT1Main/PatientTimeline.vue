@@ -77,8 +77,9 @@
                     </select>
                 </div>
 
-                <button class="cell-remove" @click="removeRow(row.id)"
-                    title="Remove this entry" :aria-label="'Remove ' + rowName(row)">✕</button>
+                <!-- the space is part of the expression: Vue removes it otherwise -->
+                <button class="cell-remove" type="button"
+                    @click="removeRow(row.id)">Remove<span class="visually-hidden">{{ " " + rowName(row) }}</span></button>
                 <p v-if="errors[row.id]" class="cell-error" :id="'row-error-' + row.id">
                     <span class="visually-hidden">Error:</span> {{ errors[row.id] }}
                 </p>
@@ -453,8 +454,8 @@ export default defineComponent({
 /* compact, but still a comfortable target (at least 36px) */
 .timeline-row .cell-remove {
     margin: 0;
-    padding: 0;
+    padding: 0 0.6rem;
     min-height: 2.25rem;
-    min-width: 2.25rem;
+    font-size: 0.95rem;
 }
 </style>

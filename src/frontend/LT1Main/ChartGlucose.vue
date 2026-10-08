@@ -32,6 +32,7 @@ import {
     timeAtPointer,
 } from '../util/ChartSync.js'
 import AccordionBox from './AccordionBox.vue'
+import { lowestGlucosePlugin, TIME_AXIS } from '../util/ChartLabels.js'
 
 /** index of the dataset showing the logged day in a what-if comparison */
 const LOGGED_DAY_DATASET = 2
@@ -154,7 +155,9 @@ export default defineComponent({
         const ctx = canvas.getContext('2d')!
         this.chart = new Chart(ctx, {
             type: "line",
-            plugins: [targetRangeBand, exercisePlugin, hoverLinePlugin],
+            plugins: [targetRangeBand, exercisePlugin, hoverLinePlugin,
+                // the original day and the changes (not predictions or readings)
+                lowestGlucosePlugin((index) => index >= LOGGED_DAY_DATASET, GLUCOSE_RANGE.low)],
             data: {
                 datasets: [
                     <ChartDataset>{
@@ -191,13 +194,8 @@ export default defineComponent({
                     x: {
                         type: "time",   
                         offset: false,
-                        time: {
-                            displayFormats: {
-                                hour: 'HH:mm'
-                            },
-                            // 24-hour time with the date, e.g. 5 Oct 14:30
-                            tooltipFormat: 'd MMM HH:mm',
-                        },
+                        // times as in the text (8am), horizontal
+                        ...TIME_AXIS,
                     },
                     y: {
                         type: "linear",
@@ -261,7 +259,7 @@ export default defineComponent({
                                 }
                                 // explain the shaded target range
                                 items.push({
-                                    text: `target range ${GLUCOSE_RANGE.low.toFixed(1)}`
+                                    text: `Target range ${GLUCOSE_RANGE.low.toFixed(1)}`
                                         + `–${GLUCOSE_RANGE.high.toFixed(1)}`,
                                     fillStyle: "rgba(120, 176, 89, 0.35)",
                                     strokeStyle: "rgba(120, 176, 89, 0.8)",
@@ -272,7 +270,7 @@ export default defineComponent({
                                 })
                                 if (hasExercise(chart)) {
                                     items.push({
-                                        text: "exercise",
+                                        text: "Exercise",
                                         fillStyle: EXERCISE_COLOR,
                                         strokeStyle: EXERCISE_BORDER,
                                         lineWidth: 1,
@@ -554,13 +552,13 @@ export default defineComponent({
 {
 	"title": "Glucose levels",
 	"key": "Colours of the glucose curves",
-	"keyHigh": "high (above 10)",
-	"keyInRange": "in range (3.9 to 10)",
-	"keyLow": "low (below 3.9)",
-	"actual": "actual concentration",
-	"prediction": "prediction by algorithm",
-	"measured": "glucose readings",
-	"logged": "original day",
+	"keyHigh": "High (above 10)",
+	"keyInRange": "In range (3.9 to 10)",
+	"keyLow": "Low (below 3.9)",
+	"actual": "Actual concentration",
+	"prediction": "Prediction by algorithm",
+	"measured": "Glucose readings",
+	"logged": "Original day",
 	"latest": "latest",
 	"preserveOldCurves": "preserve old curves",
 }

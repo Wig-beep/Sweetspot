@@ -28,6 +28,7 @@ test('own data cannot be opened, scenarios work', async ({ page }, testInfo) => 
     // a practice scenario and an educator's scenario file still work
     await page.getByRole('radio', { name: 'Treating a hypo' }).check()
     await expect(page.getByRole('status')).toContainText('Original day:')
+    await page.getByRole('button', { name: 'Show tools for educators' }).click()
     await page.getByRole('button', { name: 'For educators: make and share a scenario' }).click()
     await page.getByRole('button', { name: 'Start from this day' }).click()
     await page.getByLabel('Title').fill('Hypo at school')

@@ -16,6 +16,7 @@ import {
 } from '../../src/common/SimulationRequest.js'
 import UvaPadova from '../../src/core/models/UvaPadova_T1DMS.js'
 import IdealCGM from '../../src/core/sensors/IdealCGM.js'
+import Breton2008 from '../../src/core/sensors/Breton2008.js'
 import PatientEvent from '../../src/types/PatientEvent.js'
 
 const at = (h: number, m = 0) => new Date(2026, 9, 5, h, m)
@@ -81,5 +82,12 @@ describe("SimulationRequest", () => {
         await simulateRequest(request, load).catch((e) => { error = e })
         expect(error?.message).to.match(/longer than 4 days/)
         expect(Date.now() - started).to.be.below(2000)
+    })
+
+    it("should use the sensor settings the app used before (Breton 2008 defaults)", () => {
+        // the app sends { model: "Breton2008", parameters: {} }: defaults
+        expect(new Breton2008().getParameterValues()).to.deep.equal({
+            PACF: 0.7, alpha: 1, beta: 0, max: 1000, min: 0, resolution: 0, samplingTime: 5,
+        })
     })
 })

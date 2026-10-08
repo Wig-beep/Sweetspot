@@ -114,6 +114,17 @@ describe("DeviceExports", () => {
             expect(notes.join(" ")).to.contain("1 pump basal changes were not used")
         })
 
+        it("should read Nightscout treatments timed with timestamp or mills", () => {
+            const { events } = readPatientData(JSON.stringify([
+                { eventType: "Correction Bolus", timestamp: at(12).toISOString(), insulin: 2 },
+                { eventType: "Carb Correction", mills: at(15).valueOf(), carbs: 15 },
+            ]))
+            expect(events).to.deep.equal([
+                { time: at(12), type: "bolus", value: 2 },
+                { time: at(15), type: "carbs", value: 15 },
+            ])
+        })
+
         it("should read SweetSpot CSV files as before", () => {
             const { events, source } = readPatientData(
                 "time,type,value\n2026-10-05 08:00,bolus,4\n")

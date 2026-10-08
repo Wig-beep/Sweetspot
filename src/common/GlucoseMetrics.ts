@@ -53,7 +53,7 @@ export function modelLimitNote(metrics: GlucoseMetrics): string | undefined {
     }
     return "With these amounts the model cannot show what would happen, because "
         + "glucose would go outside what is possible (below "
-        + `${POSSIBLE_GLUCOSE.min} or above ${POSSIBLE_GLUCOSE.max} mmol/L). `
+        + `${POSSIBLE_GLUCOSE.min} or above ${POSSIBLE_GLUCOSE.max}mmol/L). `
         + "Do not read anything into these results. Check the amounts you entered."
 }
 

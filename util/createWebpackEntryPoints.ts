@@ -8,6 +8,7 @@
 
 import { findFiles } from './FindLocalModules.js'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
+import { readFileSync } from 'fs'
 import { buildInfo } from './BuildInfo.js'
 
 /**
@@ -62,6 +63,7 @@ HtmlPlugins.push(new HtmlWebpackPlugin({
             + "</ul>",
         // with only SweetSpot in the build, the start page leads straight to it
         redirect: onlySweetSpot ? htmlName('LT1Main') : '',
+        build: buildInfo,
     },
     favicon: './src/frontend/assets/images/Favicon.png',
     filename: 'index.html',
@@ -69,5 +71,23 @@ HtmlPlugins.push(new HtmlWebpackPlugin({
     // and their live updates in development would clash
     chunks: [],
 }))
+
+// pages of text: accessibility statement and privacy notice (in every
+// build); {{version}} and {{contact}} are filled in for the build
+const contact = buildInfo.feedbackUrl
+    ? `<a href="${buildInfo.feedbackUrl}">contact the SweetSpot team</a>`
+    : 'tell your diabetes educator'
+for (const [name, title] of [['accessibility', 'Accessibility statement'], ['privacy', 'Privacy']]) {
+    const content = readFileSync(`./src/frontend/assets/pages/${name}.html`, 'utf8')
+        .replaceAll('{{version}}', buildInfo.version)
+        .replaceAll('{{contact}}', contact)
+    HtmlPlugins.push(new HtmlWebpackPlugin({
+        template: './src/frontend/assets/page.ejs',
+        templateParameters: { build: buildInfo, title, content },
+        favicon: './src/frontend/assets/images/Favicon.png',
+        filename: `${name}.html`,
+        chunks: [],
+    }))
+}
 
 export {entryConfig, HtmlPlugins}

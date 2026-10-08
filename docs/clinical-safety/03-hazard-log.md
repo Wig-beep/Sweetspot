@@ -24,7 +24,7 @@ Version assessed: SweetSpot 0.1.0. Evidence paths are relative to the repository
 | H10 | Results shown that do not belong to the current day or settings | 3 | 1 | Controlled |
 | H11 | Unsafe or wrong content in a scenario shared by an educator | 3 | 2 | Open: local review process (deployment) |
 | H12 | Personal data shared in an educator's scenario | 2 | 1 | Controlled |
-| H13 | An old version with a known problem stays in use offline | 2 | 2 | Open: consider an update prompt |
+| H13 | An old version with a known problem stays in use offline | 2 | 2 | Controlled |
 | H14 | Results misread because of accessibility barriers | 2 | 1 | Controlled |
 | H15 | No results, or the page stops responding | 2 | 1 | Controlled |
 | H16 | "Better" or "worse" in the summary read as a recommendation | 2 | 1 | Controlled |
@@ -200,19 +200,22 @@ Version assessed: SweetSpot 0.1.0. Evidence paths are relative to the repository
   a device that stays offline keeps the old version.
 - **Harm:** a fixed safety problem persists for some users.
 - **Initial:** S Significant, L Medium → **R 2**.
-- **Controls:** pages are fetched from the network first when online; the version is shown in the footer;
-  reports ask for the version.
+- **Controls:** pages are fetched from the network first when online; when a new version has been stored,
+  the page says "A new version of SweetSpot is ready" with a "Use the new version" button; a stored page always
+  matches the stored files of its version; the version is shown in the footer; reports ask for the version.
 - **Evidence:** `src/frontend/assets/service-worker.js`; e2e "once opened, it works without a connection".
-- **Residual:** S Significant, L Medium → **R 2**.
-- **Actions:** consider a message when a new version is ready ("Close and reopen SweetSpot to update").
+- **Residual:** S Significant, L Low → **R 2**. A device that stays offline keeps its version until it is
+  next online.
 
 ### H14: Results misread because of accessibility barriers
 
 - **Cause:** colour-only cues, small targets, missing text alternatives.
 - **Harm:** a learner misreads which day was better or when glucose was low.
 - **Initial:** S Significant, L Medium → **R 2**.
-- **Controls:** WCAG 2.2 AA design; line patterns as well as colours; words "better"/"worse" and percentages
-  next to colours; text alternatives for charts; automated accessibility checks.
+- **Controls:** WCAG 2.2 AA design; skip link and one main heading; line patterns as well as colours; words
+  "better"/"worse" and percentages next to colours; the lowest glucose marked with its value when it is low;
+  amounts written next to dose and meal markers; text alternatives for charts; automated accessibility checks;
+  an accessibility statement listing known issues (the chart legend cannot be used with a keyboard).
 - **Evidence:** e2e "the start page has no WCAG 2.2 AA problems", "a scenario with a change has no WCAG 2.2 AA
   problems", "the educator panel has no WCAG 2.2 AA problems", "timeline fields are named after their entry,
   for screen readers".

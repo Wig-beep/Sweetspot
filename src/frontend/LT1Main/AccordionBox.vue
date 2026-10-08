@@ -41,8 +41,8 @@ export default defineComponent({
 
 <style scoped>
 .accordionbox {
-    border: 1px solid var(--ss-border, #d8dde0);
-    border-radius: var(--ss-radius, 4px);
+    /* a line above each section rather than a box inside the card */
+    border-top: 2px solid var(--ss-border, #d8dde0);
     margin-top: 1rem;
     display: grid;
     grid-template-rows: auto 0fr;
@@ -59,21 +59,19 @@ div.accordioncontent {
        unlike with hidden, the row only collapses with min-height 0 */
     overflow: clip;
     min-height: 0;
-    padding: 0 0.75rem;
+    padding: 0;
 }
 
 .boxactive div.accordioncontent {
-    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+    padding: 0.25rem 0 0.5rem 0;
 }
 
 h3 {
     position: relative;
     margin: 0;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: bold;
     color: var(--ss-text, #212b32);
-    background-color: var(--ss-primary-light, #e3f1f2);
-    border-radius: var(--ss-radius, 4px) var(--ss-radius, 4px) 0 0;
 }
 
 /* the header button fills the header: a large, easy target */
@@ -83,7 +81,7 @@ h3 button {
     width: 100%;
     box-sizing: border-box;
     min-height: 2.75rem;
-    padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+    padding: 0.6rem 2.5rem 0.6rem 0;
     text-align: left;
     cursor: pointer;
     border-radius: inherit;
@@ -104,8 +102,8 @@ h3 button:focus-visible {
 /* arrow to open or close box content */
 .accordionbox h3::after {
     position: absolute;
-    top: 0.6rem;
-    right: 0.75rem;
+    top: 0.65rem;
+    right: 0.25rem;
     pointer-events: none;
     transition: transform 0.4s;
     content: "\25BC";
