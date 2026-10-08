@@ -97,7 +97,9 @@ export default <webpack.Configuration>{
     ...HtmlPlugins,
     new CopyWebpackPlugin({
       'patterns': [
-        { from: './src/frontend/assets/images', to: 'images' },
+        // only the app icons: other images of the repository (e.g. the logo
+        // of the README) are not part of the app
+        { from: './src/frontend/assets/images/icons', to: 'images/icons' },
         { from: './src/frontend/assets/styles', to: 'styles' },
         { from: './src/frontend/assets/manifest.webmanifest', to: 'manifest.webmanifest' }
       ]

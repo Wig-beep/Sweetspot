@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai'
-import { getPatientDataTimeSpan } from '../../src/common/PatientDataTimeSpan.js'
+import { checkTimeSpan, getPatientDataTimeSpan } from '../../src/common/PatientDataTimeSpan.js'
 
 const at = (d: number, h: number, m: number, s = 0) =>
     new Date(2026, 8, d, h, m, s)
@@ -38,5 +38,27 @@ describe("getPatientDataTimeSpan", () => {
 
     it("should return undefined without events", () => {
         expect(getPatientDataTimeSpan([])).to.be.undefined
+    })
+
+    describe("checkTimeSpan", () => {
+        const at = (day: number, h: number) => new Date(2026, 9, day, h)
+
+        it("should accept up to 3 days between the entries", () => {
+            expect(checkTimeSpan([])).to.be.undefined
+            expect(checkTimeSpan([{ time: at(5, 8), type: "bolus", value: 5 }])).to.be.undefined
+            expect(checkTimeSpan([
+                { time: at(5, 8), type: "bolus", value: 5 },
+                { time: at(8, 8), type: "bolus", value: 5 },
+            ])).to.be.undefined
+        })
+
+        it("should name the dates when entries are further apart, e.g. a mistyped year", () => {
+            const problem = checkTimeSpan([
+                { time: at(5, 8), type: "bolus", value: 5 },
+                { time: new Date(2062, 9, 5, 8), type: "bolus", value: 5 },
+            ])
+            expect(problem).to.match(/more than 3 days apart \(from Monday 5 October 2026 to .* 2062\)/)
+            expect(problem).to.match(/Check the dates$/)
+        })
     })
 })

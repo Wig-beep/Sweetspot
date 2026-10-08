@@ -36,6 +36,27 @@ export declare type GlucoseMetrics = {
 
 const MS_PER_HOUR = 3600e3
 
+/** glucose outside this range (in mmol/L) is not possible for a living person */
+const POSSIBLE_GLUCOSE = { min: 1, max: 40 }
+
+/**
+ * Says if the glucose of a simulation is outside what is possible, which
+ * happens with very large amounts: the model then no longer describes
+ * anyone, so its results should not be read.
+ *
+ * @param {GlucoseMetrics} metrics - metrics of a simulation
+ * @returns {string | undefined} message for the user, if there is a problem
+ */
+export function modelLimitNote(metrics: GlucoseMetrics): string | undefined {
+    if (metrics.minGlucose >= POSSIBLE_GLUCOSE.min && metrics.maxGlucose <= POSSIBLE_GLUCOSE.max) {
+        return undefined
+    }
+    return "With these amounts the model cannot show what would happen, because "
+        + "glucose would go outside what is possible (below "
+        + `${POSSIBLE_GLUCOSE.min} or above ${POSSIBLE_GLUCOSE.max} mmol/L). `
+        + "Do not read anything into these results. Check the amounts you entered."
+}
+
 /**
  * Computes glucose and treatment metrics of a simulation run.
  *

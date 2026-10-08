@@ -75,8 +75,9 @@ Severity examples for SweetSpot: *Minor*: confusion or a misunderstanding correc
   configuration of versions, or how updates reach users (service worker).
 - Safety-relevant changes are assessed by the CSO **before release**: the hazard log is reviewed and updated,
   and the safety case report is re-issued for the new version.
-- Releases are tagged in git and carry a version (`sweetspotVersion` in `package.json`), shown in the app's
-  footer with the commit, so that reports and the safety case can name the exact version.
+- Releases are tagged in git (`v0.1.0` and so on) and carry a version (`sweetspotVersion` in `package.json`),
+  shown in the app's footer with the commit, so that reports and the safety case can name the exact version.
+  The steps are in [RELEASING.md](../RELEASING.md).
 
 ## 5. Post-release monitoring and incidents
 

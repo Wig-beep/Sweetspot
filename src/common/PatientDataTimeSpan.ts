@@ -10,8 +10,39 @@ import PatientEvent from '../types/PatientEvent.js'
 /** time to keep simulating after the last logged event in h */
 export const DEFAULT_TAIL_HOURS = 6
 
+/** longest time between the first and the last entry of a day, in h */
+export const MAX_ENTRY_SPAN_HOURS = 72
+
+/** longest simulation SweetSpot runs, in h (the entries and the tail) */
+export const MAX_SIMULATED_HOURS = MAX_ENTRY_SPAN_HOURS + 24
+
 const MS_PER_MIN = 60e3
 const MS_PER_HOUR = 3600e3
+
+/**
+ * Checks that the entries of a day are not too far apart, e.g. because of a
+ * mistyped year: the simulation would run for a very long time and show
+ * results that nobody can read.
+ *
+ * @param {PatientEvent[]} events - events of one day (and its changes)
+ * @returns {string | undefined} description of the problem, if any
+ */
+export function checkTimeSpan(events: PatientEvent[]): string | undefined {
+    const span = getPatientDataTimeSpan(events, 0)
+    if (!span || span.tmax.valueOf() - span.t0.valueOf() <= MAX_ENTRY_SPAN_HOURS * MS_PER_HOUR) {
+        return undefined
+    }
+    // e.g. Monday 5 October 2026, without the commas some browsers add
+    const date = (d: Date) => {
+        const part = (type: Intl.DateTimeFormatPartTypes) => new Intl.DateTimeFormat("en-GB",
+            { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+            .formatToParts(d).find((p) => p.type === type)!.value
+        return `${part("weekday")} ${part("day")} ${part("month")} ${part("year")}`
+    }
+    return `the entries are more than ${MAX_ENTRY_SPAN_HOURS / 24} days apart `
+        + `(from ${date(span.t0)} to ${date(span.tmax)}). SweetSpot shows up to `
+        + `${MAX_ENTRY_SPAN_HOURS / 24} days at a time. Check the dates`
+}
 
 /**
  * Determines the simulation time span covered by logged patient data.

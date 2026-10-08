@@ -5,6 +5,7 @@
  * See https://lt1.org for further information.
  */
 
+import { checkTimeSpan } from './PatientDataTimeSpan.js'
 import { checkEvent, LONG_ACTING_BRANDS, sortByTime } from './PatientEvents.js'
 import { Quiz, TeachingScenario, WhatIf } from './TeachingScenarios.js'
 import PatientEvent, {
@@ -160,7 +161,12 @@ export function scenarioFromFile(data: unknown, day: Date, id: string): Teaching
         if (items.length === 0) {
             throw new Error(`The ${name} have no entries`)
         }
-        return sortByTime(items.map((item, i) => readEvent(item, day0, `${name}, entry ${i + 1}`)))
+        const read = sortByTime(items.map((item, i) => readEvent(item, day0, `${name}, entry ${i + 1}`)))
+        const problem = checkTimeSpan(read)
+        if (problem) {
+            throw new Error(`The ${name}: ${problem}`)
+        }
+        return read
     }
 
     const whatIfs: WhatIf[] = list(file.whatIfs, "changes to try", SCENARIO_LIMITS.whatIfs)

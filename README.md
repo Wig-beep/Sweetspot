@@ -37,6 +37,11 @@ SweetSpot is configured when it is built:
 The version (`sweetspotVersion` in `package.json`) and the commit are shown in the footer of every page. CI tests
 both the standard and the educational-only version.
 
+`npm run build` makes the production build, which contains SweetSpot only (the development pages are in the
+development server, or with `SWEETSPOT_ALL_PAGES=on`). `npm run typecheck` checks the types of the `.ts` and
+`.vue` files, which the build does not report completely; CI runs it. Releases are made as described in
+[docs/RELEASING.md](docs/RELEASING.md).
+
 # Demo and further information
 For a live demo, visit the project website [https://LT1.org](https://lt1.org/simulator).
 

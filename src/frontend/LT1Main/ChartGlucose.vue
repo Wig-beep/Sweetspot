@@ -203,6 +203,9 @@ export default defineComponent({
                         type: "linear",
                         title: { display: true, text: "mmol/L" },
                         ticks: { stepSize: 1 },
+                        // never below 0: glucose cannot be negative, so results
+                        // that go there (see modelLimitNote) are cut off
+                        min: 0,
                         // extend below 2 mmol/L so that severe hypos stay visible
                         suggestedMin: 2,
                         suggestedMax: 12,

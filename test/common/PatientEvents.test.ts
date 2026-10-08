@@ -8,12 +8,14 @@
 import { expect } from 'chai'
 import {
     checkEvent,
+    getEventWarnings,
     getExercisesFromEvents,
     getMealsFromEvents,
     parseDateTime,
     parsePatientEventsCSV,
     readCSV
 } from '../../src/common/PatientEvents.js'
+import { getTeachingScenarios } from '../../src/common/TeachingScenarios.js'
 
 const at = (h: number, m: number) => new Date(2026, 9, 5, h, m)
 
@@ -183,6 +185,57 @@ describe("checkEvent", () => {
         expect(checkEvent({ time, type: "exercise", value: 150 })).to.match(/at most 100/)
         expect(checkEvent({ time, type: "carbs", value: 50, duration: 0 })).to.match(/duration must be more than 0/)
         expect(checkEvent({ time: new Date(NaN), type: "bolus", value: 1 })).to.match(/time/)
+    })
+
+    it("should reject amounts that nobody takes, as typing mistakes", () => {
+        expect(checkEvent({ time, type: "bolus", value: 100 })).to.be.undefined
+        expect(checkEvent({ time, type: "bolus", value: 101 })).to.match(/quick-acting insulin dose \(units\) must be at most 100/)
+        expect(checkEvent({ time, type: "bolus", value: 1000 })).to.match(/at most 100/)
+        expect(checkEvent({ time, type: "longacting", value: 151 })).to.match(/background insulin dose.*at most 150/)
+        expect(checkEvent({ time, type: "basal", value: 10.1 })).to.match(/pump rate.*at most 10/)
+        expect(checkEvent({ time, type: "carbs", value: 500 })).to.be.undefined
+        expect(checkEvent({ time, type: "carbs", value: 5000 })).to.match(/carbs \(grams\) must be at most 500/)
+        expect(checkEvent({ time, type: "carbs", value: 50, duration: 100000 })).to.match(/at most 24 hours/)
+        expect(checkEvent({ time, type: "glucose", value: 0.5 })).to.match(/at least 1 mmol\/L/)
+        expect(checkEvent({ time, type: "glucose", value: 1 })).to.be.undefined
+    })
+
+    it("should be used for CSV files, with the line number", () => {
+        expect(() => parsePatientEventsCSV("time,type,value\n2026-10-05 08:00,bolus,1e308\n"))
+            .to.throw(/Line 2: .*at most 100/)
+        expect(() => parsePatientEventsCSV("time,type,value\n2026-10-05 08:00,bolus,50\n")).not.to.throw()
+    })
+})
+
+describe("getEventWarnings", () => {
+    const at = (h: number, m = 0) => new Date(2026, 9, 5, h, m)
+
+    it("should not warn about usual amounts", () => {
+        expect(getEventWarnings([
+            { time: at(8), type: "bolus", value: 6 },
+            { time: at(8), type: "carbs", value: 60 },
+            { time: at(22), type: "longacting", value: 16 },
+            { time: at(0), type: "basal", value: 0.8 },
+        ])).to.deep.equal([])
+    })
+
+    it("should ask to check large amounts, in time order, in plain words", () => {
+        expect(getEventWarnings([
+            { time: at(19, 30), type: "carbs", value: 200 },
+            { time: at(8), type: "bolus", value: 50 },
+        ])).to.deep.equal([
+            "The quick-acting insulin dose of 50 units at 8am is much larger than in most days. Check that it is not a typing mistake.",
+            "The amount of carbs of 200 grams at 7:30pm is much larger than in most days. Check that it is not a typing mistake.",
+        ])
+    })
+
+    it("should not warn about the practice scenarios", () => {
+        for (const s of getTeachingScenarios(new Date(2026, 9, 5))) {
+            expect(getEventWarnings(s.events), s.id).to.deep.equal([])
+            for (const w of s.whatIfs) {
+                expect(getEventWarnings(w.events), `${s.id}: ${w.label}`).to.deep.equal([])
+            }
+        }
     })
 })
 

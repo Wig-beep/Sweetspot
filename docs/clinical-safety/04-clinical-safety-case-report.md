@@ -40,7 +40,7 @@ person's treatment.
 ## 4. Clinical risk management
 
 Hazards were identified by the development team from the user journeys and from issues found during
-development **[add hazard workshop records with the CSO and clinical lead]**. 17 hazards are logged.
+development **[add hazard workshop records with the CSO and clinical lead]**. 19 hazards are logged.
 
 ## 5. Safety argument
 
@@ -51,8 +51,9 @@ Arguments:
 
 1. **It does not give treatment advice by design.** It never calculates or proposes a dose; results are for a
    generic made-up person, not fitted to the learner (H01, H16).
-2. **Data going in is checked.** Dates, units and values are read strictly; anything not used or assumed is
-   listed; nothing is simulated until entries are valid (H04 to H07, H11).
+2. **Data going in is checked.** Dates, units and values are read strictly, with limits on amounts and on the
+   length of a day; anything not used or assumed is listed; nothing is simulated until entries are valid, and
+   results that are not possible are not presented as results (H04 to H07, H11, H18, H19).
 3. **Results shown match what is on screen.** Results are recalculated when the day or settings change, and
    only the latest simulation is shown (H10).
 4. **Users are told what the results are and are not,** in context and on every page (H01, H08, H16, H17).

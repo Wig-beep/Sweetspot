@@ -6,7 +6,7 @@
         </p>
 
         <!-- error summary, as in the NHS design system -->
-        <div v-if="errorRows.length" class="timeline-error-summary"
+        <div v-if="errorRows.length || spanError" class="timeline-error-summary"
             role="alert" tabindex="-1" ref="errorSummary">
             <h4>There is a problem</h4>
             <ul>
@@ -15,6 +15,7 @@
                         {{ rowName(row) }}: {{ errors[row.id] }}
                     </a>
                 </li>
+                <li v-if="spanError">{{ spanError }}</li>
             </ul>
         </div>
 
@@ -100,6 +101,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 import { DEFAULT_LONG_ACTING_INSULIN } from "../../common/LongActingInsulin.js"
+import { checkTimeSpan } from "../../common/PatientDataTimeSpan.js"
 import { checkEvent, sortByTime } from "../../common/PatientEvents.js"
 import PatientEvent, {
     LONG_ACTING_INSULINS,
@@ -159,6 +161,8 @@ export default defineComponent({
             addedIds: [] as number[],
             /** problems found when showing a change, by row id */
             errors: {} as Record<number, string>,
+            /** problem with the entries together (too far apart), if any */
+            spanError: "",
             eventTypes: PATIENT_EVENT_TYPES,
             typeLabels,
             insulins: LONG_ACTING_INSULINS,
@@ -193,6 +197,7 @@ export default defineComponent({
 
             handler() {
                 this.errors = {}
+                this.spanError = ""
                 this.rows = this.events.map(event => ({
                     id: nextRowId++,
                     timeString: this.toDateTimeLocal(event.time),
@@ -270,7 +275,10 @@ export default defineComponent({
             }
 
             this.errors = errors
-            if (Object.keys(errors).length > 0) {
+            // the entries together: a mistyped year makes a very long day
+            const span = Object.keys(errors).length === 0 ? checkTimeSpan(events) : undefined
+            this.spanError = span ? span.charAt(0).toUpperCase() + span.slice(1) + "." : ""
+            if (Object.keys(errors).length > 0 || this.spanError) {
                 // nothing is changed until all entries are valid
                 this.$nextTick(() => (<HTMLElement>this.$refs.errorSummary)?.focus())
                 return

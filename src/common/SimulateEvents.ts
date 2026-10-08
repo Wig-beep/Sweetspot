@@ -14,7 +14,7 @@ import PatientEvent from '../types/PatientEvent.js'
 import Sensor from '../types/Sensor.js'
 import { SimulationResult } from '../types/SimulationResult.js'
 import { getExercisesFromEvents, getMealsFromEvents } from './PatientEvents.js'
-import { getPatientDataTimeSpan } from './PatientDataTimeSpan.js'
+import { getPatientDataTimeSpan, MAX_SIMULATED_HOURS } from './PatientDataTimeSpan.js'
 
 /** whether any of the events is exercise */
 export function hasExercise(events: PatientEvent[]): boolean {
@@ -70,10 +70,17 @@ export function simulateEvents(
     simulator.setActuator(new StaticInsulinPump({
         inc_basal: 0, inc_bolus: 0, max_basal: 100, max_bolus: 100,
     }))
-    simulator.setOptions({
+    const merged = {
         ...getPatientDataTimeSpan(events),
         ...options,
         ...(withExercise ? { dt: 1 } : {}),
-    })
+    }
+    // very long periods (e.g. from a mistyped year) take minutes and
+    // millions of results: refuse them
+    if (merged.t0 && merged.tmax &&
+        merged.tmax.valueOf() - merged.t0.valueOf() > MAX_SIMULATED_HOURS * 3600e3) {
+        throw new Error(`The period to simulate is longer than ${MAX_SIMULATED_HOURS / 24} days`)
+    }
+    simulator.setOptions(merged)
     return { results: simulator.runSimulation(), usedExerciseModel }
 }

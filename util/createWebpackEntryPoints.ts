@@ -10,8 +10,18 @@ import { findFiles } from './FindLocalModules.js'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
 import { buildInfo } from './BuildInfo.js'
 
+/**
+ * Production builds contain SweetSpot only, which is the software that is
+ * deployed and assessed (see docs/clinical-safety). The other pages (model
+ * and controller structure, simple demo) are for development; they are
+ * included in development, or with SWEETSPOT_ALL_PAGES=on.
+ */
+const onlySweetSpot = process.env.NODE_ENV === 'production'
+    && process.env.SWEETSPOT_ALL_PAGES !== 'on'
+
 // find all files in the /entries folder
-const entryNames = await findFiles('./src/frontend/entries/')
+const entryNames = (await findFiles('./src/frontend/entries/')).filter(
+    (entry) => !onlySweetSpot || entry.replace(/\.[^.]*$/, '') === 'LT1Main')
 
 const entryConfig = Object.fromEntries(entryNames.map(
     (entry) => [ entry.replace(/\.[^.]*$/, ''), './src/frontend/entries/'+entry]))
@@ -49,7 +59,9 @@ HtmlPlugins.push(new HtmlWebpackPlugin({
                 const entry = entryName.replace(/\.[^.]*$/, '')
                 return `<li><a href="${htmlName(entry)}">${htmlName(entry).replace(/\.html$/, '')}</a></li>`
             }).join("\n")
-            + "</ul>"
+            + "</ul>",
+        // with only SweetSpot in the build, the start page leads straight to it
+        redirect: onlySweetSpot ? htmlName('LT1Main') : '',
     },
     favicon: './src/frontend/assets/images/Favicon.png',
     filename: 'index.html',

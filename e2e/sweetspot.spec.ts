@@ -334,6 +334,56 @@ test.describe('uploaded days', () => {
         await expect(page.getByRole('button', { name: 'Undo all changes' })).toBeVisible()
     })
 
+    test('amounts nobody takes are refused, large ones are questioned', async ({ page }) => {
+        await open(page)
+        await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
+        await expect(page.locator('.timeline-row').first()).toBeAttached()
+        const bolus = await timelineRow(page, 'bolus')
+        const show = page.getByRole('button', { name: 'Show this change' })
+        const status = page.getByRole('status')
+
+        // 1000 units cannot be right
+        await bolus.getByLabel(/: amount$/).fill('1000')
+        await show.click()
+        await expect(page.getByRole('alert').filter({ hasText: 'There is a problem' }))
+            .toContainText('The quick-acting insulin dose (units) must be at most 100')
+        await expect(status).not.toContainText('With change')
+
+        // 50 units is allowed, but looks like a typing mistake (5.0)
+        await bolus.getByLabel(/: amount$/).fill('50')
+        await show.click()
+        await expect(status).toContainText('With change')
+        const warning = page.locator('.results-warning')
+        await expect(warning).toContainText('Check these amounts')
+        await expect(warning).toContainText('50 units')
+        await expect(warning).toContainText('Check that it is not a typing mistake')
+    })
+
+    test('results that are not possible are not presented as results', async ({ page }) => {
+        await open(page)
+        await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
+        await expect(page.locator('.timeline-row').first()).toBeAttached()
+        const bolus = await timelineRow(page, 'bolus')
+        await bolus.getByLabel(/: amount$/).fill('100')
+        await page.getByRole('button', { name: 'Show this change' }).click()
+        await expect(page.getByRole('alert').filter({ hasText: 'the model cannot show what would happen' }))
+            .toContainText('Do not read anything into these results')
+    })
+
+    test('entries that are too far apart, e.g. a mistyped year, are refused', async ({ page }) => {
+        await open(page)
+        await page.getByLabel('Upload a file').setInputFiles(sampleMDI)
+        await expect(page.locator('.timeline-row').first()).toBeAttached()
+        const bolus = await timelineRow(page, 'bolus')
+        await bolus.getByLabel(/: time$/).fill('2062-10-05T07:30')
+        await page.getByRole('button', { name: 'Show this change' }).click()
+        const problems = page.getByRole('alert').filter({ hasText: 'There is a problem' })
+        await expect(problems).toContainText('The entries are more than 3 days apart')
+        await expect(problems).toContainText('Check the dates.')
+        await expect(problems).toBeFocused()
+        await expect(page.getByRole('status')).not.toContainText('With change')
+    })
+
     test('timeline fields are named after their entry, for screen readers', async ({ page }) => {
         await open(page)
         await page.getByLabel('Upload a file').setInputFiles(sampleMDI)

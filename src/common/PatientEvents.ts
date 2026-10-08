@@ -18,6 +18,38 @@ import PatientEvent, {
 /** glucose values above this are assumed to be in mg/dl instead of mmol/L */
 const MAX_GLUCOSE_MMOL = 35
 
+/**
+ * Largest amounts accepted. Anything above is rejected as a likely typing
+ * mistake: no one takes 100 units for a meal, and the model gives results
+ * that are not possible (e.g. negative glucose) for such amounts.
+ */
+export const EVENT_LIMITS = {
+    /** quick-acting dose in U */
+    bolus: 100,
+    /** long-acting (background) dose in U */
+    longacting: 150,
+    /** pump rate in U/h */
+    basal: 10,
+    /** carbs in g */
+    carbs: 500,
+    /** lowest glucose reading in mmol/L */
+    glucoseMin: 1,
+    /** longest meal or exercise in min */
+    duration: 24 * 60,
+}
+
+/**
+ * Amounts above these are accepted, but the page asks to check them: they
+ * are much larger than in most days and often a typing mistake (e.g. 50
+ * instead of 5.0 units).
+ */
+export const EVENT_WARNING_LIMITS = {
+    bolus: 25,
+    longacting: 80,
+    basal: 3,
+    carbs: 150,
+}
+
 /** duration of exercise in min, if none is given */
 export const DEFAULT_EXERCISE_DURATION = 30
 
@@ -199,6 +231,20 @@ export function checkEvent(event: PatientEvent): string | undefined {
     if (type === "glucose" && value > MAX_GLUCOSE_MMOL) {
         return `glucose ${value} looks like mg/dl, please use mmol/L`
     }
+    if (type === "glucose" && value < EVENT_LIMITS.glucoseMin) {
+        return `glucose must be at least ${EVENT_LIMITS.glucoseMin} mmol/L`
+    }
+    const limit = { bolus: EVENT_LIMITS.bolus, longacting: EVENT_LIMITS.longacting,
+        basal: EVENT_LIMITS.basal, carbs: EVENT_LIMITS.carbs }[type as string]
+    if (limit !== undefined && value > limit) {
+        const what = { bolus: "quick-acting insulin dose (units)",
+            longacting: "background insulin dose (units)",
+            basal: "pump rate (units an hour)", carbs: "carbs (grams)" }[type as string]
+        return `the ${what} must be at most ${limit}`
+    }
+    if (typeof duration !== "undefined" && isFinite(duration) && duration > EVENT_LIMITS.duration) {
+        return "the duration must be at most 24 hours (1440 minutes)"
+    }
     if (type === "exercise" && value > 100) {
         return `exercise intensity ${value} must be at most 100 %`
     }
@@ -206,6 +252,35 @@ export function checkEvent(event: PatientEvent): string | undefined {
         return "the duration must be more than 0 minutes"
     }
     return undefined
+}
+
+/** time of day in plain words, e.g. 8am or 7:30pm */
+function timeOfDay(time: Date): string {
+    const hours = time.getHours()
+    const minutes = time.getMinutes()
+    return `${hours % 12 || 12}${minutes ? ":" + String(minutes).padStart(2, "0") : ""}${hours < 12 ? "am" : "pm"}`
+}
+
+/**
+ * Returns a message for each amount that is much larger than in most days
+ * and might be a typing mistake. The amounts are valid (see checkEvent) and
+ * are still simulated.
+ *
+ * @param {PatientEvent[]} events - events to look at
+ * @returns {string[]} one message per amount, in time order
+ */
+export function getEventWarnings(events: PatientEvent[]): string[] {
+    const what: Record<string, [string, string, number]> = {
+        bolus: ["quick-acting insulin dose", "units", EVENT_WARNING_LIMITS.bolus],
+        longacting: ["background insulin dose", "units", EVENT_WARNING_LIMITS.longacting],
+        basal: ["pump rate", "units an hour", EVENT_WARNING_LIMITS.basal],
+        carbs: ["amount of carbs", "grams", EVENT_WARNING_LIMITS.carbs],
+    }
+    return sortByTime(events)
+        .filter((event) => what[event.type] && event.value > what[event.type][2])
+        .map((event) => `The ${what[event.type][0]} of ${event.value} ${what[event.type][1]} `
+            + `at ${timeOfDay(event.time)} is much larger than in most days. `
+            + "Check that it is not a typing mistake.")
 }
 
 /**

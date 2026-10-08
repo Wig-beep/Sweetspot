@@ -6,7 +6,7 @@
  */
 
 import { expect } from 'chai'
-import { computeGlucoseMetrics } from '../../src/common/GlucoseMetrics.js'
+import { computeGlucoseMetrics, modelLimitNote } from '../../src/common/GlucoseMetrics.js'
 import { toMgdl } from '../../src/common/GlucoseUnits.js'
 import { SimulationResult } from '../../src/types/SimulationResult.js'
 
@@ -65,5 +65,23 @@ describe("computeGlucoseMetrics", () => {
         expect(metrics.meanGlucose).to.be.NaN
         expect(metrics.minGlucose).to.be.NaN
         expect(metrics.bolusInsulin).to.equal(0)
+    })
+})
+
+describe("modelLimitNote", () => {
+    const metricsOf = (min: number, max: number) => computeGlucoseMetrics([
+        result(at(0), min), result(at(1), max), result(at(2), 6),
+    ])
+
+    it("should say nothing for possible glucose, also severe hypos of the scenarios", () => {
+        expect(modelLimitNote(metricsOf(5, 9))).to.be.undefined
+        expect(modelLimitNote(metricsOf(1.2, 11.5))).to.be.undefined
+    })
+
+    it("should say the model cannot show impossible glucose, and not to read the results", () => {
+        for (const note of [modelLimitNote(metricsOf(-0.8, 6)), modelLimitNote(metricsOf(5, 920))]) {
+            expect(note).to.contain("the model cannot show what would happen")
+            expect(note).to.contain("Do not read anything into these results")
+        }
     })
 })

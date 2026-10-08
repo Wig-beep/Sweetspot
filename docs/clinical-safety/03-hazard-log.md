@@ -29,6 +29,8 @@ Version assessed: SweetSpot 0.1.0. Evidence paths are relative to the repository
 | H15 | No results, or the page stops responding | 2 | 1 | Controlled |
 | H16 | "Better" or "worse" in the summary read as a recommendation | 2 | 1 | Controlled |
 | H17 | A printed summary used outside the course | 2 | 1 | Controlled |
+| H18 | Impossible amounts give results that are not possible (e.g. negative glucose) | 3 | 1 | Controlled |
+| H19 | A very long period (e.g. a mistyped year) is simulated | 2 | 1 | Controlled |
 
 ## Hazards
 
@@ -109,8 +111,9 @@ Version assessed: SweetSpot 0.1.0. Evidence paths are relative to the repository
 - **Cause:** negative amounts, empty fields, exercise above 100 %, durations of 0.
 - **Harm:** misleading results.
 - **Initial:** S Significant, L Medium → **R 2**.
-- **Controls:** every entry is checked (files, timeline, shared scenarios); nothing is simulated until all
-  entries are valid; errors are listed in an error summary linked to the entries.
+- **Controls:** every entry is checked (files, timeline, shared scenarios), including upper limits on amounts
+  (see H18); nothing is simulated until all entries are valid; errors are listed in an error summary linked to
+  the entries.
 - **Evidence:** e2e "a CSV file is loaded, and timeline errors are shown before simulating";
   `test/common/PatientEvents.test.ts`; `test/common/ScenarioFiles.test.ts` ("impossible entries").
 - **Residual:** S Significant, L Very low → **R 1**.
@@ -245,3 +248,41 @@ Version assessed: SweetSpot 0.1.0. Evidence paths are relative to the repository
   intended purpose and disclaimer.
 - **Evidence:** e2e "the printed summary shows the scenario and results, not the controls".
 - **Residual:** S Significant, L Very low → **R 1**.
+
+### H18: Impossible amounts give results that are not possible
+
+- **Cause:** a typing mistake (50 instead of 5.0 units, 5000 instead of 50 g), or a file with absurd values.
+  Found by probing: 50 units gave a glucose of -0.8 mmol/L, 1000 units -0.6, and 5000 g of carbs 920 mmol/L.
+- **Harm:** a learner sees, and may remember, results that cannot happen; contributes to H08.
+- **Initial:** S Significant, L High → **R 3**.
+- **Controls:**
+  - amounts nobody takes are refused with a clear message: quick-acting insulin above 100 units, background
+    insulin above 150 units, pump rate above 10 units an hour, carbs above 500 g, meals and exercise longer than
+    24 hours, glucose below 1 mmol/L (files, timeline and shared scenarios);
+  - amounts that are valid but much larger than in most days (quick-acting insulin above 25 units, background
+    insulin above 80 units, pump rate above 3 units an hour, carbs above 150 g) are simulated, with "Check
+    these amounts … Check that it is not a typing mistake." above the results;
+  - if the simulated glucose goes below 1 or above 40 mmol/L, the page says the model cannot show what would
+    happen and not to read anything into the results.
+- **Evidence:** `test/common/PatientEvents.test.ts` ("should reject amounts that nobody takes",
+  "getEventWarnings", including that none of the practice scenarios triggers a warning);
+  `test/common/GlucoseMetrics.test.ts` ("modelLimitNote"); e2e "amounts nobody takes are refused, large ones
+  are questioned", "results that are not possible are not presented as results".
+- **Residual:** S Significant, L Very low → **R 1**.
+- **Notes:** the limits are proposals for the CSO and the clinical lead to confirm. Scenario 1 of "Taking
+  correction doses too close together" reaches 1.2 mmol/L, which is close to the limit of what the model note
+  allows; the educator review (#24) should decide whether it is a suitable example.
+
+### H19: A very long period is simulated
+
+- **Cause:** a mistyped year in the timeline or a file (found by probing: a one-year period took 18 seconds and
+  gave 526,000 results; the charts could not show it).
+- **Harm:** inconvenience; the page may become unusable.
+- **Initial:** S Minor, L High → **R 2**.
+- **Controls:** entries more than 3 days apart are refused with the dates named ("Check the dates");
+  shared scenarios are checked the same way; the simulation refuses periods of more than 4 days.
+- **Evidence:** `test/common/PatientDataTimeSpan.test.ts` ("checkTimeSpan");
+  `test/common/SimulationRequest.test.ts` ("should refuse periods of more than 4 days"); e2e "entries that are
+  too far apart, e.g. a mistyped year, are refused".
+- **Residual:** S Minor, L Very low → **R 1**.
+

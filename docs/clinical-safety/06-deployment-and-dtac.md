@@ -30,7 +30,9 @@ SweetSpot is configured when it is built:
 SWEETSPOT_PERSONAL_DATA=off SWEETSPOT_FEEDBACK_URL=mailto:diabetes.education@example.nhs.uk npm run build
 ```
 
-The built files are in `dist/`. The version and commit are shown in the footer of every page.
+The built files are in `dist/`. The production build contains **SweetSpot only** (no development pages or
+unused images); `SWEETSPOT_ALL_PAGES=on` adds the development pages and must not be used for deployment. The
+version and commit are shown in the footer of every page.
 
 ## Hosting
 

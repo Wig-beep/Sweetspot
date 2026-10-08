@@ -98,7 +98,7 @@ export default defineComponent({
         </label>
     </li>
     <li>
-        <ParameterConfigNumber v-for="(_cfg, _id, id) in defaultValue" 
+        <ParameterConfigNumber v-for="(_cfg, _id) in defaultValue" 
             :config="config"
             :defaultValue="defaultValue[_id]" 
             :tooltip="tooltip"

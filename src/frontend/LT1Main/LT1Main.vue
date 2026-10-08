@@ -31,7 +31,7 @@ import { SimulationClient } from '../util/SimulationClient.js'
 import { friendlyDateTime } from '../util/FriendlyDate.js'
 import { getPatientDataTimeSpan } from '../../common/PatientDataTimeSpan.js'
 import PatientEvent from '../../types/PatientEvent.js'
-import { getExercisesFromEvents, sortByTime } from '../../common/PatientEvents.js'
+import { getEventWarnings, getExercisesFromEvents, sortByTime } from '../../common/PatientEvents.js'
 import { readPatientData } from '../../common/DeviceExports.js'
 import { decodeScenarioLink, isScenarioFile, scenarioFromFile } from '../../common/ScenarioFiles.js'
 import EducatorPanel from './EducatorPanel.vue'
@@ -46,7 +46,7 @@ import {
     TeachingScenario,
     WhatIf
 } from '../../common/TeachingScenarios.js'
-import { computeGlucoseMetrics, GlucoseMetrics } from '../../common/GlucoseMetrics.js'
+import { computeGlucoseMetrics, GlucoseMetrics, modelLimitNote } from '../../common/GlucoseMetrics.js'
 import {
     DescribedDay,
     describeGlucose,
@@ -195,6 +195,10 @@ export default defineComponent({
              * clearly educational use open scenario files only
              */
             personalData: buildInfo.personalData,
+            /** amounts that are much larger than in most days */
+            eventWarnings: [] as string[],
+            /** says when results are outside what is possible */
+            modelNote: '' as string,
             /** problem opening a shared scenario, if any */
             scenarioError: '',
             /** whether results take a while to calculate */
@@ -497,6 +501,12 @@ export default defineComponent({
             this.metrics = computeGlucoseMetrics(results)
             this.baselineMetrics = (isWhatIf && loggedDay)
                 ? computeGlucoseMetrics(loggedDay) : null
+            // amounts that look like typing mistakes, and results that are
+            // not possible (both kinds of days are looked at)
+            this.eventWarnings = [...new Set(getEventWarnings(
+                [...(original ?? []), ...(events ?? [])]))]
+            this.modelNote = [this.metrics, this.baselineMetrics]
+                .map((m) => m && modelLimitNote(m)).find((note) => note) ?? ""
         },
         /**
          * Describes the simulation of logged events over the period shown,
@@ -908,6 +918,13 @@ export default defineComponent({
                 Choose a practice scenario or upload a day to see the results here.
             </p>
             <div v-if="fileEvents" class="ss-inset own-data-notice">{{ ownDataNotice }}</div>
+            <div v-if="eventWarnings.length" class="ss-inset results-warning">
+                <h3>Check these amounts</h3>
+                <ul>
+                    <li v-for="warning in eventWarnings" :key="warning">{{ warning }}</li>
+                </ul>
+            </div>
+            <p v-if="modelNote" class="csv-error" role="alert">{{ modelNote }}</p>
             <p class="visually-hidden" role="status">{{ statusMessage }}</p>
             <p v-if="calculating" class="ss-hint calculating">Working out the results…</p>
             <p v-if="simulationError" class="csv-error" role="alert">{{ simulationError }}</p>

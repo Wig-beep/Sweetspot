@@ -64,4 +64,22 @@ describe("SimulationRequest", () => {
         expect(requestKey(request(70))).to.equal(requestKey(request(70)))
         expect(requestKey(request(70))).not.to.equal(requestKey(request(85)))
     })
+
+    it("should refuse periods of more than 4 days, e.g. from a mistyped year", async () => {
+        const request: SimulationRequest = {
+            events: [
+                { time: at(8), type: "bolus", value: 5 },
+                { time: new Date(2027, 9, 5, 8), type: "bolus", value: 5 },
+            ],
+            patient: moduleSpec("UvaPadova_T1DMS", new UvaPadova({})),
+            sensor: moduleSpec("IdealCGM", new IdealCGM({})),
+            options: {},
+            withExercise: false,
+        }
+        let error: Error | undefined
+        const started = Date.now()
+        await simulateRequest(request, load).catch((e) => { error = e })
+        expect(error?.message).to.match(/longer than 4 days/)
+        expect(Date.now() - started).to.be.below(2000)
+    })
 })
